@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 import uuid
+from functools import lru_cache
 from typing import Annotated
 
 import jwt
+from jwt.algorithms import ECAlgorithm
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,11 +20,24 @@ DBSession = Annotated[AsyncSession, Depends(get_db)]
 _bearer = HTTPBearer(auto_error=False)
 
 
+@lru_cache(maxsize=1)
+def _supabase_public_key():
+    """Construye la clave pública EC de Supabase desde las coordenadas JWK."""
+    jwk = {
+        "kty": "EC",
+        "crv": "P-256",
+        "alg": "ES256",
+        "x": settings.SUPABASE_JWK_X,
+        "y": settings.SUPABASE_JWK_Y,
+    }
+    return ECAlgorithm.from_jwk(json.dumps(jwk))
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     db: AsyncSession = Depends(get_db),
 ) -> UserProfile:
-    """Verifica el JWT de Supabase Auth y retorna (o crea) el UserProfile."""
+    """Verifica el JWT de Supabase Auth (ES256) y retorna (o crea) el UserProfile."""
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,8 +49,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
+            _supabase_public_key(),
+            algorithms=["ES256"],
             audience="authenticated",
         )
     except jwt.ExpiredSignatureError:
