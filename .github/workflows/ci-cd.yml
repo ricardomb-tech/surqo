@@ -12,6 +12,7 @@ jobs:
     defaults:
       run:
         working-directory: backend
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,27 +35,35 @@ jobs:
           DATABASE_URL: "sqlite+aiosqlite:///:memory:"
           REDIS_URL: "redis://localhost:6379"
           RESEND_API_KEY: "test_key"
+          FROM_EMAIL: "alertas@surqo.io"
           HIVEMQ_HOST: "broker.hivemq.com"
           HIVEMQ_USERNAME: ""
           HIVEMQ_PASSWORD: ""
+          LOGFIRE_TOKEN: ""
           APP_ENV: "test"
 
   deploy-backend:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     steps:
       - name: Deploy to Render
         run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
             -H "Content-Type: application/json"
+
+      - name: Confirm backend deploy triggered
+        run: echo "✅ Backend deploy hook enviado a Render"
 
   deploy-frontend:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -62,3 +71,23 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: "--prod"
           working-directory: ./frontend
+
+  notify-deploy:
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Summarize deploy
+        run: |
+          BACKEND="${{ needs.deploy-backend.result }}"
+          FRONTEND="${{ needs.deploy-frontend.result }}"
+          echo "🌾 Surqo deploy summary"
+          echo "  Backend  → $BACKEND"
+          echo "  Frontend → $FRONTEND"
+          if [[ "$BACKEND" == "success" && "$FRONTEND" == "success" ]]; then
+            echo "✅ Deploy completo — surqo.vercel.app está actualizado"
+          else
+            echo "⚠️  Algún deploy falló. Revisa los logs de cada job."
+            exit 1
+          fi

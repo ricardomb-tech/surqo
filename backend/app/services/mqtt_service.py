@@ -89,9 +89,14 @@ class SurqoMQTTService:
             logger.error("Error procesando mensaje MQTT: %s", e)
 
     async def _process_reading(self, payload: dict, farm_id: str | None) -> None:
+        import uuid as _uuid
+
+        from sqlalchemy import select
+
+        from app.models.farm import Farm
         from app.models.sensor_reading import SensorReading
-        from app.services.kpi_service import KPIService
         from app.services.alert_service import AlertService
+        from app.services.kpi_service import KPIService
 
         kpi_svc = KPIService()
         alert_svc = AlertService()
@@ -119,16 +124,37 @@ class SurqoMQTTService:
             "firmware_version": payload.get("firmware_version"),
         }
 
+        farm_uuid: _uuid.UUID | None = None
+        if farm_id:
+            try:
+                farm_uuid = _uuid.UUID(farm_id)
+            except ValueError:
+                pass
+
         async with self._db_factory() as db:
             reading = SensorReading(**{k: v for k, v in reading_data.items() if k != "farm_id"})
-            if farm_id:
-                import uuid
-                try:
-                    reading.farm_id = uuid.UUID(farm_id)
-                except ValueError:
-                    pass
+            reading.farm_id = farm_uuid
             db.add(reading)
             await db.commit()
+
+            # Lookup finca para email
+            farm_name = "Finca"
+            owner_email: str | None = None
+            if farm_uuid:
+                farm = await db.get(Farm, farm_uuid)
+                if farm:
+                    farm_name = farm.name
+                    owner_email = farm.owner_email
+
+            # Verificar umbrales y enviar alertas/email
+            await alert_svc.process_threshold_violations(
+                db=db,
+                reading={**reading_data, "vpd_kpa": vpd},
+                farm_id=farm_id,
+                device_id=reading_data["device_id"],
+                farm_name=farm_name,
+                owner_email=owner_email,
+            )
 
         # Broadcast a WebSocket
         if farm_id:
@@ -136,11 +162,6 @@ class SurqoMQTTService:
                 "type": "sensor_reading",
                 "data": {**reading_data, "vpd_kpa": vpd},
             })
-
-        # Verificar umbrales
-        violations = alert_svc.check_thresholds({**reading_data, "vpd_kpa": vpd})
-        if violations:
-            logfire.info("Umbrales violados", violations=violations, farm_id=farm_id)
 
     def start_background(self) -> None:
         self._running = True

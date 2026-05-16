@@ -21,8 +21,14 @@ class AlertResponse(BaseModel):
     is_resolved: bool
     resolved_at: datetime | None
     email_sent: bool
+    email_sent_at: datetime | None
     created_at: datetime
 
 
 class AlertResolveRequest(BaseModel):
     resolved: bool = True
+
+
+class AlertNotifyRequest(BaseModel):
+    to_email: str
+    farm_name: str = "Finca"
