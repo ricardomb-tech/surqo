@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import AsyncSessionLocal, init_db
-from app.routers import farms, analysis, sensors, alerts, kpis
+from app.routers import farms, analysis, sensors, alerts, kpis, users
 from app.websocket.manager import manager
 
 if settings.LOGFIRE_TOKEN:
@@ -74,6 +74,7 @@ app.add_middleware(
 if settings.LOGFIRE_TOKEN:
     logfire.instrument_fastapi(app)
 
+app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(farms.router, prefix="/api/v1/farms", tags=["farms"])
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(sensors.router, prefix="/api/v1/sensors", tags=["sensors"])

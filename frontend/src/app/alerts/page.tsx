@@ -9,7 +9,7 @@ export default function AlertsPage() {
   const [filter, setFilter] = useState("all")
 
   return (
-    <div className="min-h-screen pt-10 pb-20">
+    <div className="min-h-screen pt-28 pb-20">
       <div className="max-w-5xl mx-auto px-4">
         
         {/* Header */}

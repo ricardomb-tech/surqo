@@ -147,6 +147,7 @@ class SurqoMQTTService:
                     owner_email = farm.owner_email
 
             # Verificar umbrales y enviar alertas/email
+            user_id_str = str(farm.user_id) if farm and farm.user_id else None
             await alert_svc.process_threshold_violations(
                 db=db,
                 reading={**reading_data, "vpd_kpa": vpd},
@@ -154,6 +155,7 @@ class SurqoMQTTService:
                 device_id=reading_data["device_id"],
                 farm_name=farm_name,
                 owner_email=owner_email,
+                user_id=user_id_str,
             )
 
         # Broadcast a WebSocket

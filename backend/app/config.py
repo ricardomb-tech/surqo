@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # Base de datos (Supabase)
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""  # Settings → API → JWT Secret en el dashboard de Supabase
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/surqo"
 
     # Cache (Upstash Redis)

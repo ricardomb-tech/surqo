@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, Numeric, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,6 +15,10 @@ class Farm(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    # FK al perfil del usuario dueño de la finca
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("user_profiles.user_id"), nullable=True, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     owner_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -43,9 +47,13 @@ class Farm(Base):
     alerts: Mapped[list[Alert]] = relationship(
         "Alert", back_populates="farm", lazy="noload"
     )
+    owner: Mapped[UserProfile | None] = relationship(
+        "UserProfile", back_populates="farms", lazy="noload"
+    )
 
 
 # Avoid circular imports
 from app.models.sensor_reading import SensorReading  # noqa: E402
 from app.models.analysis import Analysis  # noqa: E402
 from app.models.alert import Alert  # noqa: E402
+from app.models.user import UserProfile  # noqa: E402

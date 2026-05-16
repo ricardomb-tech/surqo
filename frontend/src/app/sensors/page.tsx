@@ -10,7 +10,7 @@ export default function SensorsPage() {
   const [inputId, setInputId] = useState("")
 
   return (
-    <div className="min-h-screen pt-10 pb-20">
+    <div className="min-h-screen pt-28 pb-20">
       <div className="max-w-4xl mx-auto px-4">
         
         {/* Header */}

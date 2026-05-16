@@ -101,6 +101,7 @@ class AlertService:
         device_id: str | None,
         farm_name: str = "Finca",
         owner_email: str | None = None,
+        user_id: str | None = None,
     ) -> list[Alert]:
         """Crea alertas en DB y envía email si hay violaciones de umbral y no hay cooldown activo."""
         violations = self.check_thresholds(reading)
@@ -126,8 +127,23 @@ class AlertService:
             )
             created_alerts.append(alert)
 
-        # Enviar email si hay destinatario y no está en cooldown
-        if owner_email and farm_id:
+        # Verificar si el usuario puede enviar más alertas por email (límite free)
+        can_email = owner_email is not None and farm_id is not None
+        if can_email and user_id:
+            import uuid as _uuid
+            from app.models.user import UserProfile as _UserProfile
+            try:
+                uid = _uuid.UUID(user_id)
+                profile = await db.get(_UserProfile, uid)
+                if profile and not profile.can_send_email_alert:
+                    can_email = False
+                    logger.info(
+                        "Límite de alertas email alcanzado para usuario %s (plan free)", user_id
+                    )
+            except (ValueError, Exception):
+                pass
+
+        if can_email:
             sent = await self._send_with_cooldown(
                 db=db,
                 farm_id=farm_id,
@@ -144,6 +160,17 @@ class AlertService:
                     to=owner_email,
                     violations=len(violations),
                 )
+                # Incrementar contador mensual del usuario
+                if user_id:
+                    import uuid as _uuid
+                    from app.models.user import UserProfile as _UP
+                    try:
+                        profile = await db.get(_UP, _uuid.UUID(user_id))
+                        if profile:
+                            profile.email_alerts_this_month += 1
+                            await db.commit()
+                    except Exception:
+                        pass
 
         return created_alerts
 

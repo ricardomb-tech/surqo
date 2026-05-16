@@ -1,11 +1,17 @@
 import type { Analysis, Alert, Farm, KPIs, SensorReading, TimeseriesPoint } from "@/types"
+import { getAccessToken } from "@/lib/auth"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.onrender.com"
 
 async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await getAccessToken()
   const resp = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
+    },
   })
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ detail: resp.statusText }))

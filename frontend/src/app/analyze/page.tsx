@@ -1,15 +1,18 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button, Card } from "@/components/ui/Primitives"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { analysisAPI } from "@/lib/api"
+import { useAuth } from "@/components/AuthProvider"
 import type { Analysis } from "@/types"
-import { Brain, Sparkles, MapPin, Mail, Sprout, ArrowRight, Loader2 } from "lucide-react"
+import { Brain, Sparkles, MapPin, Mail, Sprout, ArrowRight, Loader2, CrownIcon, Lock } from "lucide-react"
 
 const CROPS = ["maíz", "yuca", "plátano", "café", "arroz", "algodón"]
 
 export default function AnalyzePage() {
+  const { isPaid, loading: authLoading } = useAuth()
   const [form, setForm] = useState({
     farm_name: "Finca La Esperanza",
     lat: "8.7575",
@@ -42,8 +45,43 @@ export default function AnalyzePage() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-surqo-green animate-spin" />
+      </div>
+    )
+  }
+
+  if (!isPaid) {
+    return (
+      <div className="min-h-screen pt-28 pb-20 flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-amber-400" />
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-surqo-text mb-3">Análisis IA — Plan Pro</h1>
+          <p className="text-surqo-text-secondary font-medium mb-8 text-sm leading-relaxed">
+            El análisis con Claude AI está disponible en el plan Pro. Obtén recomendaciones agronómicas precisas, predicciones climáticas y planes de acción para tus cultivos.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button size="lg" className="w-full" asChild>
+              <Link href="/upgrade">
+                <CrownIcon className="w-5 h-5 mr-2" />
+                Ver planes — Actualizar a Pro
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" className="w-full" asChild>
+              <Link href="/dashboard">Volver al dashboard</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen pt-10 pb-20">
+    <div className="min-h-screen pt-28 pb-20">
       <div className="max-w-4xl mx-auto px-4">
         
         {/* Header Area */}

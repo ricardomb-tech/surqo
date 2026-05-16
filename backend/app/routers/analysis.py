@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from sqlalchemy import select
 
 from app.config import settings
-from app.dependencies import DBSession
+from app.dependencies import CurrentUser, DBSession, PaidUser
 from app.models.analysis import Analysis
 from app.models.sensor_reading import SensorReading
 from app.schemas.analysis import AnalysisRequest, AnalysisResponse, ComparisonResult, PromptEvalRequest
@@ -27,6 +27,7 @@ alert_svc = AlertService()
 async def analyze_farm(
     body: AnalysisRequest,
     background_tasks: BackgroundTasks,
+    current_user: PaidUser,   # 402 automático si plan free
     db: DBSession,
 ) -> Analysis:
     cache_key = f"analysis:{body.lat:.3f}:{body.lon:.3f}:{body.crop_type}"
@@ -127,7 +128,7 @@ async def analyze_farm(
 
 
 @router.get("/history/{farm_id}", response_model=list[AnalysisResponse])
-async def get_history(farm_id: uuid.UUID, db: DBSession) -> list[Analysis]:
+async def get_history(farm_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> list[Analysis]:
     stmt = (
         select(Analysis)
         .where(Analysis.farm_id == farm_id)
@@ -139,7 +140,7 @@ async def get_history(farm_id: uuid.UUID, db: DBSession) -> list[Analysis]:
 
 
 @router.get("/{analysis_id}", response_model=AnalysisResponse)
-async def get_analysis(analysis_id: uuid.UUID, db: DBSession) -> Analysis:
+async def get_analysis(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> Analysis:
     analysis = await db.get(Analysis, analysis_id)
     if not analysis:
         raise HTTPException(status_code=404, detail="Análisis no encontrado")
