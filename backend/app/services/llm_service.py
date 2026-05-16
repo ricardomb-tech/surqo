@@ -1,0 +1,352 @@
+from __future__ import annotations
+
+import json
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+import anthropic
+import logfire
+import yaml
+
+from app.config import settings
+from app.services.climate_service import ClimateData
+
+
+@dataclass
+class AnalysisResult:
+    alert_level: str
+    main_alert: str | None
+    water_stress_index: float
+    irrigation_needed: bool
+    next_irrigation_date: str | None
+    avg_temperature_c: float
+    total_rain_7d_mm: float
+    avg_vpd_kpa: float
+    et0_7d_mm: float
+    recommendations: list[dict]
+    summary_for_farmer: str
+    model_used: str
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float
+    prompt_version: str
+
+
+@dataclass
+class AlertTriageResult:
+    is_alert: bool
+    severity: str
+    title: str
+    description: str
+    action: str
+    response_time: str
+
+
+@dataclass
+class DailySummaryResult:
+    emoji_status: str
+    summary_text: str
+    top_priority: str
+    week_outlook: str
+
+
+@dataclass
+class PromptEvalResult:
+    prompt_path: str
+    avg_quality: float
+    avg_latency_ms: float
+    total_cost_usd: float
+    valid_json_pct: float
+    has_required_fields_pct: float
+
+
+@dataclass
+class ComparisonResult:
+    v1: PromptEvalResult
+    v2: PromptEvalResult
+    recommendation: str
+
+
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
+
+class LLMService:
+    def __init__(self) -> None:
+        self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self._prompt_cache: dict[str, dict] = {}
+
+    def load_prompt(self, name: str) -> dict:
+        if name not in self._prompt_cache:
+            path = PROMPTS_DIR / name
+            if not path.exists():
+                raise FileNotFoundError(f"Prompt no encontrado: {path}")
+            with open(path) as f:
+                self._prompt_cache[name] = yaml.safe_load(f)
+        return self._prompt_cache[name]
+
+    def _cost(self, input_tokens: int, output_tokens: int) -> float:
+        # claude-haiku-4-5-20251001 pricing
+        return round(input_tokens * 0.00000025 + output_tokens * 0.00000125, 6)
+
+    async def analyze_farm(
+        self,
+        climate_data: ClimateData,
+        crop_type: str,
+        farm_name: str,
+        sensor_data: dict | None = None,
+    ) -> AnalysisResult:
+        with logfire.span("llm.analyze_farm", farm=farm_name, crop=crop_type):
+            prompt_cfg = self.load_prompt("farm_analysis_v1.0.yaml")
+
+            etc_daily = 0.0
+            if climate_data.daily:
+                et0_avg = climate_data.et0_total_7d / len(climate_data.daily)
+                from app.services.kpi_service import KPIService
+                etc_daily = KPIService().calculate_etc(et0_avg, crop_type)
+
+            water_deficit = max(0, climate_data.et0_total_7d * 1.0 - climate_data.rain_total_7d)
+
+            sensor_section = "Sin sensor IoT conectado (usando solo datos climáticos)"
+            if sensor_data:
+                sensor_section = "\n".join(
+                    f"  {k}: {v}" for k, v in sensor_data.items()
+                )
+
+            user_content = prompt_cfg["user_template"].format(
+                farm_name=farm_name,
+                crop_type=crop_type,
+                location=climate_data.location_name,
+                analysis_date=climate_data.daily[0].date if climate_data.daily else "hoy",
+                temp_min=climate_data.temp_min_7d,
+                temp_max=climate_data.temp_max_7d,
+                temp_avg=round(climate_data.temp_avg_7d, 1),
+                rain_total=climate_data.rain_total_7d,
+                rain_prob_max=climate_data.rain_prob_max_7d,
+                et0_total=round(climate_data.et0_total_7d, 1),
+                vpd_avg=climate_data.vpd_avg,
+                uv_max=climate_data.uv_max_7d,
+                sensor_section=sensor_section,
+                etc_daily=etc_daily,
+                water_deficit=round(water_deficit, 1),
+                water_stress_index=min(10.0, round(water_deficit / 5, 1)),
+            )
+
+            response = await self.client.messages.create(
+                model=settings.LLM_MODEL,
+                max_tokens=prompt_cfg.get("max_tokens", settings.LLM_MAX_TOKENS),
+                system=prompt_cfg["system_prompt"],
+                messages=[{"role": "user", "content": user_content}],
+            )
+
+            raw_text = response.content[0].text.strip()
+            # Extraer JSON si viene envuelto en markdown
+            if "```json" in raw_text:
+                raw_text = raw_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw_text:
+                raw_text = raw_text.split("```")[1].split("```")[0].strip()
+
+            data = json.loads(raw_text)
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+
+            return AnalysisResult(
+                alert_level=data.get("alert_level", "ok"),
+                main_alert=data.get("main_alert"),
+                water_stress_index=float(data.get("water_stress_index", 0)),
+                irrigation_needed=bool(data.get("irrigation_needed", False)),
+                next_irrigation_date=data.get("next_irrigation_date"),
+                avg_temperature_c=float(data.get("avg_temperature_c", climate_data.temp_avg_7d)),
+                total_rain_7d_mm=float(data.get("total_rain_7d_mm", climate_data.rain_total_7d)),
+                avg_vpd_kpa=float(data.get("avg_vpd_kpa", climate_data.vpd_avg)),
+                et0_7d_mm=float(data.get("et0_7d_mm", climate_data.et0_total_7d)),
+                recommendations=data.get("recommendations", []),
+                summary_for_farmer=data.get("summary_for_farmer", ""),
+                model_used=settings.LLM_MODEL,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_usd=self._cost(input_tokens, output_tokens),
+                prompt_version=prompt_cfg.get("version", "1.0.0"),
+            )
+
+    async def triage_alert(
+        self,
+        sensor_reading: dict,
+        threshold_violations: list[str],
+        crop_type: str,
+    ) -> AlertTriageResult:
+        with logfire.span("llm.triage_alert"):
+            prompt_cfg = self.load_prompt("alert_triage_v1.0.yaml")
+            user_content = prompt_cfg["user_template"].format(
+                device_id=sensor_reading.get("device_id", "unknown"),
+                farm_id=sensor_reading.get("farm_id", "unknown"),
+                crop_type=crop_type,
+                sensor_json=json.dumps(sensor_reading, indent=2, default=str),
+                violations_list="\n".join(f"- {v}" for v in threshold_violations),
+                recent_history="Sin historial disponible",
+            )
+            response = await self.client.messages.create(
+                model=settings.LLM_MODEL,
+                max_tokens=256,
+                system=prompt_cfg["system_prompt"],
+                messages=[{"role": "user", "content": user_content}],
+            )
+            raw = response.content[0].text.strip()
+            if "```" in raw:
+                raw = raw.split("```")[1].split("```")[0].strip()
+                if raw.startswith("json"):
+                    raw = raw[4:].strip()
+            data = json.loads(raw)
+            return AlertTriageResult(
+                is_alert=data.get("is_alert", False),
+                severity=data.get("severity", "info"),
+                title=data.get("title", "Alerta de sensor"),
+                description=data.get("description", ""),
+                action=data.get("action", ""),
+                response_time=data.get("response_time", "today"),
+            )
+
+    async def generate_daily_summary(
+        self,
+        farm_name: str,
+        analyses_7d: list[dict],
+        kpis_today: dict,
+    ) -> DailySummaryResult:
+        with logfire.span("llm.daily_summary", farm=farm_name):
+            prompt_cfg = self.load_prompt("daily_summary_v1.0.yaml")
+            from datetime import date
+            user_content = prompt_cfg["user_template"].format(
+                farm_name=farm_name,
+                date=date.today().strftime("%d/%m/%Y"),
+                kpis_json=json.dumps(kpis_today, indent=2, default=str),
+                analyses_summary=json.dumps(analyses_7d[-3:] if analyses_7d else [], indent=2),
+                forecast_48h="Ver dashboard para pronóstico actualizado",
+            )
+            response = await self.client.messages.create(
+                model=settings.LLM_MODEL,
+                max_tokens=512,
+                system=prompt_cfg["system_prompt"],
+                messages=[{"role": "user", "content": user_content}],
+            )
+            raw = response.content[0].text.strip()
+            if "```" in raw:
+                raw = raw.split("```")[1].split("```")[0].strip()
+                if raw.startswith("json"):
+                    raw = raw[4:].strip()
+            data = json.loads(raw)
+            return DailySummaryResult(
+                emoji_status=data.get("emoji_status", "🟡"),
+                summary_text=data.get("summary_text", ""),
+                top_priority=data.get("top_priority", ""),
+                week_outlook=data.get("week_outlook", ""),
+            )
+
+
+class PromptEvaluator:
+    def __init__(self, llm_service: LLMService) -> None:
+        self.llm = llm_service
+
+    async def evaluate_single(
+        self, prompt_path: str, test_input: dict
+    ) -> dict:
+        start = time.monotonic()
+        prompt_cfg = self.llm.load_prompt(prompt_path)
+        required_fields = prompt_cfg.get("response_required_fields", [])
+
+        try:
+            user_content = prompt_cfg["user_template"].format(**test_input)
+            response = await self.llm.client.messages.create(
+                model=settings.LLM_MODEL,
+                max_tokens=prompt_cfg.get("max_tokens", 1024),
+                system=prompt_cfg["system_prompt"],
+                messages=[{"role": "user", "content": user_content}],
+            )
+            raw = response.content[0].text.strip()
+            latency_ms = (time.monotonic() - start) * 1000
+            input_tokens = response.usage.input_tokens
+            output_tokens = response.usage.output_tokens
+            cost = self.llm._cost(input_tokens, output_tokens)
+
+            # Validar JSON
+            is_valid = False
+            parsed = {}
+            try:
+                if "```json" in raw:
+                    raw = raw.split("```json")[1].split("```")[0].strip()
+                elif "```" in raw:
+                    raw = raw.split("```")[1].split("```")[0].strip()
+                parsed = json.loads(raw)
+                is_valid = True
+            except json.JSONDecodeError:
+                pass
+
+            has_fields = all(f in parsed for f in required_fields) if is_valid else False
+            quality = await self.llm_judge(raw, test_input) if is_valid else 0.0
+
+            return {
+                "prompt_path": prompt_path,
+                "latency_ms": round(latency_ms, 1),
+                "cost_usd": cost,
+                "is_valid_json": is_valid,
+                "has_required_fields": has_fields,
+                "quality_score": quality,
+            }
+        except Exception as e:
+            return {
+                "prompt_path": prompt_path,
+                "error": str(e),
+                "latency_ms": (time.monotonic() - start) * 1000,
+                "cost_usd": 0.0,
+                "is_valid_json": False,
+                "has_required_fields": False,
+                "quality_score": 0.0,
+            }
+
+    async def llm_judge(self, output: str, context: dict) -> float:
+        try:
+            response = await self.llm.client.messages.create(
+                model=settings.LLM_MODEL,
+                max_tokens=50,
+                system="Eres un evaluador experto en agronomía colombiana.",
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Evalúa esta respuesta agronómica del 0.0 al 1.0 según:\n"
+                        f"precisión(0.4) + accionabilidad(0.3) + completitud(0.2) + formato(0.1)\n\n"
+                        f"RESPUESTA:\n{output[:500]}\n\n"
+                        f"Responde SOLO con un número decimal entre 0.0 y 1.0"
+                    ),
+                }],
+            )
+            return float(response.content[0].text.strip())
+        except Exception:
+            return 0.5
+
+    async def compare_versions(
+        self, v1_path: str, v2_path: str, test_cases: list[dict]
+    ) -> ComparisonResult:
+        v1_results = [await self.evaluate_single(v1_path, tc) for tc in test_cases]
+        v2_results = [await self.evaluate_single(v2_path, tc) for tc in test_cases]
+
+        def summarize(results: list[dict], path: str) -> PromptEvalResult:
+            n = len(results)
+            return PromptEvalResult(
+                prompt_path=path,
+                avg_quality=sum(r["quality_score"] for r in results) / n,
+                avg_latency_ms=sum(r["latency_ms"] for r in results) / n,
+                total_cost_usd=sum(r["cost_usd"] for r in results),
+                valid_json_pct=sum(1 for r in results if r["is_valid_json"]) / n,
+                has_required_fields_pct=sum(1 for r in results if r["has_required_fields"]) / n,
+            )
+
+        v1_summary = summarize(v1_results, v1_path)
+        v2_summary = summarize(v2_results, v2_path)
+
+        if v2_summary.avg_quality > v1_summary.avg_quality + 0.05:
+            recommendation = f"Usar {v2_path}: mejor calidad ({v2_summary.avg_quality:.2f} vs {v1_summary.avg_quality:.2f})"
+        elif v1_summary.avg_quality >= v2_summary.avg_quality:
+            recommendation = f"Mantener {v1_path}: igual o mejor calidad con costo similar"
+        else:
+            recommendation = "Las versiones son equivalentes — considerar latencia y costo"
+
+        return ComparisonResult(v1=v1_summary, v2=v2_summary, recommendation=recommendation)

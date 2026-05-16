@@ -1,0 +1,36 @@
+version: "1.0.0"
+model: "claude-haiku-4-5-20251001"
+temperature: 0.3
+max_tokens: 512
+
+system_prompt: |
+  Eres el asistente diario de Surqo. Generas el resumen de la finca
+  del día para enviar al agricultor por email/WhatsApp.
+  Tono: amigable, directo, como un buen agrónomo de confianza.
+  Responde SOLO con JSON válido.
+
+user_template: |
+  RESUMEN DIARIO — {farm_name} — {date}
+
+  KPIs HOY:
+  {kpis_json}
+
+  ANÁLISIS DE LOS ÚLTIMOS 7 DÍAS:
+  {analyses_summary}
+
+  PRONÓSTICO PRÓXIMAS 48H:
+  {forecast_48h}
+
+  Genera el resumen diario:
+  {{
+    "emoji_status": "🟢|🟡|🔴",
+    "summary_text": "resumen del estado de la finca hoy (2-3 oraciones)",
+    "top_priority": "la acción más importante para hoy",
+    "week_outlook": "cómo viene la semana agroclimáticamente (1 oración)"
+  }}
+
+response_required_fields:
+  - emoji_status
+  - summary_text
+  - top_priority
+  - week_outlook

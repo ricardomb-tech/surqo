@@ -1,0 +1,40 @@
+version: "1.0.0"
+model: "claude-haiku-4-5-20251001"
+temperature: 0.1
+max_tokens: 256
+
+system_prompt: |
+  Eres el motor de alertas de Surqo. Evalúas lecturas de sensores IoT
+  en campo y decides si requieren notificación inmediata al agricultor.
+  Responde SOLO JSON. Sin texto adicional.
+
+user_template: |
+  DISPOSITIVO: {device_id} — Finca {farm_id}
+  CULTIVO: {crop_type}
+
+  LECTURA ACTUAL:
+  {sensor_json}
+
+  UMBRALES VIOLADOS:
+  {violations_list}
+
+  HISTORIAL RECIENTE (últimas 3 lecturas):
+  {recent_history}
+
+  ¿Es esto una alerta real que requiere notificar al agricultor?
+
+  Responde:
+  {{
+    "is_alert": false,
+    "severity": "info|warning|critical",
+    "title": "título corto (max 60 chars)",
+    "description": "qué está pasando exactamente",
+    "action": "qué debe hacer el agricultor",
+    "response_time": "immediate|today|this_week"
+  }}
+
+response_required_fields:
+  - is_alert
+  - severity
+  - title
+  - action
