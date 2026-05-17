@@ -4,13 +4,95 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 import anthropic
+import httpx
 import logfire
 import yaml
 
 from app.config import settings
 from app.services.climate_service import ClimateData
+
+
+# ─── Abstracción de proveedor LLM ─────────────────────────────────────────────
+
+class LLMProvider(Protocol):
+    """Interfaz común para Anthropic y Ollama."""
+    async def complete(
+        self,
+        system_prompt: str,
+        user_content: str,
+        max_tokens: int = 1024,
+    ) -> tuple[str, int, int]:
+        """Retorna (texto_respuesta, input_tokens, output_tokens)."""
+        ...
+
+
+class AnthropicProvider:
+    """Proveedor usando Anthropic Claude (producción)."""
+
+    def __init__(self) -> None:
+        self._client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.model   = settings.LLM_MODEL
+
+    async def complete(
+        self, system_prompt: str, user_content: str, max_tokens: int = 1024
+    ) -> tuple[str, int, int]:
+        response = await self._client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_content}],
+        )
+        return (
+            response.content[0].text,
+            response.usage.input_tokens,
+            response.usage.output_tokens,
+        )
+
+
+class OllamaProvider:
+    """Proveedor usando Ollama local (desarrollo / testing sin créditos)."""
+
+    def __init__(self) -> None:
+        self.base_url = settings.OLLAMA_BASE_URL
+        self.model    = settings.OLLAMA_MODEL
+
+    async def complete(
+        self, system_prompt: str, user_content: str, max_tokens: int = 1024
+    ) -> tuple[str, int, int]:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_content},
+            ],
+            "options": {"temperature": 0.2, "num_predict": max_tokens},
+            "stream": False,
+        }
+        async with httpx.AsyncClient(timeout=120) as client:
+            r = await client.post(f"{self.base_url}/api/chat", json=payload)
+            r.raise_for_status()
+
+        data = r.json()
+        text = data["message"]["content"]
+        # Ollama no retorna token counts exactos — estimamos
+        prompt_tokens = len(system_prompt.split()) + len(user_content.split())
+        output_tokens = len(text.split())
+        return text, prompt_tokens, output_tokens
+
+
+def _build_provider() -> AnthropicProvider | OllamaProvider:
+    if settings.LLM_PROVIDER == "ollama":
+        return OllamaProvider()
+    return AnthropicProvider()
+
+
+def _model_name() -> str:
+    if settings.LLM_PROVIDER == "ollama":
+        return f"ollama/{settings.OLLAMA_MODEL}"
+    return settings.LLM_MODEL
 
 
 @dataclass
@@ -73,8 +155,15 @@ PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 class LLMService:
     def __init__(self) -> None:
-        self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self._provider: AnthropicProvider | OllamaProvider = _build_provider()
         self._prompt_cache: dict[str, dict] = {}
+
+    # Mantener compatibilidad con PromptEvaluator que accede a self.client
+    @property
+    def client(self) -> anthropic.AsyncAnthropic:
+        if isinstance(self._provider, AnthropicProvider):
+            return self._provider._client
+        raise RuntimeError("PromptEvaluator solo disponible con proveedor Anthropic")
 
     def load_prompt(self, name: str) -> dict:
         if name not in self._prompt_cache:
@@ -132,14 +221,13 @@ class LLMService:
                 water_stress_index=min(10.0, round(water_deficit / 5, 1)),
             )
 
-            response = await self.client.messages.create(
-                model=settings.LLM_MODEL,
+            raw_text, input_tokens, output_tokens = await self._provider.complete(
+                system_prompt=prompt_cfg["system_prompt"],
+                user_content=user_content,
                 max_tokens=prompt_cfg.get("max_tokens", settings.LLM_MAX_TOKENS),
-                system=prompt_cfg["system_prompt"],
-                messages=[{"role": "user", "content": user_content}],
             )
+            raw_text = raw_text.strip()
 
-            raw_text = response.content[0].text.strip()
             # Extraer JSON si viene envuelto en markdown
             if "```json" in raw_text:
                 raw_text = raw_text.split("```json")[1].split("```")[0].strip()
@@ -147,8 +235,6 @@ class LLMService:
                 raw_text = raw_text.split("```")[1].split("```")[0].strip()
 
             data = json.loads(raw_text)
-            input_tokens = response.usage.input_tokens
-            output_tokens = response.usage.output_tokens
 
             return AnalysisResult(
                 alert_level=data.get("alert_level", "ok"),
@@ -162,10 +248,10 @@ class LLMService:
                 et0_7d_mm=float(data.get("et0_7d_mm", climate_data.et0_total_7d)),
                 recommendations=data.get("recommendations", []),
                 summary_for_farmer=data.get("summary_for_farmer", ""),
-                model_used=settings.LLM_MODEL,
+                model_used=_model_name(),
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
-                cost_usd=self._cost(input_tokens, output_tokens),
+                cost_usd=self._cost(input_tokens, output_tokens) if settings.LLM_PROVIDER == "anthropic" else 0.0,
                 prompt_version=prompt_cfg.get("version", "1.0.0"),
             )
 
@@ -185,13 +271,12 @@ class LLMService:
                 violations_list="\n".join(f"- {v}" for v in threshold_violations),
                 recent_history="Sin historial disponible",
             )
-            response = await self.client.messages.create(
-                model=settings.LLM_MODEL,
+            raw, _, _ = await self._provider.complete(
+                system_prompt=prompt_cfg["system_prompt"],
+                user_content=user_content,
                 max_tokens=256,
-                system=prompt_cfg["system_prompt"],
-                messages=[{"role": "user", "content": user_content}],
             )
-            raw = response.content[0].text.strip()
+            raw = raw.strip()
             if "```" in raw:
                 raw = raw.split("```")[1].split("```")[0].strip()
                 if raw.startswith("json"):
@@ -222,13 +307,12 @@ class LLMService:
                 analyses_summary=json.dumps(analyses_7d[-3:] if analyses_7d else [], indent=2),
                 forecast_48h="Ver dashboard para pronóstico actualizado",
             )
-            response = await self.client.messages.create(
-                model=settings.LLM_MODEL,
+            raw, _, _ = await self._provider.complete(
+                system_prompt=prompt_cfg["system_prompt"],
+                user_content=user_content,
                 max_tokens=512,
-                system=prompt_cfg["system_prompt"],
-                messages=[{"role": "user", "content": user_content}],
             )
-            raw = response.content[0].text.strip()
+            raw = raw.strip()
             if "```" in raw:
                 raw = raw.split("```")[1].split("```")[0].strip()
                 if raw.startswith("json"):
