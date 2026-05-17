@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button, Card } from "@/components/ui/Primitives"
 import { AlertBadge } from "@/components/AlertBadge"
 import { ShieldAlert, History, Filter, Search, CheckCircle2 } from "lucide-react"
+import type { Alert } from "@/types"
 
 export default function AlertsPage() {
   const [filter, setFilter] = useState("all")
@@ -59,28 +60,32 @@ export default function AlertsPage() {
                 message="Déficit Hídrico Severo - Sector Sur" 
                 time="Hace 12 minutos"
                 alert={{
-                  id: "1",
+                  id: "1", farm_id: null, device_id: null,
+                  alert_type: "water_stress", response_time: null,
+                  resolved_at: null, email_sent: false,
                   title: "Déficit Hídrico Severo - Sector Sur",
                   severity: "critical",
                   description: "La humedad del suelo ha caído por debajo del 30% mientras la temperatura ambiente supera los 32°C.",
                   recommended_action: "Iniciar ciclo de riego de emergencia inmediatamente.",
                   created_at: new Date().toISOString(),
                   is_resolved: false
-                }}
+                } as Alert}
               />
               <AlertBadge 
                 severity="warning" 
                 message="Anomalía en Sensor de Humedad Aire" 
                 time="Hace 1 hora"
                 alert={{
-                  id: "2",
+                  id: "2", farm_id: null, device_id: null,
+                  alert_type: "sensor_anomaly", response_time: null,
+                  resolved_at: null, email_sent: false,
                   title: "Anomalía en Sensor de Humedad Aire",
                   severity: "warning",
                   description: "Lecturas intermitentes detectadas en el nodo SURQO-X02. Posible interferencia de señal.",
                   recommended_action: "Verificar posición de la antena del nodo.",
                   created_at: new Date(Date.now() - 3600000).toISOString(),
                   is_resolved: false
-                }}
+                } as Alert}
               />
               
               {/* Resolved Alerts */}
@@ -91,13 +96,15 @@ export default function AlertsPage() {
                   message="Mantenimiento Programado Completado" 
                   time="Ayer, 18:45"
                   alert={{
-                    id: "3",
+                    id: "3", farm_id: null, device_id: null,
+                    alert_type: "maintenance", response_time: null,
+                    recommended_action: null, resolved_at: null, email_sent: false,
                     title: "Mantenimiento Programado Completado",
                     severity: "info",
                     description: "Se ha actualizado el firmware de todos los nodos a la versión 2.4.1.",
                     created_at: new Date(Date.now() - 86400000).toISOString(),
                     is_resolved: true
-                  }}
+                  } as Alert}
                 />
               </div>
             </div>

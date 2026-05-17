@@ -12,16 +12,22 @@ const dummyAnalysis: Analysis = {
   farm_name: "Finca La Esperanza",
   crop_type: "Maíz",
   alert_level: "ok",
+  main_alert: null,
   summary_for_farmer: "Las condiciones son óptimas. El VPD se mantiene bajo control y el suelo tiene humedad suficiente para las próximas 48 horas.",
   irrigation_needed: false,
+  next_irrigation_date: null,
   water_stress_index: 1.2,
   avg_temperature_c: 28.5,
   total_rain_7d_mm: 12,
   avg_vpd_kpa: 0.95,
+  et0_7d_mm: null,
   recommendations: [
     { action: "Mantener monitoreo", time_window: "24h", justification: "Condiciones estables", category: "general", priority: 1 }
   ],
   model_used: "Claude 3.5 Sonnet",
+  input_tokens: null,
+  output_tokens: null,
+  cost_usd: null,
   created_at: new Date().toISOString(),
 }
 
