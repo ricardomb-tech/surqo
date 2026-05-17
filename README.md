@@ -2,7 +2,7 @@
 
 > Plataforma IoT + IA para el campo colombiano. Del sensor al insight en segundos.
 
-[![Backend CI](https://github.com/your-org/surqo/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/your-org/surqo/actions)
+[![Backend CI](https://github.com/ricardomb-tech/surqo/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ricardomb-tech/surqo/actions)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)](https://python.org)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
@@ -16,6 +16,20 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 **Problema que resuelve:** El 85% de los agricultores en Colombia toman decisiones de riego, fertilización y cosecha basadas en experiencia visual, sin datos objetivos. Las pérdidas por estrés hídrico, plagas y heladas ascienden a millones de pesos por cosecha que podrían evitarse con monitoreo continuo.
 
 **Solución:** Nodos IoT de bajo costo (ESP32, ~$15 USD) conectados a una nube inteligente que analiza microclima, calcula índices agronómicos y usa Claude AI para generar planes de acción específicos para cada cultivo en el trópico colombiano.
+
+---
+
+## 🚀 API en Producción
+
+> **Base URL:** `https://surqo.onrender.com`
+
+| Recurso | URL |
+|---------|-----|
+| 📖 **Documentación interactiva (Swagger)** | [https://surqo.onrender.com/docs](https://surqo.onrender.com/docs) |
+| 📘 **Documentación alternativa (ReDoc)** | [https://surqo.onrender.com/redoc](https://surqo.onrender.com/redoc) |
+| ✅ **Health check** | [https://surqo.onrender.com/health](https://surqo.onrender.com/health) |
+
+> ⏳ **Nota importante:** El backend está desplegado en el plan gratuito de Render. Si el servicio lleva más de 15 minutos inactivo, entrará en modo de suspensión automática. La **primera solicitud puede tardar entre 30 y 60 segundos** mientras el servidor vuelve a arrancar. Las solicitudes siguientes responden normalmente. Por favor espera unos instantes y recarga si el sitio no carga de inmediato.
 
 ---
 
@@ -159,7 +173,7 @@ backend/
 # Prerrequisito: instalar uv
 # https://docs.astral.sh/uv/getting-started/installation/
 
-git clone https://github.com/your-org/surqo.git
+git clone https://github.com/ricardomb-tech/surqo.git
 cd surqo/backend
 
 # Instalar dependencias
@@ -370,103 +384,496 @@ Fallback: si MQTT falla → HTTP POST al backend → deep sleep
 
 ## API Reference
 
+> 📖 Documentación interactiva en vivo: **[https://surqo.onrender.com/docs](https://surqo.onrender.com/docs)**
+>
+> ⏳ Si es la primera carga del día, espera ~30s a que Render despierte el servidor.
+
+---
+
 ### Autenticación
 
-Todos los endpoints protegidos requieren header:
+Todos los endpoints protegidos requieren el siguiente header HTTP:
+
 ```
 Authorization: Bearer <jwt-token-de-supabase>
 ```
 
-El token se obtiene automáticamente desde `supabase.auth.getSession()` en el cliente.
+El token JWT es emitido por **Supabase Auth** con algoritmo **ES256** (curva elíptica P-256). El backend lo valida contra la clave pública JWKS de tu proyecto Supabase. En el frontend, el token se obtiene automáticamente con `supabase.auth.getSession()`.
 
-### Endpoints
+---
 
-#### Usuarios
-```
-GET    /api/v1/users/me                 → Perfil del usuario autenticado
-PATCH  /api/v1/users/me                 → Actualizar perfil (nombre, email)
-GET    /api/v1/users/me/plan-limits     → Límites y uso del plan actual
-PATCH  /api/v1/users/{id}/plan          → Cambiar plan (solo admin is_admin=true)
-```
+### `GET /health`
 
-#### Fincas
-```
-POST   /api/v1/farms/                   → Crear finca (→ 402 si Free y ya tiene 3)
-GET    /api/v1/farms/                   → Listar fincas del usuario autenticado
-GET    /api/v1/farms/{id}               → Detalle de finca (solo owner)
-PATCH  /api/v1/farms/{id}               → Actualizar finca
-DELETE /api/v1/farms/{id}               → Eliminar finca
-GET    /api/v1/farms/{id}/kpis          → KPIs calculados de la finca
-```
+Verifica que el servidor y la base de datos están operativos.
 
-#### Sensores
-```
-POST   /api/v1/sensors/reading              → Ingresar lectura (ESP32 / MQTT)
-GET    /api/v1/sensors/latest/{device_id}   → Última lectura del dispositivo
-GET    /api/v1/sensors/timeseries/{farm_id}?hours=24&metric=soil_moisture_pct
-GET    /api/v1/sensors/stats/{farm_id}      → Min, max, promedio por métrica
-WS     /api/v1/sensors/ws/live/{farm_id}    → Stream WebSocket tiempo real
-```
+**Acceso:** Público — sin autenticación
 
-#### Análisis IA
-```
-POST   /api/v1/analysis/analyze              → Ejecutar análisis (→ 402 si Free)
-GET    /api/v1/analysis/history/{farm_id}    → Historial de análisis
-GET    /api/v1/analysis/{id}                 → Detalle de análisis
-POST   /api/v1/analysis/evaluate-prompts     → A/B test de prompts (LLM-as-judge)
-```
-
-#### Alertas
-```
-GET    /api/v1/alerts/active                 → Alertas activas (filtrar por farm_id)
-GET    /api/v1/alerts/history                → Historial completo
-PATCH  /api/v1/alerts/{id}/resolve           → Marcar como resuelta
-POST   /api/v1/alerts/{id}/notify            → Reenviar notificación email
-```
-
-#### KPIs
-```
-GET    /api/v1/kpis/farm/{id}                → VPD, ETc, GDD, déficit hídrico
-GET    /api/v1/kpis/farm/{id}/vpd-history    → Serie histórica de VPD
-GET    /api/v1/kpis/farm/{id}/water-balance  → Balance hídrico 7 días
-GET    /api/v1/kpis/farm/{id}/pest-risk      → Índice de riesgo de plagas
-```
-
-### Ejemplo — Análisis IA
-
-**Request:**
+**Respuesta exitosa `200`:**
 ```json
-POST /api/v1/analysis/analyze
-Authorization: Bearer eyJ...
-
 {
-  "farm_name": "Finca La Esperanza",
-  "lat": 8.7575,
-  "lon": -75.8891,
+  "status": "ok",
+  "db": "ok",
+  "env": "production"
+}
+```
+
+**Uso típico:** Health check de Render / monitoreo de uptime.
+
+---
+
+### Fincas — `/api/v1/farms`
+
+Gestiona las fincas del usuario. Cada finca representa una unidad productiva con ubicación geográfica, tipo de cultivo y área.
+
+---
+
+#### `POST /api/v1/farms/`
+
+Registra una nueva finca asociada al usuario autenticado.
+
+**Acceso:** Autenticado · Plan Free: máximo 3 fincas (→ `402 Payment Required` al exceder)
+
+**Body:**
+```json
+{
+  "name": "Finca La Esperanza",
   "crop_type": "maíz",
-  "farm_id": "uuid-finca",
+  "latitude": 8.7575,
+  "longitude": -75.8891,
+  "area_hectares": 12.5,
   "alert_email": "agricultor@ejemplo.com"
 }
 ```
 
-**Response:**
+**Respuesta `201`:**
 ```json
 {
-  "id": "uuid",
-  "alert_level": "warning",
-  "water_stress_index": 0.67,
-  "irrigation_needed": true,
-  "irrigation_amount_mm": 25.0,
-  "next_irrigation_date": "2026-05-17",
-  "recommendations": [
-    "Aplicar riego por goteo en las próximas 24h",
-    "VPD alto (1.8 kPa): monitorear turgor foliar",
-    "Riesgo moderado de trips por baja humedad relativa"
-  ],
-  "summary_for_farmer": "Tu cultivo de maíz muestra estrés hídrico moderado. El pronóstico indica sin lluvia por 5 días...",
-  "tokens_used": 847,
-  "cost_usd": 0.00021
+  "id": "310f2f64-4faf-4552-bc13-e9964e1cfccb",
+  "name": "Finca La Esperanza",
+  "crop_type": "maíz",
+  "latitude": 8.7575,
+  "longitude": -75.8891,
+  "area_hectares": 12.5,
+  "alert_email": "agricultor@ejemplo.com",
+  "user_id": "uuid-usuario",
+  "created_at": "2026-05-17T10:00:00Z"
 }
+```
+
+---
+
+#### `GET /api/v1/farms/`
+
+Lista todas las fincas registradas por el usuario autenticado.
+
+**Acceso:** Autenticado
+
+**Respuesta `200`:** Array de objetos `Farm` (mismo schema que POST).
+
+---
+
+#### `GET /api/v1/farms/{farm_id}`
+
+Retorna el detalle completo de una finca específica.
+
+**Acceso:** Autenticado · Solo el propietario puede ver sus fincas (→ `403` si otro usuario intenta acceder)
+
+**Parámetros de ruta:**
+- `farm_id` — UUID de la finca
+
+---
+
+#### `PATCH /api/v1/farms/{farm_id}`
+
+Actualiza uno o más campos de una finca existente.
+
+**Acceso:** Autenticado · Solo propietario
+
+**Body (todos los campos son opcionales):**
+```json
+{
+  "name": "Nuevo nombre",
+  "crop_type": "yuca",
+  "area_hectares": 15.0,
+  "alert_email": "nuevo@email.com"
+}
+```
+
+---
+
+#### `DELETE /api/v1/farms/{farm_id}`
+
+Elimina una finca y todos sus datos asociados (lecturas, análisis, alertas).
+
+**Acceso:** Autenticado · Solo propietario
+
+**Respuesta `204`:** Sin cuerpo.
+
+---
+
+#### `GET /api/v1/farms/{farm_id}/kpis`
+
+Calcula y retorna los KPIs agronómicos de la finca basados en las lecturas de las últimas 24 horas.
+
+**Acceso:** Autenticado
+
+**Respuesta `200`:**
+```json
+{
+  "vpd_kpa": 1.42,
+  "avg_air_temp_c": 29.5,
+  "avg_humidity_pct": 68.3,
+  "avg_soil_moisture_pct": 44.1,
+  "soil_health_score": 75,
+  "pest_risk": {
+    "risk_pct": 35,
+    "pathogens": ["roya", "fusarium"],
+    "conditions": "Condiciones moderadas de riesgo"
+  },
+  "readings_count_24h": 96,
+  "latest_reading_at": "2026-05-17T14:30:00Z"
+}
+```
+
+**KPIs incluidos:**
+
+| Campo | Descripción | Unidad |
+|-------|-------------|--------|
+| `vpd_kpa` | Déficit de presión de vapor — calculado con ecuación de Magnus. >1.6 kPa indica estrés hídrico | kPa |
+| `avg_air_temp_c` | Temperatura promedio del aire en las últimas 24h | °C |
+| `avg_humidity_pct` | Humedad relativa promedio del aire | % |
+| `avg_soil_moisture_pct` | Humedad volumétrica promedio del suelo | % |
+| `soil_health_score` | Score compuesto 0-100 basado en humedad, temperatura y conductividad del suelo | puntos |
+| `pest_risk.risk_pct` | Probabilidad de infección fúngica según condiciones actuales y tipo de cultivo | % |
+
+---
+
+### Sensores — `/api/v1/sensors`
+
+Gestiona las lecturas de los nodos ESP32. Soporta ingesta por HTTP (directo) y por MQTT (consumer interno), además de consultas históricas y streaming en tiempo real.
+
+---
+
+#### `POST /api/v1/sensors/readings`
+
+Registra una lectura de sensor. Usada directamente por el ESP32 como fallback cuando MQTT no está disponible, o por el consumer MQTT interno al procesar mensajes de HiveMQ.
+
+**Acceso:** Público (el ESP32 no tiene JWT — la finca se identifica por `farm_id`)
+
+**Body:**
+```json
+{
+  "device_id": "ESP32-CAMPO-001",
+  "farm_id": "310f2f64-4faf-4552-bc13-e9964e1cfccb",
+  "sensors": {
+    "soil_moisture_pct": 44.5,
+    "soil_temp_c": 27.8,
+    "air_temp_c": 31.2,
+    "air_humidity_pct": 70.1,
+    "light_uv_index": 7.4
+  },
+  "battery_mv": 3820,
+  "rssi_dbm": -62,
+  "firmware_version": "1.0.0"
+}
+```
+
+**Respuesta `201`:** La lectura guardada, incluyendo `vpd_kpa` calculado automáticamente en el backend.
+
+---
+
+#### `GET /api/v1/sensors/timeseries/{farm_id}`
+
+Retorna la serie temporal de una métrica específica para graficar en el dashboard.
+
+**Acceso:** Autenticado
+
+**Parámetros de consulta:**
+
+| Parámetro | Tipo | Defecto | Descripción |
+|-----------|------|---------|-------------|
+| `hours` | int | 24 | Ventana de tiempo hacia atrás (máx 168 = 7 días) |
+| `metric` | string | `soil_moisture_pct` | Métrica a consultar |
+
+**Métricas disponibles:** `soil_moisture_pct`, `soil_temp_c`, `air_temp_c`, `air_humidity_pct`, `vpd_kpa`, `uv_index`
+
+**Respuesta `200`:**
+```json
+[
+  { "timestamp": "2026-05-17T00:00:00Z", "value": 43.2 },
+  { "timestamp": "2026-05-17T00:15:00Z", "value": 43.8 },
+  ...
+]
+```
+
+---
+
+#### `WebSocket /api/v1/sensors/ws/live/{farm_id}`
+
+Stream en tiempo real de las lecturas del sensor. Se conecta usando el protocolo WebSocket (`wss://` en producción).
+
+**Acceso:** Sin autenticación (el `farm_id` actúa como scope)
+
+**Protocolo:**
+- El cliente se conecta y espera mensajes JSON
+- Cada vez que el consumer MQTT procesa una lectura de esa finca, el backend hace broadcast a todos los clientes conectados
+- El servidor envía `ping` cada 30s para mantener la conexión viva
+
+**Mensaje recibido:**
+```json
+{
+  "device_id": "ESP32-CAMPO-001",
+  "farm_id": "310f2f64-...",
+  "soil_moisture_pct": 44.5,
+  "soil_temp_c": 27.8,
+  "air_temp_c": 31.2,
+  "air_humidity_pct": 70.1,
+  "vpd_kpa": 1.24,
+  "uv_index": 7.4,
+  "battery_mv": 3820,
+  "created_at": "2026-05-17T14:32:00Z"
+}
+```
+
+**Ejemplo de conexión (JavaScript):**
+```javascript
+const ws = new WebSocket('wss://surqo.onrender.com/api/v1/sensors/ws/live/FARM_ID')
+ws.onmessage = (event) => {
+  const reading = JSON.parse(event.data)
+  console.log('Humedad suelo:', reading.soil_moisture_pct)
+}
+```
+
+---
+
+### Análisis IA — `/api/v1/analysis`
+
+Utiliza **Claude Haiku** de Anthropic para generar un análisis agronómico completo fusionando datos del sensor, pronóstico climático de 7 días (Open-Meteo) y KPIs calculados.
+
+---
+
+#### `POST /api/v1/analysis/analyze`
+
+Ejecuta un análisis completo de la finca con inteligencia artificial. El proceso toma ~2-4 segundos.
+
+**Acceso:** Autenticado · **Solo plan Pro** (→ `402 Payment Required` en plan Free)
+
+**Body:**
+```json
+{
+  "farm_id": "310f2f64-4faf-4552-bc13-e9964e1cfccb",
+  "farm_name": "Finca La Esperanza",
+  "lat": 8.7575,
+  "lon": -75.8891,
+  "crop_type": "maíz",
+  "alert_email": "agricultor@ejemplo.com"
+}
+```
+
+**Respuesta `201`:**
+```json
+{
+  "id": "uuid-analisis",
+  "farm_id": "uuid-finca",
+  "farm_name": "Finca La Esperanza",
+  "crop_type": "maíz",
+  "alert_level": "warning",
+  "summary_for_farmer": "Tu cultivo de maíz muestra estrés hídrico moderado. El pronóstico indica ausencia de lluvia por 5 días. Se recomienda aplicar riego en las próximas 24 horas para evitar pérdidas en la etapa de llenado de grano.",
+  "irrigation_needed": true,
+  "water_stress_index": 0.67,
+  "avg_temperature_c": 29.5,
+  "total_rain_7d_mm": 8.2,
+  "avg_vpd_kpa": 1.62,
+  "recommendations": [
+    {
+      "action": "Aplicar riego por goteo — 25mm en las próximas 6 horas",
+      "time_window": "0-6h",
+      "justification": "VPD > 1.6 kPa y suelo al 38% de capacidad de campo",
+      "category": "irrigation",
+      "priority": 1
+    },
+    {
+      "action": "Revisar hojas por síntomas de trips",
+      "time_window": "24-48h",
+      "justification": "Humedad baja favorece infestación de trips en maíz",
+      "category": "pest_control",
+      "priority": 2
+    }
+  ],
+  "model_used": "claude-haiku-4-5-20251001",
+  "input_tokens": 624,
+  "output_tokens": 318,
+  "cost_usd": 0.00019,
+  "created_at": "2026-05-17T14:35:00Z"
+}
+```
+
+**Niveles de alerta (`alert_level`):**
+
+| Valor | Significado |
+|-------|-------------|
+| `ok` | Condiciones óptimas — sin acción urgente |
+| `warning` | Estrés detectado — acción recomendada en 24-48h |
+| `critical` | Condición crítica — acción inmediata necesaria |
+
+---
+
+#### `GET /api/v1/analysis/history/{farm_id}`
+
+Retorna el historial de análisis ejecutados para una finca, ordenados del más reciente al más antiguo.
+
+**Acceso:** Autenticado · Solo propietario
+
+**Respuesta `200`:** Array de objetos `Analysis` (misma estructura que el POST anterior).
+
+---
+
+#### `GET /api/v1/analysis/{analysis_id}`
+
+Retorna el detalle completo de un análisis específico por su ID.
+
+**Acceso:** Autenticado · Solo propietario de la finca asociada
+
+---
+
+### Alertas — `/api/v1/alerts`
+
+Sistema de alertas automáticas. Las alertas son generadas por el backend cuando las lecturas de los sensores superan umbrales predefinidos (VPD > 1.6 kPa, suelo < 25%, temperatura > 38°C). Incluye cooldown de 30 minutos para evitar spam de notificaciones.
+
+---
+
+#### `GET /api/v1/alerts/active`
+
+Retorna todas las alertas activas (no resueltas) de las fincas del usuario.
+
+**Acceso:** Autenticado
+
+**Parámetros de consulta:**
+
+| Parámetro | Descripción |
+|-----------|-------------|
+| `farm_id` | (opcional) Filtrar por finca específica |
+
+**Respuesta `200`:**
+```json
+[
+  {
+    "id": "uuid-alerta",
+    "farm_id": "uuid-finca",
+    "title": "VPD crítico — Estrés hídrico severo",
+    "description": "El VPD alcanzó 2.1 kPa, superando el umbral crítico de 2.0 kPa para maíz en etapa de llenado de grano.",
+    "severity": "critical",
+    "recommended_action": "Aplicar riego inmediato — mínimo 30mm en las próximas 2 horas.",
+    "is_resolved": false,
+    "created_at": "2026-05-17T12:00:00Z"
+  }
+]
+```
+
+**Niveles de severidad:**
+
+| `severity` | Color | Descripción |
+|-----------|-------|-------------|
+| `info` | 🔵 Azul | Información relevante — sin urgencia |
+| `warning` | 🟡 Amarillo | Condición anómala — monitorear |
+| `critical` | 🔴 Rojo | Acción inmediata requerida |
+
+---
+
+#### `GET /api/v1/alerts/history`
+
+Retorna el historial completo de alertas (activas y resueltas) del usuario.
+
+**Acceso:** Autenticado
+
+---
+
+#### `PATCH /api/v1/alerts/{alert_id}/resolve`
+
+Marca una alerta como resuelta. Una alerta resuelta no genera nuevas notificaciones.
+
+**Acceso:** Autenticado · Solo propietario de la finca
+
+**Respuesta `200`:** La alerta actualizada con `is_resolved: true`.
+
+---
+
+### KPIs — `/api/v1/kpis`
+
+Cálculo de índices agronómicos derivados usando ecuaciones científicas estándar. Los valores son recalculados en tiempo real a partir de las lecturas almacenadas.
+
+---
+
+#### `GET /api/v1/kpis/farm/{farm_id}`
+
+Retorna todos los KPIs calculados para la finca basándose en las lecturas de las últimas 24 horas.
+
+**Acceso:** Autenticado
+
+**KPIs calculados y sus fórmulas:**
+
+| KPI | Fórmula | Interpretación |
+|-----|---------|----------------|
+| **VPD** (kPa) | `es - ea` donde `es = 0.6108 × e^(17.27T / (T+237.3))` (Magnus) | < 0.8 óptimo · 0.8-1.6 aceptable · > 1.6 estrés · > 2.5 crítico |
+| **ETc** (mm/día) | `ET₀ × Kc` (coeficiente por cultivo) | Agua que el cultivo consume por día |
+| **GDD** (°días) | `(Tmax + Tmin)/2 − Tbase` | Acumulación de calor para desarrollo del cultivo |
+| **Déficit hídrico** (mm) | `ETc_7d − lluvia_7d` (solo si > 0) | Agua que le falta al cultivo en la semana |
+| **Score suelo** (0-100) | Compuesto: 40 pts humedad + 30 pts temp. + 30 pts CE | > 70 saludable · 50-70 aceptable · < 50 crítico |
+| **Riesgo plagas** (%) | Modelo por temp + humedad + cultivo | < 40 bajo · 40-70 moderado · > 70 alto |
+
+**Coeficientes Kc por cultivo:**
+
+| Cultivo | Kc |
+|---------|-----|
+| Maíz | 1.15 |
+| Arroz | 1.20 |
+| Plátano | 1.10 |
+| Café | 0.95 |
+| Yuca | 0.85 |
+| Algodón | 1.05 |
+
+---
+
+### Ejemplo completo — Flujo de integración
+
+```bash
+# 1. Crear una finca
+curl -X POST https://surqo.onrender.com/api/v1/farms/ \
+  -H "Authorization: Bearer TU_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mi Finca",
+    "crop_type": "maíz",
+    "latitude": 8.7575,
+    "longitude": -75.8891,
+    "area_hectares": 10,
+    "alert_email": "yo@ejemplo.com"
+  }'
+
+# 2. Enviar una lectura de sensor (desde ESP32 o para pruebas)
+curl -X POST https://surqo.onrender.com/api/v1/sensors/readings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": "ESP32-TEST-001",
+    "farm_id": "FARM_ID_DEL_PASO_1",
+    "sensors": {
+      "soil_moisture_pct": 42.0,
+      "soil_temp_c": 28.0,
+      "air_temp_c": 31.0,
+      "air_humidity_pct": 68.0,
+      "light_uv_index": 7.2
+    },
+    "battery_mv": 3820,
+    "rssi_dbm": -62
+  }'
+
+# 3. Consultar KPIs
+curl https://surqo.onrender.com/api/v1/farms/FARM_ID/kpis \
+  -H "Authorization: Bearer TU_JWT"
+
+# 4. Ver alertas activas
+curl https://surqo.onrender.com/api/v1/alerts/active?farm_id=FARM_ID \
+  -H "Authorization: Bearer TU_JWT"
 ```
 
 ---
