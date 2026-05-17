@@ -5,9 +5,12 @@ import uuid
 from functools import lru_cache
 from typing import Annotated
 
+import logging
 import jwt
 from jwt.algorithms import ECAlgorithm
 from fastapi import Depends, HTTPException, status
+
+logger = logging.getLogger(__name__)
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,6 +59,7 @@ async def get_current_user(
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado. Vuelve a iniciar sesión.")
     except jwt.InvalidTokenError as e:
+        logger.error("JWT verification failed: %s | JWK_X set: %s", e, bool(settings.SUPABASE_JWK_X))
         raise HTTPException(status_code=401, detail=f"Token inválido: {e}")
 
     user_id_str = payload.get("sub")
