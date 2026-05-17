@@ -15,8 +15,11 @@ env/
 
 # Secrets — NEVER commit
 .env
-*.env
 backend/.env
+frontend/.env.local
+
+# .env.production es seguro subirlo — solo contiene NEXT_PUBLIC_* (ya expuestos al browser)
+# frontend/.env.production → se sube para que Vercel tenga las variables correctas
 
 # Node
 node_modules/
@@ -26,9 +29,6 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Frontend local env (has no secrets but keep local)
-frontend/.env.local
 
 # IDE
 .vscode/

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "wss://surqo-api.onrender.com"
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "wss://surqo.onrender.com"
 
 export function useWebSocket<T = unknown>(farmId: string | null) {
   const [data, setData] = useState<T | null>(null)
