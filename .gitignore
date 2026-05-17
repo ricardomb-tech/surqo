@@ -56,3 +56,11 @@ logs/
 # Compiled
 *.pyc
 *.pyo
+
+# Docs locales — no subir al repo
+docs/*.docx
+docs/~$*.docx
+docs/generate_tutorial.js
+docs/package.json
+docs/package-lock.json
+docs/node_modules/
