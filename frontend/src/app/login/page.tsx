@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-react"
@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/Primitives"
 import { useAuth } from "@/components/AuthProvider"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo") || "/dashboard"
@@ -34,7 +34,6 @@ export default function LoginPage() {
       setError(authError.message)
       setSubmitting(false)
     }
-    // AuthProvider onAuthStateChange handles redirect via useEffect above
   }
 
   if (loading) {
@@ -48,7 +47,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 pt-16">
       <div className="w-full max-w-sm">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-6">
             <Zap className="w-6 h-6 text-surqo-green" />
@@ -58,7 +56,6 @@ export default function LoginPage() {
           <p className="text-sm text-surqo-text-secondary font-medium">Ingresa tu cuenta para continuar</p>
         </div>
 
-        {/* Form */}
         <div className="glass rounded-3xl border border-white/10 p-6 shadow-xl">
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
@@ -119,5 +116,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-surqo-green animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
