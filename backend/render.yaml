@@ -29,5 +29,13 @@ services:
         sync: false
       - key: HIVEMQ_PASSWORD
         sync: false
+      - key: SUPABASE_JWK_X
+        sync: false
+      - key: SUPABASE_JWK_Y
+        sync: false
+      - key: SUPABASE_JWK_KID
+        sync: false
+      - key: FROM_EMAIL
+        value: "alertas@surqo.io"
       - key: LOGFIRE_TOKEN
         sync: false
