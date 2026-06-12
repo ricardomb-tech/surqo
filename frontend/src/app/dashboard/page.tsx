@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button, Card } from "@/components/ui/Primitives"
 import {
   Cloud, Droplets, Thermometer, Wind, AlertCircle,
-  RefreshCcw, BarChart3, Waves, ArrowRight, Loader2, MapPin
+  RefreshCcw, BarChart3, Waves, ArrowRight, Loader2, MapPin, Sprout
 } from "lucide-react"
 import { KPICard } from "@/components/KPICard"
 import { SensorChart } from "@/components/SensorChart"
@@ -68,8 +68,27 @@ function DashboardContent() {
 
   if (!farm) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-surqo-text-secondary">No se encontró ninguna finca.</p>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-20 h-20 rounded-3xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center mx-auto mb-6">
+            <Sprout className="w-10 h-10 text-surqo-green" />
+          </div>
+          <h2 className="text-2xl font-black tracking-tight text-slate-900 mb-2">
+            Aún no tienes una finca
+          </h2>
+          <p className="text-slate-500 font-medium mb-8">
+            Registra tu finca para comenzar a monitorear tus cultivos y ver los datos en tiempo real.
+          </p>
+          <Button
+            variant="primary"
+            className="gap-2 px-8"
+            onClick={() => window.location.href = "/farms"}
+          >
+            <Sprout className="w-4 h-4" />
+            Registrar mi finca
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     )
   }
