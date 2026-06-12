@@ -40,7 +40,7 @@ export function useAuth() {
   return useContext(AuthContext)
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.onrender.com"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 
 async function fetchPlanLimits(token: string): Promise<PlanLimits | null> {
   try {

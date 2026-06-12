@@ -7,7 +7,7 @@ import { useAuth } from "@/components/AuthProvider"
 import { Button, Card } from "@/components/ui/Primitives"
 import { getAccessToken } from "@/lib/auth"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.onrender.com"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 
 interface Farm {
   id: string
