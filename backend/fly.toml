@@ -1,0 +1,37 @@
+app = "surqo-api"
+primary_region = "mia"   # Miami — más cercano a Colombia
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV      = "production"
+  PORT         = "8080"
+  HIVEMQ_PORT  = "8883"
+  FROM_EMAIL   = "alertas@surqo.io"
+
+[http_service]
+  internal_port       = 8080
+  force_https         = true
+  auto_stop_machines  = false   # ← sin hibernación (diferencia vs Render free)
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type       = "connections"
+    hard_limit = 200
+    soft_limit = 150
+
+[[vm]]
+  size   = "shared-cpu-1x"
+  memory = "512mb"
+
+[checks]
+  [checks.health]
+    grace_period = "10s"
+    interval     = "30s"
+    method       = "GET"
+    path         = "/health"
+    port         = 8080
+    timeout      = "5s"
+    type         = "http"

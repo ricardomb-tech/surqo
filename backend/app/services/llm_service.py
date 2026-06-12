@@ -18,7 +18,7 @@ from app.services.climate_service import ClimateData
 # ─── Abstracción de proveedor LLM ─────────────────────────────────────────────
 
 class LLMProvider(Protocol):
-    """Interfaz común para Anthropic y Ollama."""
+    """Interfaz común para todos los proveedores."""
     async def complete(
         self,
         system_prompt: str,
@@ -29,8 +29,43 @@ class LLMProvider(Protocol):
         ...
 
 
+class GroqProvider:
+    """Proveedor Groq — gratis hasta 14,400 req/día con Llama 3.3 70B."""
+
+    BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+    def __init__(self) -> None:
+        self.model = settings.GROQ_MODEL
+        self._api_key = settings.GROQ_API_KEY
+
+    async def complete(
+        self, system_prompt: str, user_content: str, max_tokens: int = 1024
+    ) -> tuple[str, int, int]:
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_content},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0.2,
+        }
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        async with httpx.AsyncClient(timeout=60) as client:
+            r = await client.post(self.BASE_URL, json=payload, headers=headers)
+            r.raise_for_status()
+
+        data = r.json()
+        text = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
+        return text, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
+
+
 class AnthropicProvider:
-    """Proveedor usando Anthropic Claude (producción)."""
+    """Proveedor Anthropic Claude (fallback de pago)."""
 
     def __init__(self) -> None:
         self._client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -53,7 +88,7 @@ class AnthropicProvider:
 
 
 class OllamaProvider:
-    """Proveedor usando Ollama local (desarrollo / testing sin créditos)."""
+    """Proveedor Ollama local (desarrollo / testing sin créditos)."""
 
     def __init__(self) -> None:
         self.base_url = settings.OLLAMA_BASE_URL
@@ -77,19 +112,22 @@ class OllamaProvider:
 
         data = r.json()
         text = data["message"]["content"]
-        # Ollama no retorna token counts exactos — estimamos
         prompt_tokens = len(system_prompt.split()) + len(user_content.split())
         output_tokens = len(text.split())
         return text, prompt_tokens, output_tokens
 
 
-def _build_provider() -> AnthropicProvider | OllamaProvider:
+def _build_provider() -> GroqProvider | AnthropicProvider | OllamaProvider:
+    if settings.LLM_PROVIDER == "groq":
+        return GroqProvider()
     if settings.LLM_PROVIDER == "ollama":
         return OllamaProvider()
     return AnthropicProvider()
 
 
 def _model_name() -> str:
+    if settings.LLM_PROVIDER == "groq":
+        return f"groq/{settings.GROQ_MODEL}"
     if settings.LLM_PROVIDER == "ollama":
         return f"ollama/{settings.OLLAMA_MODEL}"
     return settings.LLM_MODEL
@@ -155,10 +193,9 @@ PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 class LLMService:
     def __init__(self) -> None:
-        self._provider: AnthropicProvider | OllamaProvider = _build_provider()
+        self._provider: GroqProvider | AnthropicProvider | OllamaProvider = _build_provider()
         self._prompt_cache: dict[str, dict] = {}
 
-    # Mantener compatibilidad con PromptEvaluator que accede a self.client
     @property
     def client(self) -> anthropic.AsyncAnthropic:
         if isinstance(self._provider, AnthropicProvider):
@@ -175,6 +212,10 @@ class LLMService:
         return self._prompt_cache[name]
 
     def _cost(self, input_tokens: int, output_tokens: int) -> float:
+        if settings.LLM_PROVIDER == "groq":
+            return 0.0  # Groq free tier
+        if settings.LLM_PROVIDER == "ollama":
+            return 0.0
         # claude-haiku-4-5-20251001 pricing
         return round(input_tokens * 0.00000025 + output_tokens * 0.00000125, 6)
 
@@ -251,7 +292,7 @@ class LLMService:
                 model_used=_model_name(),
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
-                cost_usd=self._cost(input_tokens, output_tokens) if settings.LLM_PROVIDER == "anthropic" else 0.0,
+                cost_usd=self._cost(input_tokens, output_tokens),
                 prompt_version=prompt_cfg.get("version", "1.0.0"),
             )
 

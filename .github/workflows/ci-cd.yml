@@ -2,9 +2,9 @@ name: Surqo CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   test:
@@ -29,7 +29,10 @@ jobs:
       - name: Run tests
         run: uv run pytest tests/ --cov=app --cov-report=term-missing -v
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_PROVIDER: "groq"
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'test_key' }}
+          GROQ_MODEL: "llama-3.3-70b-versatile"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://placeholder.supabase.co' }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY || 'placeholder' }}
           DATABASE_URL: "sqlite+aiosqlite:///:memory:"
@@ -45,21 +48,24 @@ jobs:
   deploy-backend:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     steps:
-      - name: Deploy to Render
-        run: |
-          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" \
-            -H "Content-Type: application/json"
+      - uses: actions/checkout@v4
 
-      - name: Confirm backend deploy triggered
-        run: echo "✅ Backend deploy hook enviado a Render"
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        working-directory: backend
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
   deploy-frontend:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
@@ -75,19 +81,19 @@ jobs:
   notify-deploy:
     needs: [deploy-backend, deploy-frontend]
     runs-on: ubuntu-latest
-    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: always() && github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     steps:
       - name: Summarize deploy
         run: |
           BACKEND="${{ needs.deploy-backend.result }}"
           FRONTEND="${{ needs.deploy-frontend.result }}"
-          echo "🌾 Surqo deploy summary"
-          echo "  Backend  → $BACKEND"
-          echo "  Frontend → $FRONTEND"
+          echo "Surqo deploy summary"
+          echo "  Backend  (Fly.io)  -> $BACKEND"
+          echo "  Frontend (Vercel)  -> $FRONTEND"
           if [[ "$BACKEND" == "success" && "$FRONTEND" == "success" ]]; then
-            echo "✅ Deploy completo — surqo.vercel.app está actualizado"
+            echo "Deploy completo — surqo.vercel.app esta actualizado"
           else
-            echo "⚠️  Algún deploy falló. Revisa los logs de cada job."
+            echo "Algun deploy fallo. Revisa los logs de cada job."
             exit 1
           fi

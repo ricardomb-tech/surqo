@@ -14,8 +14,8 @@ RUN uv sync --no-dev
 # Copiar código fuente
 COPY app/ app/
 
-# Exponer puerto
-EXPOSE 8000
+# Exponer puerto (Fly.io usa 8080 por defecto)
+EXPOSE 8080
 
 # Iniciar servidor
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

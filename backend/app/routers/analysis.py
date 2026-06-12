@@ -4,7 +4,9 @@ import uuid
 from datetime import datetime, timezone
 
 import logfire
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 
 from app.config import settings
@@ -21,10 +23,13 @@ router = APIRouter()
 climate_svc = ClimateService()
 llm_svc = LLMService()
 alert_svc = AlertService()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/analyze", response_model=AnalysisResponse, status_code=201)
+@limiter.limit("10/minute")   # máximo 10 análisis por IP por minuto
 async def analyze_farm(
+    request: Request,
     body: AnalysisRequest,
     background_tasks: BackgroundTasks,
     current_user: PaidUser,   # 402 automático si plan free

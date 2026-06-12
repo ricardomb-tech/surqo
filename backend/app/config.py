@@ -7,15 +7,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", env_ignore_empty=True)
 
-    # LLM — proveedor: "anthropic" (producción) | "ollama" (local/dev)
-    LLM_PROVIDER: str = "anthropic"          # anthropic | ollama
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "mistral"            # mistral | llama3 | gemma2
+    # LLM — proveedor: "groq" (producción gratis) | "anthropic" | "ollama" (local/dev)
+    LLM_PROVIDER: str = "groq"               # groq | anthropic | ollama
+    LLM_MAX_TOKENS: int = 1024
 
-    # Anthropic
+    # Groq (gratis: 14,400 req/día con Llama 3.3 70B)
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # Anthropic (fallback de pago)
     ANTHROPIC_API_KEY: str = ""
     LLM_MODEL: str = "claude-haiku-4-5-20251001"
-    LLM_MAX_TOKENS: int = 1024
+
+    # Ollama (desarrollo local sin API key)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "mistral"            # mistral | llama3 | gemma2
 
     # Base de datos (Supabase)
     SUPABASE_URL: str = ""
