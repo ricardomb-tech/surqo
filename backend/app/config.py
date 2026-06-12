@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from pydantic import field_validator
+import json
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", env_ignore_empty=True)
 
     # LLM — proveedor: "groq" (producción gratis) | "anthropic" | "ollama" (local/dev)
-    LLM_PROVIDER: str = "groq"               # groq | anthropic | ollama
+    LLM_PROVIDER: str = "groq"
     LLM_MAX_TOKENS: int = 1024
 
     # Groq (gratis: 14,400 req/día con Llama 3.3 70B)
@@ -21,12 +22,11 @@ class Settings(BaseSettings):
 
     # Ollama (desarrollo local sin API key)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "mistral"            # mistral | llama3 | gemma2
+    OLLAMA_MODEL: str = "mistral"
 
     # Base de datos (Supabase)
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
-    # JWK público de Supabase (ES256) — Settings → API → JWT Settings → JWKS
     SUPABASE_JWK_X: str = ""
     SUPABASE_JWK_Y: str = ""
     SUPABASE_JWK_KID: str = ""
@@ -48,18 +48,23 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     FROM_EMAIL: str = "alertas@surqo.io"
 
-    # App
+    # App — CORS_ORIGINS como str para evitar conflicto con pydantic-settings JSON parser
     APP_ENV: str = "development"
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "https://surqo.vercel.app"]
+    CORS_ORIGINS_RAW: str = "http://localhost:3000,https://surqo.vercel.app"
     LOGFIRE_TOKEN: str = ""
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
-        if isinstance(v, str):
-            import json
-            return json.loads(v)
-        return v
+    @property
+    def CORS_ORIGINS(self) -> list[str]:
+        v = self.CORS_ORIGINS_RAW
+        if not v:
+            return ["http://localhost:3000"]
+        try:
+            parsed = json.loads(v)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            pass
+        return [u.strip() for u in v.split(",") if u.strip()]
 
     @property
     def is_production(self) -> bool:
