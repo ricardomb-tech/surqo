@@ -54,6 +54,8 @@ async function fetchPlanLimits(token: string): Promise<PlanLimits | null> {
   }
 }
 
+const INACTIVITY_MS = 15 * 60 * 1000 // 15 minutos
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -86,6 +88,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => listener.subscription.unsubscribe()
+  }, [])
+
+  // Cierre de sesión por inactividad
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(async () => {
+        const { data } = await supabase.auth.getSession()
+        if (data.session) {
+          await supabase.auth.signOut()
+          setPlanLimits(null)
+          window.location.href = "/login?reason=inactivity"
+        }
+      }, INACTIVITY_MS)
+    }
+
+    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"]
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }))
+    reset()
+
+    return () => {
+      clearTimeout(timer)
+      events.forEach((e) => window.removeEventListener(e, reset))
+    }
   }, [])
 
   const handleSignOut = async () => {

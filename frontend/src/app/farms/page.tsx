@@ -41,7 +41,7 @@ export default function FarmsPage() {
   const [error, setError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  const [form, setForm] = useState({ name: "", location: "", crop_type: "", area_ha: "" })
+  const [form, setForm] = useState({ name: "", location: "", crop_type: "", area_ha: "", latitude: "", longitude: "" })
 
   const loadFarms = useCallback(async () => {
     setFetching(true)
@@ -63,19 +63,29 @@ export default function FarmsPage() {
     setSubmitting(true)
     setError(null)
 
+    const lat = parseFloat(form.latitude)
+    const lon = parseFloat(form.longitude)
+    if (isNaN(lat) || isNaN(lon)) {
+      setError("Ingresa coordenadas válidas de latitud y longitud.")
+      setSubmitting(false)
+      return
+    }
+
     const res = await apiFetch("/api/v1/farms/", {
       method: "POST",
       body: JSON.stringify({
-        ...form,
-        area_ha: parseFloat(form.area_ha) || 0,
-        latitude: null,
-        longitude: null,
+        name: form.name,
+        crop_type: form.crop_type,
+        latitude: lat,
+        longitude: lon,
+        area_hectares: form.area_ha ? parseFloat(form.area_ha) : null,
+        department: form.location,
       }),
     })
 
     if (res.ok) {
       setShowForm(false)
-      setForm({ name: "", location: "", crop_type: "", area_ha: "" })
+      setForm({ name: "", location: "", crop_type: "", area_ha: "", latitude: "", longitude: "" })
       await Promise.all([loadFarms(), refreshPlanLimits()])
     } else {
       const data = await res.json().catch(() => ({}))
@@ -192,6 +202,32 @@ export default function FarmsPage() {
                       step="0.1"
                       value={form.area_ha}
                       onChange={(e) => setForm((f) => ({ ...f, area_ha: e.target.value }))}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label>Latitud</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej: 8.7575"
+                      value={form.latitude}
+                      onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label>Longitud</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej: -75.889"
+                      value={form.longitude}
+                      onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
+                      required
                       className="w-full"
                     />
                   </div>

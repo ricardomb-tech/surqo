@@ -1,19 +1,87 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button, Card } from "@/components/ui/Primitives"
 import { AlertBadge } from "@/components/AlertBadge"
-import { ShieldAlert, History, Filter, Search, CheckCircle2 } from "lucide-react"
+import { ShieldAlert, History, Search, CheckCircle2, Loader2 } from "lucide-react"
+import { RequireAuth } from "@/components/RequireAuth"
+import { farmAPI, alertAPI } from "@/lib/api"
 import type { Alert } from "@/types"
 
-export default function AlertsPage() {
-  const [filter, setFilter] = useState("all")
+function AlertsContent() {
+  const [farmId, setFarmId] = useState<string | null>(null)
+  const [activeAlerts, setActiveAlerts] = useState<Alert[]>([])
+  const [resolvedAlerts, setResolvedAlerts] = useState<Alert[]>([])
+  const [loading, setLoading] = useState(true)
+  const [query, setQuery] = useState("")
+  const [resolving, setResolving] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const farms = await farmAPI.list()
+      if (farms.length === 0) { setLoading(false); return }
+      const fid = farms[0].id
+      setFarmId(fid)
+      const [active, history] = await Promise.allSettled([
+        alertAPI.active(fid),
+        alertAPI.history(fid),
+      ])
+      if (active.status === "fulfilled") setActiveAlerts(active.value)
+      if (history.status === "fulfilled") {
+        setResolvedAlerts(history.value.filter((a) => a.is_resolved).slice(0, 5))
+      }
+    } catch {
+      // silently handle
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const handleResolve = async (id: string) => {
+    setResolving(id)
+    try {
+      await alertAPI.resolve(id)
+      await load()
+    } finally {
+      setResolving(null)
+    }
+  }
+
+  const handleResolveAll = async () => {
+    setResolving("all")
+    try {
+      await Promise.all(activeAlerts.map((a) => alertAPI.resolve(a.id)))
+      await load()
+    } finally {
+      setResolving(null)
+    }
+  }
+
+  const filtered = activeAlerts.filter(
+    (a) =>
+      !query ||
+      a.title.toLowerCase().includes(query.toLowerCase()) ||
+      a.description.toLowerCase().includes(query.toLowerCase())
+  )
+
+  const criticalCount = activeAlerts.filter((a) => a.severity === "critical").length
+  const warningCount = activeAlerts.filter((a) => a.severity === "warning").length
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-surqo-green animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen pt-28 pb-20">
       <div className="max-w-5xl mx-auto px-4">
-        
-        {/* Header */}
+
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surqo-danger/10 border border-surqo-danger/20 text-surqo-danger text-xs font-bold uppercase tracking-widest">
@@ -28,127 +96,123 @@ export default function AlertsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="w-4 h-4" />
-              Filtrar
-            </Button>
-            <Button variant="primary" size="sm" className="gap-2">
-              <CheckCircle2 className="w-4 h-4" />
+          {activeAlerts.length > 0 && (
+            <Button
+              variant="primary"
+              size="sm"
+              className="gap-2"
+              onClick={handleResolveAll}
+              disabled={resolving === "all"}
+            >
+              {resolving === "all"
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <CheckCircle2 className="w-4 h-4" />}
               Resolver Todo
             </Button>
-          </div>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8">
-          
-          {/* Active Alerts List */}
+
           <div className="lg:col-span-8 space-y-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-black tracking-tight flex items-center gap-2">
                 <History className="w-5 h-5 text-surqo-green" />
-                Eventos Recientes
+                Alertas Activas
               </h3>
-              <span className="text-[10px] font-bold text-surqo-text-muted uppercase tracking-widest bg-black/5 dark:bg-white/5 px-2 py-1 rounded-md">
-                2 Alertas Activas
+              <span className="text-[10px] font-bold text-surqo-text-muted uppercase tracking-widest bg-black/5 px-2 py-1 rounded-md">
+                {activeAlerts.length} activas
               </span>
             </div>
 
+            {filtered.length === 0 && !query && (
+              <Card className="text-center py-12">
+                <CheckCircle2 className="w-10 h-10 text-surqo-green mx-auto mb-3" />
+                <p className="font-bold text-surqo-text">Sin alertas activas</p>
+                <p className="text-sm text-surqo-text-secondary mt-1">Tu finca está operando correctamente.</p>
+              </Card>
+            )}
+
             <div className="space-y-4">
-              <AlertBadge 
-                severity="critical" 
-                message="Déficit Hídrico Severo - Sector Sur" 
-                time="Hace 12 minutos"
-                alert={{
-                  id: "1", farm_id: null, device_id: null,
-                  alert_type: "water_stress", response_time: null,
-                  resolved_at: null, email_sent: false,
-                  title: "Déficit Hídrico Severo - Sector Sur",
-                  severity: "critical",
-                  description: "La humedad del suelo ha caído por debajo del 30% mientras la temperatura ambiente supera los 32°C.",
-                  recommended_action: "Iniciar ciclo de riego de emergencia inmediatamente.",
-                  created_at: new Date().toISOString(),
-                  is_resolved: false
-                } as Alert}
-              />
-              <AlertBadge 
-                severity="warning" 
-                message="Anomalía en Sensor de Humedad Aire" 
-                time="Hace 1 hora"
-                alert={{
-                  id: "2", farm_id: null, device_id: null,
-                  alert_type: "sensor_anomaly", response_time: null,
-                  resolved_at: null, email_sent: false,
-                  title: "Anomalía en Sensor de Humedad Aire",
-                  severity: "warning",
-                  description: "Lecturas intermitentes detectadas en el nodo SURQO-X02. Posible interferencia de señal.",
-                  recommended_action: "Verificar posición de la antena del nodo.",
-                  created_at: new Date(Date.now() - 3600000).toISOString(),
-                  is_resolved: false
-                } as Alert}
-              />
-              
-              {/* Resolved Alerts */}
-              <div className="pt-8 opacity-60">
-                <h4 className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-4">Resueltas recientemente</h4>
-                <AlertBadge 
-                  severity="info" 
-                  message="Mantenimiento Programado Completado" 
-                  time="Ayer, 18:45"
-                  alert={{
-                    id: "3", farm_id: null, device_id: null,
-                    alert_type: "maintenance", response_time: null,
-                    recommended_action: null, resolved_at: null, email_sent: false,
-                    title: "Mantenimiento Programado Completado",
-                    severity: "info",
-                    description: "Se ha actualizado el firmware de todos los nodos a la versión 2.4.1.",
-                    created_at: new Date(Date.now() - 86400000).toISOString(),
-                    is_resolved: true
-                  } as Alert}
-                />
-              </div>
+              {filtered.map((a) => (
+                <div key={a.id} className="relative">
+                  <AlertBadge
+                    severity={a.severity as "critical" | "warning" | "info"}
+                    message={a.title}
+                    time={new Date(a.created_at).toLocaleString("es-CO", {
+                      dateStyle: "short", timeStyle: "short"
+                    })}
+                    alert={a}
+                  />
+                  <button
+                    onClick={() => handleResolve(a.id)}
+                    disabled={!!resolving}
+                    className="absolute right-3 top-3 text-xs text-surqo-text-muted hover:text-surqo-green transition-colors font-bold px-2 py-1 rounded-lg hover:bg-surqo-green/10"
+                  >
+                    {resolving === a.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Resolver"}
+                  </button>
+                </div>
+              ))}
             </div>
+
+            {resolvedAlerts.length > 0 && (
+              <div className="pt-8 opacity-60">
+                <h4 className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-4">
+                  Resueltas recientemente
+                </h4>
+                {resolvedAlerts.map((a) => (
+                  <AlertBadge
+                    key={a.id}
+                    severity={a.severity as "critical" | "warning" | "info"}
+                    message={a.title}
+                    time={a.resolved_at
+                      ? new Date(a.resolved_at).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })
+                      : ""}
+                    alert={a}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Stats & Search */}
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-6">
               <div className="relative mb-6">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surqo-text-muted" />
-                <input 
-                  type="text" 
-                  placeholder="Buscar alertas..." 
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar alertas..."
                   className="w-full pl-10"
                 />
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest">Resumen Semanal</h4>
+                <h4 className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest">Resumen</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-surqo-danger/5 border border-surqo-danger/10">
-                    <p className="text-2xl font-black text-surqo-danger">3</p>
+                    <p className="text-2xl font-black text-surqo-danger">{criticalCount}</p>
                     <p className="text-[10px] font-bold text-surqo-danger/60 uppercase">Críticas</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-surqo-warning/5 border border-surqo-warning/10">
-                    <p className="text-2xl font-black text-surqo-warning">12</p>
+                    <p className="text-2xl font-black text-surqo-warning">{warningCount}</p>
                     <p className="text-[10px] font-bold text-surqo-warning/60 uppercase">Advertencias</p>
                   </div>
                 </div>
               </div>
             </Card>
-
-            <Card className="p-6 bg-surqo-green/[0.02]">
-              <h4 className="text-sm font-black mb-3 tracking-tight">Reporte de Incidencias</h4>
-              <p className="text-xs text-surqo-text-secondary leading-relaxed mb-4">
-                Genera un informe PDF con todos los eventos y acciones tomadas durante el último mes.
-              </p>
-              <Button variant="outline" size="sm" className="w-full">
-                Exportar Reporte
-              </Button>
-            </Card>
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AlertsPage() {
+  return (
+    <RequireAuth>
+      <AlertsContent />
+    </RequireAuth>
   )
 }
