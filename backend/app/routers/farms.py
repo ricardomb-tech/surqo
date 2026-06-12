@@ -15,21 +15,19 @@ router = APIRouter()
 
 @router.post("/", response_model=FarmResponse, status_code=status.HTTP_201_CREATED)
 async def create_farm(body: FarmCreate, current_user: CurrentUser, db: DBSession) -> Farm:
-    # Verificar límite de fincas para plan free
-    if not current_user.is_paid:
-        count_result = await db.execute(
-            select(func.count()).where(Farm.user_id == current_user.user_id)
+    # 1 finca por usuario
+    count_result = await db.execute(
+        select(func.count()).where(Farm.user_id == current_user.user_id)
+    )
+    farm_count = count_result.scalar() or 0
+    if farm_count >= UserProfile.MAX_FARMS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "FARM_LIMIT_REACHED",
+                "message": "Cada cuenta puede registrar 1 finca. Edita tu finca existente para cambiar el cultivo.",
+            },
         )
-        farm_count = count_result.scalar() or 0
-        if farm_count >= UserProfile.FREE_MAX_FARMS:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail={
-                    "code": "FARM_LIMIT_REACHED",
-                    "message": f"El plan gratuito permite máximo {UserProfile.FREE_MAX_FARMS} fincas.",
-                    "upgrade_url": "/upgrade",
-                },
-            )
 
     farm_data = body.model_dump()
     # Si el usuario no especificó su email, usamos el del perfil como contacto por defecto

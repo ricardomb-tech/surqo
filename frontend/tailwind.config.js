@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
+  darkMode: 'media',
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,22 +10,22 @@ module.exports = {
     extend: {
       colors: {
         surqo: {
-          green: "#22C55E",
-          "green-bright": "#4ADE80",
-          "green-glow": "#16A34A",
-          "green-dim": "#15803D",
+          green: "#16A34A",
+          "green-bright": "#15803D",
+          "green-glow": "#22C55E",
+          "green-dim": "#166534",
           earth: "#92400E",
           "earth-light": "#D97706",
-          sky: "#38BDF8",
-          warning: "#FCD34D",
-          danger: "#F87171",
-          bg: "#030B05",
-          "bg-surface": "#0A1A0F",
-          "bg-elevated": "#0F2418",
-          "border": "rgba(34,197,94,0.12)",
-          "text": "#F0FDF4",
-          "text-secondary": "rgba(240, 253, 244, 0.5)",
-          "text-muted": "rgba(240, 253, 244, 0.25)",
+          sky: "#0284C7",
+          warning: "#D97706",
+          danger: "#DC2626",
+          bg: "#F8FAFC",
+          "bg-surface": "#FFFFFF",
+          "bg-elevated": "#F1F5F9",
+          "border": "rgba(15, 23, 42, 0.08)",
+          "text": "#0F172A",
+          "text-secondary": "#475569",
+          "text-muted": "#94A3B8",
         },
       },
       fontFamily: {

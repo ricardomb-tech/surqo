@@ -43,30 +43,20 @@ class UserProfile(Base):
 
     farms: Mapped[list[Farm]] = relationship("Farm", back_populates="owner", lazy="noload")
 
-    # ── Constantes del plan ───────────────────────────────────────────────────
-    FREE_MAX_FARMS = 3
-    FREE_MAX_EMAIL_ALERTS_MONTH = 10
+    # 1 finca por usuario — todos los demás features sin límite
+    MAX_FARMS = 1
 
     @property
     def is_paid(self) -> bool:
-        return self.plan == "paid"
-
-    @property
-    def can_create_farm(self) -> bool:
-        if self.is_paid:
-            return True
-        # Verificado dinámicamente en el router con COUNT de fincas
-        return True
+        return True  # todos son "paid" — sin restricciones
 
     @property
     def can_use_ai_analysis(self) -> bool:
-        return self.is_paid
+        return True
 
     @property
     def can_send_email_alert(self) -> bool:
-        if self.is_paid:
-            return True
-        return self.email_alerts_this_month < self.FREE_MAX_EMAIL_ALERTS_MONTH
+        return True
 
 
 from app.models.farm import Farm  # noqa: E402

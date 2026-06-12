@@ -12,11 +12,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", asChild = false, children, ...props }, ref) => {
     const variants = {
-      primary: "bg-surqo-green text-white shadow-glow-sm hover:shadow-glow-md hover:bg-surqo-green-bright",
-      secondary: "bg-surqo-green/10 text-surqo-green-bright border border-surqo-green/10 hover:bg-surqo-green/20 dark:border-surqo-green/20",
-      outline: "border border-black/[0.08] dark:border-white/10 hover:bg-black/[0.03] dark:hover:bg-white/5 text-surqo-text",
-      ghost: "hover:bg-black/[0.04] dark:hover:bg-white/5 text-surqo-text-secondary hover:text-surqo-text",
-      glass: "glass glass-hover text-surqo-text border-black/[0.05] dark:border-white/10",
+      primary: "bg-surqo-green text-white hover:bg-surqo-green-bright shadow-sm hover:shadow-md",
+      secondary: "bg-green-50 text-surqo-green border border-green-200 hover:bg-green-100",
+      outline: "border border-slate-200 hover:bg-slate-50 text-surqo-text",
+      ghost: "hover:bg-slate-100 text-surqo-text-secondary hover:text-surqo-text",
+      glass: "bg-white border border-slate-200 text-surqo-text hover:border-green-200",
     }
 
     const sizes = {
@@ -57,7 +57,7 @@ Button.displayName = "Button"
 export const Card = ({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "glass rounded-3xl border border-black/[0.05] dark:border-white/10 p-6 transition-all duration-500 shadow-sm dark:shadow-none bg-white/60 dark:bg-white/5",
+      "rounded-3xl border border-slate-200 p-6 transition-all duration-300 shadow-sm bg-white",
       className
     )}
     {...props}

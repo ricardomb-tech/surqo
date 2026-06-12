@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Sprout, MapPin, Loader2, CrownIcon, Trash2, X } from "lucide-react"
+import { Plus, Sprout, MapPin, Loader2, Trash2, X, Edit2 } from "lucide-react"
 import { useAuth } from "@/components/AuthProvider"
 import { Button, Card } from "@/components/ui/Primitives"
 import { getAccessToken } from "@/lib/auth"
-import Link from "next/link"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.onrender.com"
 
@@ -33,7 +32,7 @@ async function apiFetch(path: string, init?: RequestInit) {
 
 export default function FarmsPage() {
   const router = useRouter()
-  const { user, loading, planLimits, isPaid, refreshPlanLimits } = useAuth()
+  const { user, loading, planLimits, refreshPlanLimits } = useAuth()
 
   const [farms, setFarms] = useState<Farm[]>([])
   const [fetching, setFetching] = useState(true)
@@ -80,8 +79,8 @@ export default function FarmsPage() {
       await Promise.all([loadFarms(), refreshPlanLimits()])
     } else {
       const data = await res.json().catch(() => ({}))
-      if (res.status === 402) {
-        setError("Has alcanzado el límite de fincas del plan gratuito. Actualiza a Pro para registrar más.")
+      if (res.status === 400) {
+        setError("Solo puedes registrar 1 finca por cuenta. Edita tu finca existente para cambiar el cultivo.")
       } else {
         setError(data?.detail || "Error al crear la finca")
       }
@@ -99,7 +98,7 @@ export default function FarmsPage() {
     setDeleteId(null)
   }
 
-  const atLimit = !isPaid && (planLimits?.farms.used ?? 0) >= (planLimits?.farms.limit ?? 3)
+  const atLimit = (planLimits?.farms.used ?? 0) >= (planLimits?.farms.limit ?? 1)
 
   if (loading || fetching) {
     return (
@@ -116,20 +115,13 @@ export default function FarmsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-black tracking-tighter text-surqo-text mb-1">Mis Fincas</h1>
-            {planLimits && !isPaid && (
+            {planLimits && (
               <p className="text-sm text-surqo-text-secondary font-medium">
-                {planLimits.farms.used} de {planLimits.farms.limit} fincas registradas
+                {planLimits.farms.used} de {planLimits.farms.limit} finca registrada
               </p>
             )}
           </div>
-          {atLimit ? (
-            <Button variant="secondary" asChild>
-              <Link href="/upgrade">
-                <CrownIcon className="w-4 h-4 mr-2" />
-                Actualizar plan
-              </Link>
-            </Button>
-          ) : (
+          {!atLimit && (
             <Button onClick={() => setShowForm(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nueva finca
@@ -137,17 +129,14 @@ export default function FarmsPage() {
           )}
         </div>
 
-        {/* Plan limit warning */}
+        {/* Farm limit info */}
         {atLimit && (
-          <div className="mb-6 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3">
-            <CrownIcon className="w-5 h-5 text-amber-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-bold text-amber-300">Límite de fincas alcanzado</p>
-              <p className="text-xs text-amber-400/70 mt-0.5">El plan gratuito permite hasta 3 fincas. Actualiza a Pro para registrar más.</p>
+          <div className="mb-6 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
+            <Edit2 className="w-5 h-5 text-blue-500 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-blue-700">Finca registrada</p>
+              <p className="text-xs text-blue-500 mt-0.5">Cada cuenta tiene 1 finca. Edita tu finca para cambiar el cultivo u otros datos.</p>
             </div>
-            <Button size="sm" variant="secondary" asChild>
-              <Link href="/upgrade">Ver planes</Link>
-            </Button>
           </div>
         )}
 
@@ -209,13 +198,8 @@ export default function FarmsPage() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
                     {error}
-                    {error.includes("límite") && (
-                      <Link href="/upgrade" className="ml-2 text-amber-400 font-bold hover:underline">
-                        Ver planes →
-                      </Link>
-                    )}
                   </p>
                 )}
 

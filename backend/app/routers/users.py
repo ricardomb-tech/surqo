@@ -50,35 +50,22 @@ async def update_my_profile(
 
 @router.get("/me/plan-limits")
 async def get_plan_limits(current_user: CurrentUser, db: DBSession) -> dict:
-    """Retorna los límites del plan actual y cuánto se ha usado."""
+    """Retorna el uso actual del usuario."""
     farm_count_result = await db.execute(
         select(func.count()).where(Farm.user_id == current_user.user_id)
     )
     farms_count = farm_count_result.scalar() or 0
 
-    if current_user.is_paid:
-        return {
-            "plan": "paid",
-            "farms": {"used": farms_count, "limit": None, "unlimited": True},
-            "ai_analysis": {"allowed": True},
-            "email_alerts": {"used": current_user.email_alerts_this_month, "limit": None, "unlimited": True},
-        }
-
     return {
         "plan": "free",
         "farms": {
             "used": farms_count,
-            "limit": UserProfile.FREE_MAX_FARMS,
+            "limit": UserProfile.MAX_FARMS,
             "unlimited": False,
-            "remaining": max(0, UserProfile.FREE_MAX_FARMS - farms_count),
+            "remaining": max(0, UserProfile.MAX_FARMS - farms_count),
         },
-        "ai_analysis": {"allowed": False, "reason": "Requiere plan Surqo Pro"},
-        "email_alerts": {
-            "used": current_user.email_alerts_this_month,
-            "limit": UserProfile.FREE_MAX_EMAIL_ALERTS_MONTH,
-            "unlimited": False,
-            "remaining": max(0, UserProfile.FREE_MAX_EMAIL_ALERTS_MONTH - current_user.email_alerts_this_month),
-        },
+        "ai_analysis": {"allowed": True},
+        "email_alerts": {"unlimited": True},
     }
 
 

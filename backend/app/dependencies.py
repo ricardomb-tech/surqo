@@ -98,23 +98,8 @@ async def get_current_user_optional(
         return None
 
 
-async def require_paid_plan(
-    current_user: UserProfile = Depends(get_current_user),
-) -> UserProfile:
-    """Dependencia que exige plan de pago. Retorna 402 si es free."""
-    if not current_user.is_paid:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail={
-                "code": "PLAN_REQUIRED",
-                "message": "Esta función requiere el plan Surqo Pro.",
-                "upgrade_url": "/upgrade",
-            },
-        )
-    return current_user
-
-
 # Anotaciones de tipo para usar como parámetros en endpoints
 CurrentUser = Annotated[UserProfile, Depends(get_current_user)]
 CurrentUserOptional = Annotated[UserProfile | None, Depends(get_current_user_optional)]
-PaidUser = Annotated[UserProfile, Depends(require_paid_plan)]
+# Todo es gratuito — PaidUser es alias de CurrentUser sin restricciones
+PaidUser = Annotated[UserProfile, Depends(get_current_user)]

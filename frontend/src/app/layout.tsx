@@ -16,12 +16,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${inter.variable} ${outfit.variable} dark`} suppressHydrationWarning>
+    <html lang="es" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body className="bg-surqo-bg text-surqo-text antialiased font-sans transition-colors duration-500 selection:bg-surqo-green/30">
         <AuthProvider>
           <NavBar />
           <main className="relative z-10">{children}</main>
-          <footer className="border-t border-black/5 dark:border-white/5 py-12 mt-20">
+          <footer className="border-t border-slate-200 py-12 mt-20">
             <div className="max-w-6xl mx-auto px-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Zap className="w-5 h-5 text-surqo-green" />

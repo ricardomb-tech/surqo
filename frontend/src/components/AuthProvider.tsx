@@ -12,10 +12,10 @@ import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 
 interface PlanLimits {
-  plan: "free" | "paid"
+  plan: string
   farms: { used: number; limit: number | null; unlimited: boolean; remaining?: number }
-  ai_analysis: { allowed: boolean; reason?: string }
-  email_alerts: { used: number; limit: number | null; unlimited: boolean; remaining?: number }
+  ai_analysis: { allowed: boolean }
+  email_alerts: { unlimited: boolean }
 }
 
 interface AuthContextValue {
@@ -23,7 +23,6 @@ interface AuthContextValue {
   user: User | null
   loading: boolean
   planLimits: PlanLimits | null
-  isPaid: boolean
   refreshPlanLimits: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -33,7 +32,6 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
   planLimits: null,
-  isPaid: false,
   refreshPlanLimits: async () => {},
   signOut: async () => {},
 })
@@ -102,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: session?.user ?? null,
         loading,
         planLimits,
-        isPaid: planLimits?.plan === "paid",
         refreshPlanLimits,
         signOut: handleSignOut,
       }}
