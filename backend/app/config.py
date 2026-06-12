@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # Base de datos (Supabase)
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
     SUPABASE_JWK_X: str = ""
     SUPABASE_JWK_Y: str = ""
     SUPABASE_JWK_KID: str = ""
