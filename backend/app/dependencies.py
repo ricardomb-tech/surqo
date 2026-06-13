@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 import urllib.request
-from functools import lru_cache
+import time
 from typing import Annotated
 
 import logging
@@ -23,40 +23,58 @@ DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 _bearer = HTTPBearer(auto_error=False)
 
+# Cache de claves JWKS con TTL de 1 hora
+_jwks_cache: list = []
+_jwks_fetched_at: float = 0.0
+_JWKS_TTL = 3600
 
-@lru_cache(maxsize=1)
+
 def _fetch_jwks_keys() -> list:
-    """Descarga las claves públicas desde el endpoint JWKS de Supabase."""
+    """Descarga las claves públicas desde el endpoint JWKS de Supabase (cache 1h)."""
+    global _jwks_cache, _jwks_fetched_at
+
+    now = time.monotonic()
+    if _jwks_cache and (now - _jwks_fetched_at) < _JWKS_TTL:
+        return _jwks_cache
+
     jwks_url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
     try:
         with urllib.request.urlopen(jwks_url, timeout=5) as resp:
             data = json.loads(resp.read())
         keys = []
         for jwk in data.get("keys", []):
+            kty = jwk.get("kty", "")
             alg = jwk.get("alg", "")
-            if alg == "ES256" or jwk.get("kty") == "EC":
-                keys.append(("ES256", ECAlgorithm.from_jwk(json.dumps(jwk))))
-            elif alg in ("RS256", "RS384", "RS512") or jwk.get("kty") == "RSA":
-                keys.append((alg or "RS256", RSAAlgorithm.from_jwk(json.dumps(jwk))))
-        logger.info("JWKS loaded: %d key(s) from %s", len(keys), jwks_url)
+            try:
+                if kty == "EC":
+                    keys.append(("ES256", ECAlgorithm.from_jwk(json.dumps(jwk))))
+                elif kty == "RSA":
+                    keys.append((alg or "RS256", RSAAlgorithm.from_jwk(json.dumps(jwk))))
+            except Exception as parse_err:
+                logger.warning("Could not parse JWK: %s", parse_err)
+
+        logger.info("JWKS refreshed: %d key(s) loaded from %s", len(keys), jwks_url)
+        _jwks_cache = keys
+        _jwks_fetched_at = now
         return keys
     except Exception as e:
-        logger.warning("Could not fetch JWKS from %s: %s", jwks_url, e)
-        return []
+        logger.error("Could not fetch JWKS from %s: %s", jwks_url, e)
+        return _jwks_cache  # devolver cache anterior si hay, o []
 
 
 def _decode_token(token: str) -> dict:
     """
     Verifica el JWT de Supabase en este orden:
-    1. JWKS dinámico desde /auth/v1/.well-known/jwks.json (nuevo sistema de Supabase)
+    1. JWKS dinámico desde /auth/v1/.well-known/jwks.json (nuevo sistema)
     2. HS256 con SUPABASE_JWT_SECRET (legacy)
     3. ES256 con coordenadas JWK manuales (SUPABASE_JWK_X/Y)
     """
     errors = []
 
-    # 1. JWKS dinámico (nuevo sistema de Supabase con JWT Signing Keys)
+    # 1. JWKS dinámico
     if settings.SUPABASE_URL:
-        for alg, key in _fetch_jwks_keys():
+        jwks_keys = _fetch_jwks_keys()
+        for alg, key in jwks_keys:
             try:
                 return jwt.decode(
                     token,
@@ -98,7 +116,7 @@ def _decode_token(token: str) -> dict:
             errors.append(f"ES256-manual: {e}")
 
     raise jwt.InvalidTokenError(
-        f"No se pudo verificar el token. Errores: {'; '.join(errors) or 'Sin claves configuradas'}"
+        f"Sin claves válidas. Errores: {'; '.join(errors) or 'Sin claves configuradas (SUPABASE_URL vacío)'}"
     )
 
 
@@ -120,7 +138,7 @@ async def get_current_user(
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado. Vuelve a iniciar sesión.")
     except jwt.InvalidTokenError as e:
-        logger.error("JWT verification failed: %s", e)
+        logger.error("JWT verification failed: %s | SUPABASE_URL set: %s", e, bool(settings.SUPABASE_URL))
         raise HTTPException(status_code=401, detail=f"Token inválido: {e}")
 
     user_id_str = payload.get("sub")
