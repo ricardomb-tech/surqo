@@ -47,7 +47,7 @@ export function SensorChart({ data = dummyData, metric = "Valor", unit = "", col
       hour: "2-digit",
       minute: "2-digit",
     }),
-    value: p.value !== null ? Number(p.value.toFixed(1)) : null,
+    value: p.value != null ? Number(Number(p.value).toFixed(1)) : null,
   }))
 
   if (chartData.length === 0) {
