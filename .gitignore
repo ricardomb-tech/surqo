@@ -64,3 +64,5 @@ docs/generate_tutorial.js
 docs/package.json
 docs/package-lock.json
 docs/node_modules/
+
+.vercel

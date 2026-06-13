@@ -1,5 +1,5 @@
 app = "surqo-api"
-primary_region = "mia"   # Miami — más cercano a Colombia
+primary_region = "dfw"   # Dallas — más cercano a Colombia
 
 [build]
   dockerfile = "Dockerfile"
