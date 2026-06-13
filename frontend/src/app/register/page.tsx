@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  Zap, Eye, EyeOff, Loader2, CheckCircle2,
+  Eye, EyeOff, Loader2, CheckCircle2,
   AlertCircle, ArrowRight, Shield, User, Mail, Lock,
 } from "lucide-react"
+import { SurqoIcon } from "@/components/SurqoIcon"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/Primitives"
 import { useAuth } from "@/components/AuthProvider"
@@ -143,7 +144,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-surqo-bg">
       <div className="w-full max-w-sm text-center">
         <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8">
-          <Zap className="w-5 h-5 text-surqo-green" />
+          <SurqoIcon className="w-6 h-6 text-surqo-green" />
           <span className="text-xl font-black tracking-tighter text-gradient">SURQO</span>
         </Link>
         <div className="glass rounded-3xl border border-surqo-green/20 p-8 shadow-2xl">
@@ -179,7 +180,7 @@ export default function RegisterPage() {
         {/* Brand */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-6">
-            <Zap className="w-5 h-5 text-surqo-green" />
+            <SurqoIcon className="w-6 h-6 text-surqo-green" />
             <span className="text-xl font-black tracking-tighter text-gradient">SURQO</span>
           </Link>
           <h1 className="text-2xl font-black tracking-tight text-surqo-text">Crea tu cuenta</h1>

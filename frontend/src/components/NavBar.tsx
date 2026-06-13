@@ -4,10 +4,11 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import {
-  Zap, LayoutDashboard, Activity, Bell,
+  LayoutDashboard, Activity, Bell,
   FlaskConical, Sprout, Menu, X, LogOut, ChevronDown,
 } from "lucide-react"
 import { useAuth } from "@/components/AuthProvider"
+import { SurqoIcon } from "@/components/SurqoIcon"
 import { Button } from "@/components/ui/Primitives"
 import { cn } from "@/lib/utils"
 
@@ -67,7 +68,7 @@ export function NavBar() {
             href={user ? "/dashboard" : "/"}
             className="flex items-center gap-2 shrink-0 group"
           >
-            <Zap className="w-5 h-5 text-surqo-green group-hover:scale-110 transition-transform" />
+            <SurqoIcon className="w-6 h-6 text-surqo-green group-hover:scale-110 transition-transform" />
             <span className="text-lg font-black tracking-tighter text-gradient">SURQO</span>
           </Link>
 

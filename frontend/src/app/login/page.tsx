@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Zap, Eye, EyeOff, Loader2, AlertCircle, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, Loader2, AlertCircle, ArrowRight } from "lucide-react"
+import { SurqoIcon } from "@/components/SurqoIcon"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/Primitives"
 import { useAuth } from "@/components/AuthProvider"
@@ -53,7 +54,7 @@ function LoginForm() {
         {/* Brand */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-7 group">
-            <Zap className="w-5 h-5 text-surqo-green" />
+            <SurqoIcon className="w-6 h-6 text-surqo-green" />
             <span className="text-xl font-black tracking-tighter text-gradient">SURQO</span>
           </Link>
           <h1 className="text-2xl font-black tracking-tight text-surqo-text">Bienvenido de vuelta</h1>

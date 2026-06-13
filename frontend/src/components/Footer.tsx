@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Zap, Mail, Github, MapPin } from "lucide-react"
+import { Mail, Github, MapPin } from "lucide-react"
+import { SurqoIcon } from "@/components/SurqoIcon"
 
 const PRODUCT_LINKS = [
   { href: "/register", label: "Crear cuenta gratis" },
@@ -30,7 +31,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <Zap className="w-5 h-5 text-surqo-green" />
+              <SurqoIcon className="w-6 h-6 text-surqo-green" />
               <span className="text-lg font-black tracking-tighter text-gradient">SURQO</span>
             </Link>
             <p className="text-sm text-surqo-text-muted font-medium leading-relaxed mb-5">
