@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import asyncio
+import uuid
 from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base, get_db
+from app.dependencies import get_current_user
 from app.main import app
+from app.models.user import UserProfile
 
 # SQLite en memoria para tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -29,13 +30,35 @@ async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+_TEST_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+
+def override_get_current_user() -> UserProfile:
+    return UserProfile(
+        user_id=_TEST_USER_ID,
+        email="test@surqo.io",
+        full_name="Test User",
+        plan="free",
+    )
+
+
 app.dependency_overrides[get_db] = override_get_db
+app.dependency_overrides[get_current_user] = override_get_current_user
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def create_tables():
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Seed test user so FK constraints pass
+    async with TestSessionLocal() as session:
+        session.add(UserProfile(
+            user_id=_TEST_USER_ID,
+            email="test@surqo.io",
+            full_name="Test User",
+            plan="free",
+        ))
+        await session.commit()
     yield
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

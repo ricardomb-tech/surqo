@@ -14,7 +14,7 @@ PROMPTS_DIR = Path(__file__).parent.parent / "app" / "prompts"
 def test_load_prompt_farm_analysis() -> None:
     svc = LLMService.__new__(LLMService)
     svc._prompt_cache = {}
-    svc.client = MagicMock()
+    svc._provider = MagicMock()
 
     prompt = svc.load_prompt("farm_analysis_v1.0.yaml")
     assert "version" in prompt
@@ -26,7 +26,7 @@ def test_load_prompt_farm_analysis() -> None:
 def test_load_prompt_alert_triage() -> None:
     svc = LLMService.__new__(LLMService)
     svc._prompt_cache = {}
-    svc.client = MagicMock()
+    svc._provider = MagicMock()
 
     prompt = svc.load_prompt("alert_triage_v1.0.yaml")
     assert "is_alert" in prompt["response_required_fields"]
@@ -35,7 +35,7 @@ def test_load_prompt_alert_triage() -> None:
 def test_cost_calculation() -> None:
     svc = LLMService.__new__(LLMService)
     svc._prompt_cache = {}
-    svc.client = MagicMock()
+    svc._provider = MagicMock()
 
     cost = svc._cost(1000, 500)
     # 1000 * 0.00000025 + 500 * 0.00000125 = 0.00025 + 0.000625 = 0.000875
@@ -45,7 +45,7 @@ def test_cost_calculation() -> None:
 def test_load_prompt_caches() -> None:
     svc = LLMService.__new__(LLMService)
     svc._prompt_cache = {}
-    svc.client = MagicMock()
+    svc._provider = MagicMock()
 
     prompt1 = svc.load_prompt("farm_analysis_v1.0.yaml")
     prompt2 = svc.load_prompt("farm_analysis_v1.0.yaml")
@@ -55,7 +55,7 @@ def test_load_prompt_caches() -> None:
 def test_load_prompt_missing_raises() -> None:
     svc = LLMService.__new__(LLMService)
     svc._prompt_cache = {}
-    svc.client = MagicMock()
+    svc._provider = MagicMock()
 
     with pytest.raises(FileNotFoundError):
         svc.load_prompt("no_existe_v99.yaml")
