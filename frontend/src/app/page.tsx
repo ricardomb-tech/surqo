@@ -73,14 +73,14 @@ export default function Home() {
             <span className="tracking-widest uppercase">Piloto activo · Córdoba, Colombia</span>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-6 leading-[0.88]">
-            La agricultura colombiana<br />
-            merece datos <span className="text-gradient">reales.</span>
+          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[0.85]">
+            Del surco al <br />
+            <span className="text-gradient">insight.</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-surqo-text-secondary max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
-            Surqo conecta tus cultivos a la inteligencia artificial. Sensores IoT + análisis agronómico
-            + alertas automáticas. Todo en uno, desde $180.000 COP.
+            Impulsamos la agricultura colombiana con inteligencia de datos real.
+            Conecta tus cultivos, optimiza tus recursos, maximiza tu cosecha.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
