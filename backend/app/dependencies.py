@@ -1,23 +1,23 @@
 from __future__ import annotations
 
 import json
-import uuid
-import urllib.request
+import logging
 import time
+import urllib.request
+import uuid
 from typing import Annotated
 
-import logging
 import jwt
-from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from fastapi import Depends, HTTPException, status
-
-logger = logging.getLogger(__name__)
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
 from app.models.user import UserProfile
+
+logger = logging.getLogger(__name__)
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 

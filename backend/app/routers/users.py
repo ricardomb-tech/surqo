@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import func, select
@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from app.dependencies import CurrentUser, DBSession
 from app.models.farm import Farm
 from app.models.user import UserProfile
-from app.schemas.user import UserProfileResponse, UserProfileUpdate, UserPlanUpdate
+from app.schemas.user import UserPlanUpdate, UserProfileResponse, UserProfileUpdate
 
 router = APIRouter()
 
@@ -91,7 +91,7 @@ async def admin_update_plan(
 
     target.plan = body.plan
     if body.plan == "paid":
-        target.plan_activated_at = datetime.now(timezone.utc)
+        target.plan_activated_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(target)

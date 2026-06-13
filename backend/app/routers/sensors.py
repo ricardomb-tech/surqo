@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
+from datetime import UTC, datetime, timedelta
 
 import logfire
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
 
 from app.dependencies import DBSession
 from app.models.sensor_reading import SensorReading
@@ -81,7 +80,7 @@ async def get_timeseries(
     if metric not in allowed_metrics:
         raise HTTPException(status_code=400, detail=f"Métrica no válida. Usar: {allowed_metrics}")
 
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
     stmt = (
         select(SensorReading)
         .where(
@@ -104,7 +103,7 @@ async def get_timeseries(
 
 @router.get("/stats/{farm_id}")
 async def get_stats(farm_id: uuid.UUID, db: DBSession) -> dict:
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    since = datetime.now(UTC) - timedelta(hours=24)
     stmt = (
         select(SensorReading)
         .where(

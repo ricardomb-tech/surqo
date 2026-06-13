@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import date
 
 import httpx
 import logfire
-
-from app.config import settings
 
 
 @dataclass

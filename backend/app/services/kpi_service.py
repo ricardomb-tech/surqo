@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import logfire
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.sensor_reading import SensorReading
@@ -103,7 +103,7 @@ class KPIService:
 
     async def get_farm_kpis(self, farm_id: str, db: AsyncSession) -> dict:
         with logfire.span("kpi.get_farm_kpis", farm_id=farm_id):
-            since = datetime.now(timezone.utc) - timedelta(hours=24)
+            since = datetime.now(UTC) - timedelta(hours=24)
             stmt = (
                 select(SensorReading)
                 .where(

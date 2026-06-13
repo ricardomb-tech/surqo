@@ -39,10 +39,11 @@ testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py311"
-line-length = 88
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "B008", "B904"]
 
 [dependency-groups]
 dev = [

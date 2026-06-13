@@ -14,7 +14,6 @@ import yaml
 from app.config import settings
 from app.services.climate_service import ClimateData
 
-
 # ─── Abstracción de proveedor LLM ─────────────────────────────────────────────
 
 class LLMProvider(Protocol):

@@ -53,7 +53,7 @@ class Farm(Base):
 
 
 # Avoid circular imports
-from app.models.sensor_reading import SensorReading  # noqa: E402
-from app.models.analysis import Analysis  # noqa: E402
 from app.models.alert import Alert  # noqa: E402
+from app.models.analysis import Analysis  # noqa: E402
+from app.models.sensor_reading import SensorReading  # noqa: E402
 from app.models.user import UserProfile  # noqa: E402

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.dependencies import DBSession
 from app.models.alert import Alert
 from app.models.farm import Farm
-from app.schemas.alert import AlertNotifyRequest, AlertResponse, AlertResolveRequest
+from app.schemas.alert import AlertNotifyRequest, AlertResolveRequest, AlertResponse
 from app.services.alert_service import AlertService
 
 router = APIRouter()
@@ -57,7 +57,7 @@ async def resolve_alert(
         raise HTTPException(status_code=404, detail="Alerta no encontrada")
     alert.is_resolved = body.resolved
     if body.resolved:
-        alert.resolved_at = datetime.now(timezone.utc)
+        alert.resolved_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(alert)
     return alert

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter
 from sqlalchemy import select
@@ -21,7 +21,7 @@ async def get_farm_kpis(farm_id: uuid.UUID, db: DBSession) -> dict:
 
 @router.get("/farm/{farm_id}/vpd-history")
 async def get_vpd_history(farm_id: uuid.UUID, db: DBSession) -> list[dict]:
-    since = datetime.now(timezone.utc) - timedelta(hours=48)
+    since = datetime.now(UTC) - timedelta(hours=48)
     stmt = (
         select(SensorReading)
         .where(
@@ -43,7 +43,7 @@ async def get_vpd_history(farm_id: uuid.UUID, db: DBSession) -> list[dict]:
 async def get_water_balance(farm_id: uuid.UUID, db: DBSession) -> dict:
     """Balance hídrico estimado de los últimos 7 días."""
     # Datos de sensor para ETc aproximada
-    since = datetime.now(timezone.utc) - timedelta(days=7)
+    since = datetime.now(UTC) - timedelta(days=7)
     stmt = (
         select(SensorReading)
         .where(
@@ -54,11 +54,9 @@ async def get_water_balance(farm_id: uuid.UUID, db: DBSession) -> dict:
     result = await db.execute(stmt)
     readings = result.scalars().all()
 
-    avg_temp = 28.0  # Default para Córdoba
     if readings:
         temps = [float(r.air_temp_c) for r in readings if r.air_temp_c]
-        if temps:
-            avg_temp = sum(temps) / len(temps)
+        _ = sum(temps) / len(temps) if temps else 28.0  # noqa: F841
 
     et0_approx = 4.5  # mm/día approx para zona tropical colombiana
     etc_7d = kpi_svc.calculate_etc(et0_approx * 7, "maíz")
@@ -77,7 +75,7 @@ async def get_water_balance(farm_id: uuid.UUID, db: DBSession) -> dict:
 
 @router.get("/farm/{farm_id}/pest-risk")
 async def get_pest_risk(farm_id: uuid.UUID, db: DBSession) -> dict:
-    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    since = datetime.now(UTC) - timedelta(hours=24)
     stmt = (
         select(SensorReading)
         .where(
@@ -103,7 +101,7 @@ async def get_pest_risk(farm_id: uuid.UUID, db: DBSession) -> dict:
     risk = kpi_svc.calculate_pest_risk(avg_temp, avg_humidity, "maíz")
     return {
         "farm_id": str(farm_id),
-        "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "calculated_at": datetime.now(UTC).isoformat(),
         "avg_temp_c": round(avg_temp, 1),
         "avg_humidity_pct": round(avg_humidity, 1),
         **risk,

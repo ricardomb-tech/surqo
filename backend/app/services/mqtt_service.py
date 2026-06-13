@@ -4,7 +4,6 @@ import asyncio
 import json
 import logging
 import ssl
-import threading
 import time
 from typing import TYPE_CHECKING
 
@@ -26,7 +25,7 @@ class SurqoMQTTService:
     def __init__(
         self,
         db_session_factory,
-        ws_manager: "WebSocketManager",
+        ws_manager: WebSocketManager,
         loop: asyncio.AbstractEventLoop,
     ) -> None:
         self._db_factory = db_session_factory
@@ -90,8 +89,6 @@ class SurqoMQTTService:
 
     async def _process_reading(self, payload: dict, farm_id: str | None) -> None:
         import uuid as _uuid
-
-        from sqlalchemy import select
 
         from app.models.farm import Farm
         from app.models.sensor_reading import SensorReading

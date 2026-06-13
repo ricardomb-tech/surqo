@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 
 import logfire
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request

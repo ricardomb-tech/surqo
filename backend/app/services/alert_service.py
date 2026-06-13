@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import logfire
 import resend
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -131,6 +130,7 @@ class AlertService:
         can_email = owner_email is not None and farm_id is not None
         if can_email and user_id:
             import uuid as _uuid
+
             from app.models.user import UserProfile as _UserProfile
             try:
                 uid = _uuid.UUID(user_id)
@@ -163,6 +163,7 @@ class AlertService:
                 # Incrementar contador mensual del usuario
                 if user_id:
                     import uuid as _uuid
+
                     from app.models.user import UserProfile as _UP
                     try:
                         profile = await db.get(_UP, _uuid.UUID(user_id))
@@ -210,7 +211,7 @@ class AlertService:
 
         if sent:
             # Marcar alertas como notificadas por email
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             for alert in alerts:
                 alert.email_sent = True
                 alert.email_sent_at = now
@@ -235,7 +236,7 @@ class AlertService:
         )
         if sent:
             alert.email_sent = True
-            alert.email_sent_at = datetime.now(timezone.utc)
+            alert.email_sent_at = datetime.now(UTC)
             await db.commit()
         return sent
 
