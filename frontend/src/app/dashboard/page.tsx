@@ -37,7 +37,7 @@ function DashboardContent() {
         sensorAPI.timeseries(f.id, 24, "soil_moisture_pct"),
         analysisAPI.history(f.id),
       ])
-      if (kpiData.status === "fulfilled") setKpis(kpiData.value)
+      if (kpiData.status === "fulfilled" && !("error" in kpiData.value)) setKpis(kpiData.value)
       if (alertData.status === "fulfilled") setAlerts(alertData.value)
       if (tsData.status === "fulfilled") setTimeseries(tsData.value)
       if (analysisData.status === "fulfilled" && analysisData.value.length > 0) {
@@ -132,7 +132,7 @@ function DashboardContent() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <KPICard
                 title="VPD"
-                value={kpis ? kpis.vpd_kpa.toFixed(2) : "—"}
+                value={kpis ? (kpis.vpd_kpa?.toFixed(2) ?? "—") : "—"}
                 unit="kPa"
                 status={kpis ? kpiStatus(kpis.vpd_kpa, 0.4, 1.6) : "ok"}
                 icon={<Wind className="w-5 h-5" />}
@@ -140,7 +140,7 @@ function DashboardContent() {
               />
               <KPICard
                 title="Humedad Suelo"
-                value={kpis ? kpis.avg_soil_moisture_pct.toFixed(1) : "—"}
+                value={kpis ? (kpis.avg_soil_moisture_pct?.toFixed(1) ?? "—") : "—"}
                 unit="%"
                 status={kpis ? kpiStatus(kpis.avg_soil_moisture_pct, 30, 80) : "ok"}
                 icon={<Droplets className="w-5 h-5" />}
@@ -148,7 +148,7 @@ function DashboardContent() {
               />
               <KPICard
                 title="Temp. Ambiente"
-                value={kpis ? kpis.avg_air_temp_c.toFixed(1) : "—"}
+                value={kpis ? (kpis.avg_air_temp_c?.toFixed(1) ?? "—") : "—"}
                 unit="°C"
                 status={kpis ? kpiStatus(kpis.avg_air_temp_c, 15, 35) : "ok"}
                 icon={<Thermometer className="w-5 h-5" />}
@@ -210,7 +210,7 @@ function DashboardContent() {
                   </div>
                   <p className="text-xs text-surqo-text-secondary leading-relaxed font-medium">
                     {kpis
-                      ? `${kpis.readings_count_24h} lecturas en las últimas 24h. Riesgo de plagas: ${kpis.pest_risk.risk_pct}%.`
+                      ? `${kpis.readings_count_24h} lecturas en las últimas 24h. Riesgo de plagas: ${kpis.pest_risk?.risk_pct ?? 0}%.`
                       : "Sin datos de sensores disponibles aún."}
                   </p>
                 </div>
