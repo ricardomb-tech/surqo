@@ -7,19 +7,23 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
+_is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+
 _connect_args: dict = {}
-if "pooler.supabase.com" in settings.DATABASE_URL:
+if not _is_sqlite and "pooler.supabase.com" in settings.DATABASE_URL:
     # Transaction pooler doesn't support named prepared statements
     _connect_args = {"statement_cache_size": 0}
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    echo=not settings.is_production,
-    connect_args=_connect_args,
-)
+_engine_kwargs: dict = {
+    "echo": not settings.is_production,
+    "connect_args": _connect_args,
+}
+if not _is_sqlite:
+    _engine_kwargs["pool_size"] = 5
+    _engine_kwargs["max_overflow"] = 10
+    _engine_kwargs["pool_pre_ping"] = True
+
+engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     engine,
