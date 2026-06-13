@@ -19,7 +19,11 @@ const APP_LINKS = [
   { href: "/farms",     label: "Fincas",     icon: Sprout },
 ]
 
-const PUBLIC_PATHS = ["/", "/login", "/register"]
+const PUBLIC_PATHS = ["/", "/login", "/register", "/precios", "/privacidad", "/terminos"]
+
+const PUBLIC_NAV_LINKS = [
+  { href: "/precios", label: "Precios" },
+]
 
 export function NavBar() {
   const pathname = usePathname()
@@ -45,6 +49,26 @@ export function NavBar() {
           <Zap className="w-5 h-5 text-surqo-green" />
           <span className="text-lg font-black tracking-tighter text-gradient">SURQO</span>
         </Link>
+
+        {/* Public nav links */}
+        {isPublicPage && !user && (
+          <div className="hidden md:flex items-center gap-1">
+            {PUBLIC_NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200",
+                  pathname === href
+                    ? "bg-green-50 text-surqo-green border border-green-200"
+                    : "text-surqo-text-secondary hover:text-surqo-text hover:bg-slate-100"
+                )}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* App nav — solo cuando hay sesión y no es página pública */}
         {showAppNav && (
