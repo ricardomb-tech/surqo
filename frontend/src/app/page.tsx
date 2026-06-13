@@ -91,7 +91,7 @@ const SOCIAL_PROOF = [
 const FAQS = [
   {
     q: "¿Cuánto cuesta Surqo?",
-    a: "El plan base es completamente gratuito. Incluye 1 finca, análisis de IA ilimitados, alertas por correo y el dashboard completo. En el futuro habrá planes premium con funciones avanzadas como reportes PDF, alertas por WhatsApp y múltiples fincas.",
+    a: "Surqo es completamente gratuito. No hay planes de pago, no hay tarjeta de crédito, no hay letra pequeña. Es una solución abierta para el agricultor colombiano.",
   },
   {
     q: "¿Qué hardware necesito para empezar?",
@@ -182,9 +182,12 @@ export default function Home() {
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="h-14 px-10 text-base rounded-2xl" asChild>
-              <Link href="/precios">Ver planes</Link>
+              <Link href="/login">Ya tengo cuenta</Link>
             </Button>
           </div>
+          <p className="text-xs text-surqo-text-muted font-medium mt-5">
+            100% gratuito · Sin tarjeta de crédito · Sin letra pequeña
+          </p>
         </div>
       </section>
 
@@ -340,7 +343,7 @@ export default function Home() {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-surqo-green/10 border border-surqo-green/20 rounded-full px-4 py-2 text-xs font-bold text-surqo-green-bright mb-6">
               <Zap className="w-3.5 h-3.5" />
-              Empieza hoy · Sin tarjeta de crédito
+              100% gratuito · Siempre
             </div>
             <h2 className="text-4xl sm:text-5xl font-black tracking-tighter mb-4">
               Tu finca inteligente<br />
@@ -358,7 +361,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="h-14 px-10 text-base rounded-2xl" asChild>
-                <Link href="/precios">Ver precios</Link>
+                <Link href="/login">Iniciar sesión</Link>
               </Button>
             </div>
           </div>

@@ -2,7 +2,6 @@ import Link from "next/link"
 import { Zap, Mail, Github, MapPin } from "lucide-react"
 
 const PRODUCT_LINKS = [
-  { href: "/precios", label: "Precios" },
   { href: "/register", label: "Crear cuenta gratis" },
   { href: "/login", label: "Iniciar sesión" },
 ]

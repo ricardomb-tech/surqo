@@ -21,7 +21,7 @@
 #include "config.h"
 
 // ─── Objetos globales ────────────────────────────────────────────────────────
-DHT dht(DHT_PIN, DHT22);
+DHT dht(DHT_PIN, DHT11);  // cambiar a DHT22 cuando se tenga
 OneWire oneWire(DS18B20_PIN);
 DallasTemperature ds18b20(&oneWire);
 WiFiClientSecure wifiClient;

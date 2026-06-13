@@ -19,11 +19,9 @@ const APP_LINKS = [
   { href: "/farms",     label: "Fincas",     icon: Sprout },
 ]
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/precios", "/privacidad", "/terminos"]
+const PUBLIC_PATHS = ["/", "/login", "/register", "/privacidad", "/terminos"]
 
-const PUBLIC_NAV_LINKS = [
-  { href: "/precios", label: "Precios" },
-]
+const PUBLIC_NAV_LINKS: { href: string; label: string }[] = []
 
 export function NavBar() {
   const pathname = usePathname()
