@@ -3,8 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, Numeric, SmallInteger, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, Numeric, SmallInteger, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -14,11 +13,11 @@ class SensorReading(Base):
     __tablename__ = "sensor_readings"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     device_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     farm_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("farms.id"), nullable=True
+        Uuid(as_uuid=True), ForeignKey("farms.id"), nullable=True
     )
     soil_moisture_pct: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     soil_temp_c: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)

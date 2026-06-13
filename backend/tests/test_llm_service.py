@@ -37,7 +37,9 @@ def test_cost_calculation() -> None:
     svc._prompt_cache = {}
     svc._provider = MagicMock()
 
-    cost = svc._cost(1000, 500)
+    with patch("app.services.llm_service.settings") as mock_settings:
+        mock_settings.LLM_PROVIDER = "anthropic"
+        cost = svc._cost(1000, 500)
     # 1000 * 0.00000025 + 500 * 0.00000125 = 0.00025 + 0.000625 = 0.000875
     assert cost == pytest.approx(0.000875, rel=0.01)
 
