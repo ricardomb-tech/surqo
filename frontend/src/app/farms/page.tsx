@@ -1,62 +1,66 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { Plus, Sprout, MapPin, Loader2, Trash2, X, Edit2 } from "lucide-react"
+import { RequireAuth } from "@/components/RequireAuth"
+import { farmAPI } from "@/lib/api"
 import { useAuth } from "@/components/AuthProvider"
+import type { Farm } from "@/types"
+import {
+  Plus, Sprout, MapPin, Loader2, Trash2, X,
+  Edit2, AlertCircle, CheckCircle2, Mountain,
+} from "lucide-react"
 import { Button, Card } from "@/components/ui/Primitives"
-import { getAccessToken } from "@/lib/auth"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
+const CROP_OPTIONS = [
+  "Maíz", "Yuca", "Ñame", "Arroz", "Algodón",
+  "Sorgo", "Plátano", "Aguacate", "Cacao", "Café",
+  "Caña de azúcar", "Palma de aceite", "Otro",
+]
 
-interface Farm {
-  id: string
+const DEPARTMENTS = [
+  "Córdoba", "Antioquia", "Cundinamarca", "Bolívar", "Sucre",
+  "Cesar", "Magdalena", "Atlántico", "Tolima", "Huila",
+  "Valle del Cauca", "Cauca", "Nariño", "Meta", "Casanare",
+  "Santander", "Norte de Santander", "Boyacá", "Caldas", "Otro",
+]
+
+interface FormState {
   name: string
-  location: string
+  department: string
+  municipality: string
   crop_type: string
-  area_ha: number
-  owner_email: string
+  area_hectares: string
+  latitude: string
+  longitude: string
+  altitude_masl: string
 }
 
-async function apiFetch(path: string, init?: RequestInit) {
-  const token = await getAccessToken()
-  return fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers ?? {}),
-    },
-  })
+const EMPTY_FORM: FormState = {
+  name: "", department: "", municipality: "", crop_type: "",
+  area_hectares: "", latitude: "", longitude: "", altitude_masl: "",
 }
 
-export default function FarmsPage() {
-  const router = useRouter()
-  const { user, loading, planLimits, refreshPlanLimits } = useAuth()
-
+function FarmsContent() {
+  const { planLimits, refreshPlanLimits } = useAuth()
   const [farms, setFarms] = useState<Farm[]>([])
-  const [fetching, setFetching] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
 
-  const [form, setForm] = useState({ name: "", location: "", crop_type: "", area_ha: "", latitude: "", longitude: "" })
-
-  const loadFarms = useCallback(async () => {
-    setFetching(true)
-    try {
-      const res = await apiFetch("/api/v1/farms/")
-      if (res.ok) setFarms(await res.json())
-    } finally {
-      setFetching(false)
-    }
+  const load = useCallback(async () => {
+    setLoading(true)
+    try { setFarms(await farmAPI.list()) }
+    catch { setFarms([]) }
+    finally { setLoading(false) }
   }, [])
 
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login?redirectTo=/farms")
-    if (!loading && user) loadFarms()
-  }, [loading, user, router, loadFarms])
+  useEffect(() => { load() }, [load])
+
+  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,216 +70,258 @@ export default function FarmsPage() {
     const lat = parseFloat(form.latitude)
     const lon = parseFloat(form.longitude)
     if (isNaN(lat) || isNaN(lon)) {
-      setError("Ingresa coordenadas válidas de latitud y longitud.")
+      setError("Ingresa coordenadas válidas.")
       setSubmitting(false)
       return
     }
 
-    const res = await apiFetch("/api/v1/farms/", {
-      method: "POST",
-      body: JSON.stringify({
+    try {
+      await farmAPI.create({
         name: form.name,
         crop_type: form.crop_type,
         latitude: lat,
         longitude: lon,
-        area_hectares: form.area_ha ? parseFloat(form.area_ha) : null,
-        department: form.location,
-      }),
-    })
-
-    if (res.ok) {
+        area_hectares: form.area_hectares ? parseFloat(form.area_hectares) : null,
+        department: form.department,
+        municipality: form.municipality || null,
+        altitude_masl: form.altitude_masl ? parseFloat(form.altitude_masl) : null,
+      })
       setShowForm(false)
-      setForm({ name: "", location: "", crop_type: "", area_ha: "", latitude: "", longitude: "" })
-      await Promise.all([loadFarms(), refreshPlanLimits()])
-    } else {
-      const data = await res.json().catch(() => ({}))
-      if (res.status === 400) {
-        setError("Solo puedes registrar 1 finca por cuenta. Edita tu finca existente para cambiar el cultivo.")
+      setForm(EMPTY_FORM)
+      await Promise.all([load(), refreshPlanLimits()])
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al crear la finca"
+      if (msg.includes("400") || msg.toLowerCase().includes("limit")) {
+        setError("Solo puedes registrar 1 finca por cuenta.")
       } else {
-        setError(data?.detail || "Error al crear la finca")
+        setError(msg)
       }
       setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
-  const handleDelete = async (farmId: string) => {
-    setDeleteId(farmId)
-    const res = await apiFetch(`/api/v1/farms/${farmId}`, { method: "DELETE" })
-    if (res.ok) {
-      await Promise.all([loadFarms(), refreshPlanLimits()])
+  const handleDelete = async (id: string) => {
+    setDeleteId(id)
+    try {
+      const token = await import("@/lib/auth").then((m) => m.getAccessToken())
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
+      await fetch(`${API_BASE}/api/v1/farms/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      await Promise.all([load(), refreshPlanLimits()])
+    } finally {
+      setDeleteId(null)
     }
-    setDeleteId(null)
   }
 
   const atLimit = (planLimits?.farms.used ?? 0) >= (planLimits?.farms.limit ?? 1)
 
-  if (loading || fetching) {
-    return (
-      <div className="min-h-screen pt-28 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-surqo-green animate-spin" />
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-7 h-7 text-surqo-green animate-spin" />
+    </div>
+  )
 
   return (
-    <div className="min-h-screen pt-28 pb-20">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen pt-20 pb-16 bg-surqo-bg">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+        {/* ── HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter text-surqo-text mb-1">Mis Fincas</h1>
+            <div className="flex items-center gap-2 mb-1">
+              <Sprout className="w-4 h-4 text-surqo-green" />
+              <span className="text-xs font-bold tracking-[0.15em] uppercase text-surqo-green-bright">
+                Gestión de Fincas
+              </span>
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-surqo-text">Mis Fincas</h1>
             {planLimits && (
-              <p className="text-sm text-surqo-text-secondary font-medium">
+              <p className="text-sm text-surqo-text-secondary font-medium mt-0.5">
                 {planLimits.farms.used} de {planLimits.farms.limit} finca registrada
               </p>
             )}
           </div>
           {!atLimit && (
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button onClick={() => setShowForm(true)} className="gap-2 shrink-0">
+              <Plus className="w-4 h-4" />
               Nueva finca
             </Button>
           )}
         </div>
 
-        {/* Farm limit info */}
+        {/* ── LIMIT BANNER ── */}
         {atLimit && (
-          <div className="mb-6 flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-            <Edit2 className="w-5 h-5 text-blue-500 shrink-0" />
+          <div className="glass rounded-2xl border border-surqo-sky/20 p-4 flex items-center gap-3">
+            <Edit2 className="w-5 h-5 text-surqo-sky shrink-0" />
             <div>
-              <p className="text-sm font-bold text-blue-700">Finca registrada</p>
-              <p className="text-xs text-blue-500 mt-0.5">Cada cuenta tiene 1 finca. Edita tu finca para cambiar el cultivo u otros datos.</p>
+              <p className="text-sm font-bold text-surqo-text">Límite de fincas alcanzado</p>
+              <p className="text-xs text-surqo-text-muted font-medium mt-0.5">
+                El plan actual incluye 1 finca. Elimina la actual para registrar una nueva.
+              </p>
             </div>
           </div>
         )}
 
-        {/* Create form modal */}
+        {/* ── MODAL FORM ── */}
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <Card className="w-full max-w-md relative">
-              <button
-                onClick={() => { setShowForm(false); setError(null) }}
-                className="absolute right-4 top-4 text-surqo-text-muted hover:text-surqo-text transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <h2 className="text-xl font-black tracking-tight mb-6">Nueva Finca</h2>
+            <div className="glass w-full max-w-lg rounded-3xl border border-white/[0.10] shadow-2xl overflow-hidden">
+              <div className="px-6 py-5 border-b border-white/[0.07] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center text-surqo-green">
+                    <Sprout className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-lg font-black tracking-tight text-surqo-text">Registrar finca</h2>
+                </div>
+                <button onClick={() => { setShowForm(false); setError(null); setForm(EMPTY_FORM) }}
+                  className="p-1.5 rounded-lg text-surqo-text-muted hover:text-surqo-text hover:bg-white/[0.06] transition-all">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-              <form onSubmit={handleCreate} className="flex flex-col gap-4">
+              <form onSubmit={handleCreate} className="p-6 space-y-4">
+                {/* Name */}
                 <div>
-                  <label>Nombre de la finca</label>
-                  <input
-                    placeholder="Ej: Finca El Paraíso"
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    required
-                    className="w-full"
-                  />
+                  <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                    Nombre de la finca *
+                  </label>
+                  <input placeholder="Ej: Finca El Paraíso" value={form.name}
+                    onChange={set("name")} required className="w-full" />
                 </div>
-                <div>
-                  <label>Ubicación</label>
-                  <input
-                    placeholder="Ej: Montería, Córdoba"
-                    value={form.location}
-                    onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                    required
-                    className="w-full"
-                  />
-                </div>
+
+                {/* Department + Municipality */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label>Tipo de cultivo</label>
-                    <input
-                      placeholder="Ej: Maíz"
-                      value={form.crop_type}
-                      onChange={(e) => setForm((f) => ({ ...f, crop_type: e.target.value }))}
-                      className="w-full"
-                    />
+                    <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                      Departamento *
+                    </label>
+                    <select value={form.department} onChange={set("department")} required className="w-full">
+                      <option value="">Seleccionar…</option>
+                      {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </select>
                   </div>
                   <div>
-                    <label>Área (ha)</label>
-                    <input
-                      type="number"
-                      placeholder="0.0"
-                      min="0"
-                      step="0.1"
-                      value={form.area_ha}
-                      onChange={(e) => setForm((f) => ({ ...f, area_ha: e.target.value }))}
-                      className="w-full"
-                    />
+                    <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                      Municipio
+                    </label>
+                    <input placeholder="Ej: Montería" value={form.municipality} onChange={set("municipality")} className="w-full" />
                   </div>
                 </div>
+
+                {/* Crop + Area */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label>Latitud</label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="Ej: 8.7575"
-                      value={form.latitude}
-                      onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
-                      required
-                      className="w-full"
-                    />
+                    <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                      Cultivo principal
+                    </label>
+                    <select value={form.crop_type} onChange={set("crop_type")} className="w-full">
+                      <option value="">Seleccionar…</option>
+                      {CROP_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
                   </div>
                   <div>
-                    <label>Longitud</label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="Ej: -75.889"
-                      value={form.longitude}
-                      onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
-                      required
-                      className="w-full"
-                    />
+                    <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                      Área (ha)
+                    </label>
+                    <input type="number" placeholder="0.0" min="0" step="0.1"
+                      value={form.area_hectares} onChange={set("area_hectares")} className="w-full" />
                   </div>
+                </div>
+
+                {/* Lat + Lon */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                      Latitud *
+                    </label>
+                    <input type="number" step="any" placeholder="Ej: 8.7575"
+                      value={form.latitude} onChange={set("latitude")} required className="w-full" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                      Longitud *
+                    </label>
+                    <input type="number" step="any" placeholder="Ej: -75.889"
+                      value={form.longitude} onChange={set("longitude")} required className="w-full" />
+                  </div>
+                </div>
+
+                {/* Altitude (optional) */}
+                <div>
+                  <label className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-1.5 block">
+                    Altitud (msnm) — opcional
+                  </label>
+                  <input type="number" placeholder="Ej: 120" min="0" step="1"
+                    value={form.altitude_masl} onChange={set("altitude_masl")} className="w-full" />
                 </div>
 
                 {error && (
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                    {error}
-                  </p>
+                  <div className="flex items-start gap-2.5 bg-surqo-danger/10 border border-surqo-danger/20 rounded-xl px-3 py-2.5">
+                    <AlertCircle className="w-4 h-4 text-surqo-danger shrink-0 mt-0.5" />
+                    <p className="text-sm text-surqo-danger font-medium">{error}</p>
+                  </div>
                 )}
 
-                <div className="flex gap-3 mt-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => { setShowForm(false); setError(null) }}>
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" className="flex-1"
+                    onClick={() => { setShowForm(false); setError(null); setForm(EMPTY_FORM) }}>
                     Cancelar
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={submitting}>
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  <Button type="submit" className="flex-1 gap-2" disabled={submitting}>
+                    {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                     Registrar
                   </Button>
                 </div>
               </form>
-            </Card>
+            </div>
           </div>
         )}
 
-        {/* Farms grid */}
+        {/* ── FARMS GRID ── */}
         {farms.length === 0 ? (
-          <Card className="text-center py-16">
-            <Sprout className="w-12 h-12 text-surqo-text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-black text-surqo-text mb-2">Sin fincas registradas</h3>
-            <p className="text-sm text-surqo-text-secondary mb-6 font-medium">Agrega tu primera finca para empezar a monitorear tus cultivos.</p>
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+          <div className="glass rounded-2xl border border-dashed border-white/[0.10] py-20 flex flex-col items-center gap-5 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center">
+              <Sprout className="w-8 h-8 text-surqo-green" />
+            </div>
+            <div>
+              <p className="font-bold text-surqo-text text-lg">Sin fincas registradas</p>
+              <p className="text-sm text-surqo-text-secondary font-medium mt-1">
+                Registra tu primera finca para activar el monitoreo IoT y los análisis con IA.
+              </p>
+            </div>
+            <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
               Registrar primera finca
             </Button>
-          </Card>
+          </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {farms.map((farm) => (
-              <Card key={farm.id} className="group hover:border-surqo-green/20 transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center">
-                    <Sprout className="w-5 h-5 text-surqo-green" />
+              <div key={farm.id}
+                className="glass rounded-2xl border border-white/[0.07] hover:border-surqo-green/20 transition-all duration-200 group overflow-hidden">
+
+                {/* Card header */}
+                <div className="px-5 pt-5 pb-4 border-b border-white/[0.06] flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center shrink-0">
+                      <Sprout className="w-5 h-5 text-surqo-green" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-surqo-text tracking-tight truncate">{farm.name}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3 text-surqo-text-muted shrink-0" />
+                        <p className="text-xs text-surqo-text-muted font-medium truncate">
+                          {farm.municipality ? `${farm.municipality}, ` : ""}{farm.department}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <button
                     onClick={() => handleDelete(farm.id)}
                     disabled={deleteId === farm.id}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-surqo-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-surqo-text-muted hover:text-surqo-danger hover:bg-surqo-danger/10 transition-all shrink-0"
                   >
                     {deleteId === farm.id
                       ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -283,30 +329,48 @@ export default function FarmsPage() {
                   </button>
                 </div>
 
-                <h3 className="text-lg font-black text-surqo-text mb-1 tracking-tight">{farm.name}</h3>
-
-                <div className="flex items-center gap-1.5 text-xs text-surqo-text-muted mb-3">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {farm.location}
-                </div>
-
-                <div className="flex gap-2 flex-wrap">
+                {/* Card body */}
+                <div className="px-5 py-4 flex flex-wrap gap-2">
                   {farm.crop_type && (
-                    <span className="px-2.5 py-1 rounded-lg bg-surqo-green/10 text-surqo-green-bright text-xs font-bold border border-surqo-green/20">
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg bg-surqo-green/10 text-surqo-green-bright border border-surqo-green/20">
                       {farm.crop_type}
                     </span>
                   )}
-                  {farm.area_ha > 0 && (
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 text-surqo-text-secondary text-xs font-semibold border border-white/10">
-                      {farm.area_ha} ha
+                  {farm.area_hectares != null && farm.area_hectares > 0 && (
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg bg-white/[0.04] text-surqo-text-secondary border border-white/[0.08]">
+                      {farm.area_hectares} ha
                     </span>
                   )}
+                  {farm.altitude_masl != null && (
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg bg-white/[0.04] text-surqo-text-muted border border-white/[0.06] flex items-center gap-1">
+                      <Mountain className="w-3 h-3" />
+                      {farm.altitude_masl} msnm
+                    </span>
+                  )}
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg border ${
+                    farm.is_active
+                      ? "bg-surqo-green/10 text-surqo-green border-surqo-green/20"
+                      : "bg-white/[0.04] text-surqo-text-muted border-white/[0.06]"
+                  }`}>
+                    {farm.is_active ? "Activa" : "Inactiva"}
+                  </span>
                 </div>
-              </Card>
+
+                {/* Coords footer */}
+                <div className="px-5 pb-4">
+                  <p className="text-[11px] text-surqo-text-muted font-mono">
+                    {farm.latitude.toFixed(4)}, {farm.longitude.toFixed(4)}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
     </div>
   )
+}
+
+export default function FarmsPage() {
+  return <RequireAuth><FarmsContent /></RequireAuth>
 }
