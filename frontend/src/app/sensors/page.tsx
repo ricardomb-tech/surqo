@@ -1,12 +1,47 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/Primitives"
 import { LiveFeed } from "@/components/LiveFeed"
-import { Cpu, Wifi, Terminal, Zap, Info, Loader2 } from "lucide-react"
 import { RequireAuth } from "@/components/RequireAuth"
 import { farmAPI } from "@/lib/api"
 import type { Farm } from "@/types"
+import {
+  Cpu, Wifi, Terminal, Loader2, Copy, Check,
+  AlertCircle, CheckCircle2, ArrowRight,
+} from "lucide-react"
+import { Button } from "@/components/ui/Primitives"
+
+const STEPS = [
+  {
+    n: "01",
+    title: "Configura config.h",
+    desc: "WiFi SSID + password, host MQTT de HiveMQ Cloud y el Farm ID de tu finca.",
+  },
+  {
+    n: "02",
+    title: "Flashea el firmware",
+    desc: "PlatformIO: pio run --target upload desde /firmware/surqo_node",
+  },
+  {
+    n: "03",
+    title: "Verifica la conexión",
+    desc: "Abre el Serial Monitor a 115200 baud. Deberías ver ✅ Publicado por MQTT",
+  },
+]
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button onClick={copy} className="p-1 rounded text-surqo-text-muted hover:text-surqo-green transition-colors">
+      {copied ? <Check className="w-3.5 h-3.5 text-surqo-green" /> : <Copy className="w-3.5 h-3.5" />}
+    </button>
+  )
+}
 
 function SensorsContent() {
   const [farm, setFarm] = useState<Farm | null>(null)
@@ -14,139 +49,170 @@ function SensorsContent() {
 
   useEffect(() => {
     farmAPI.list()
-      .then((farms) => { if (farms.length > 0) setFarm(farms[0]) })
+      .then((f) => { if (f.length) setFarm(f[0]) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-surqo-green animate-spin" />
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-7 h-7 text-surqo-green animate-spin" />
+    </div>
+  )
+
+  const farmId = farm?.id ?? "tu-farm-uuid"
+  const simCmd = `python simulator.py --farm-id ${farmId} --interval 30 --mode mqtt`
 
   return (
-    <div className="min-h-screen pt-28 pb-20">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen pt-20 pb-16 bg-surqo-bg">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
 
-        <div className="text-center mb-12 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surqo-green/10 border border-surqo-green/20 text-surqo-green-bright text-xs font-bold uppercase tracking-widest">
-            <Wifi className="w-3 h-3" />
-            Infraestructura IoT
+        {/* ── HEADER ── */}
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Wifi className="w-4 h-4 text-surqo-green" />
+            <span className="text-xs font-bold tracking-[0.15em] uppercase text-surqo-green-bright">
+              Infraestructura IoT
+            </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-gradient leading-tight">
-            Monitoreo de Hardware
-          </h1>
-          <p className="text-surqo-text-secondary max-w-2xl mx-auto font-medium">
-            Stream de telemetría en tiempo real vía WebSockets seguros (WSS).
+          <h1 className="text-3xl font-black tracking-tight text-surqo-text">Sensores y Nodos</h1>
+          <p className="text-sm text-surqo-text-secondary font-medium mt-0.5">
+            Telemetría en tiempo real vía WebSocket · MQTT TLS 8883
           </p>
-          {farm && (
-            <p className="text-sm text-surqo-green-bright font-bold">
-              Finca: {farm.name}
-            </p>
+        </div>
+
+        {/* ── STATUS CARD ── */}
+        <div className={`glass rounded-2xl border p-5 flex items-center gap-4 ${
+          farm ? "border-surqo-green/20" : "border-dashed border-white/[0.10]"
+        }`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+            farm ? "bg-surqo-green/10 text-surqo-green" : "bg-white/[0.04] text-surqo-text-muted"
+          }`}>
+            <Cpu className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            {farm ? (
+              <>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <CheckCircle2 className="w-4 h-4 text-surqo-green" />
+                  <p className="font-bold text-surqo-text text-sm">{farm.name}</p>
+                  <span className="text-[10px] font-bold text-surqo-green-bright bg-surqo-green/10 border border-surqo-green/20 px-2 py-0.5 rounded">
+                    Finca activa
+                  </span>
+                </div>
+                <p className="text-xs text-surqo-text-muted font-mono">{farm.crop_type} · ID: {farm.id.slice(0, 16)}…</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <AlertCircle className="w-4 h-4 text-surqo-text-muted" />
+                  <p className="font-bold text-surqo-text text-sm">Sin finca registrada</p>
+                </div>
+                <p className="text-xs text-surqo-text-muted">Registra tu finca primero para activar el stream de datos</p>
+              </>
+            )}
+          </div>
+          {!farm && (
+            <Button size="sm" className="shrink-0 gap-1.5 h-9" onClick={() => (window.location.href = "/farms")}>
+              <ArrowRight className="w-3.5 h-3.5" />
+              Registrar finca
+            </Button>
           )}
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-8">
+        {/* ── LIVE FEED + GUIDE ── */}
+        <div className="grid lg:grid-cols-5 gap-6">
 
-          <div className="lg:col-span-7 space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-surqo-green/10 flex items-center justify-center text-surqo-green">
-                  <Cpu className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black tracking-tight">Conexión de Nodo</h3>
-                  <p className="text-[10px] text-surqo-text-muted font-bold uppercase tracking-widest">
-                    {farm ? "Finca detectada" : "Sin finca registrada"}
-                  </p>
-                </div>
+          {/* Live Feed — 3/5 */}
+          <div className="lg:col-span-3 glass rounded-2xl border border-white/[0.07] overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-surqo-green/10 flex items-center justify-center text-surqo-green">
+                <Wifi className="w-4 h-4" />
               </div>
-
-              {farm ? (
-                <div className="text-sm text-surqo-text-secondary font-medium bg-surqo-green/5 border border-surqo-green/20 rounded-xl px-4 py-3">
-                  Conectado a: <span className="font-bold text-surqo-text">{farm.name}</span>
-                  <span className="text-surqo-text-muted ml-2">· ID: {farm.id.slice(0, 8)}…</span>
-                </div>
-              ) : (
-                <p className="text-sm text-surqo-text-muted">
-                  No tienes fincas registradas. Ve a <a href="/onboarding" className="text-surqo-green font-bold underline">Onboarding</a> para comenzar.
+              <div>
+                <p className="font-bold text-surqo-text text-sm">Live Feed</p>
+                <p className="text-[11px] text-surqo-text-muted font-bold uppercase tracking-widest">
+                  Nodo ESP32 · WebSocket
                 </p>
-              )}
-            </Card>
-
-            {farm ? (
-              <div className="animate-fade-up">
-                <LiveFeed farmId={farm.id} />
               </div>
-            ) : (
-              <Card className="p-12 text-center bg-black/5 border-dashed">
-                <div className="w-16 h-16 rounded-full bg-surqo-text-muted/10 flex items-center justify-center mx-auto mb-4">
-                  <Wifi className="w-8 h-8 text-surqo-text-muted" />
-                </div>
-                <h4 className="text-lg font-bold mb-1">Sin Conexión Activa</h4>
-                <p className="text-sm text-surqo-text-secondary font-medium">
-                  Registra una finca para activar el stream de datos.
-                </p>
-              </Card>
-            )}
+            </div>
+            <div className="p-4">
+              {farm
+                ? <LiveFeed farmId={farm.id} />
+                : (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                      <Wifi className="w-6 h-6 text-surqo-text-muted opacity-40" />
+                    </div>
+                    <p className="text-sm text-surqo-text-muted font-medium">Sin finca — registra una para activar el stream</p>
+                  </div>
+                )
+              }
+            </div>
           </div>
 
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="p-6 bg-surqo-green/[0.02]">
-              <div className="flex items-center gap-3 mb-6">
-                <Terminal className="w-5 h-5 text-surqo-green" />
-                <h3 className="font-black tracking-tight">Guía de Despliegue</h3>
-              </div>
+          {/* Guide — 2/5 */}
+          <div className="lg:col-span-2 space-y-4">
 
-              <div className="space-y-6">
-                {[
-                  { step: "01", text: "Configura WiFi y MQTT en config.h", desc: "Usa credenciales de HiveMQ Cloud" },
-                  { step: "02", text: "Compila y flashea el firmware", desc: "Directorio: /firmware/surqo_node" },
-                  { step: "03", text: "Verifica el handshake TLS", desc: "Puerto 8883 (MQTTS)" },
-                ].map((item) => (
-                  <div key={item.step} className="flex gap-4">
-                    <span className="text-xl font-black text-surqo-green/20 tabular-nums">{item.step}</span>
+            {/* Deployment steps */}
+            <div className="glass rounded-2xl border border-white/[0.07] overflow-hidden">
+              <div className="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3">
+                <Terminal className="w-4 h-4 text-surqo-green" />
+                <p className="font-bold text-surqo-text text-sm">Guía de despliegue</p>
+              </div>
+              <div className="p-5 space-y-5">
+                {STEPS.map((s) => (
+                  <div key={s.n} className="flex gap-4">
+                    <span className="text-2xl font-black text-surqo-green/15 tabular-nums leading-none shrink-0 mt-0.5">
+                      {s.n}
+                    </span>
                     <div>
-                      <p className="text-sm font-bold text-surqo-text mb-0.5">{item.text}</p>
-                      <p className="text-[11px] text-surqo-text-muted font-medium">{item.desc}</p>
+                      <p className="text-sm font-bold text-surqo-text">{s.title}</p>
+                      <p className="text-xs text-surqo-text-muted font-medium mt-0.5 leading-relaxed">{s.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
 
-              <div className="mt-8 pt-6 border-t border-black/5">
-                <div className="p-4 rounded-xl bg-surqo-sky/10 border border-surqo-sky/20 flex items-start gap-3">
-                  <Info className="w-4 h-4 text-surqo-sky mt-0.5" />
-                  <p className="text-[11px] text-surqo-sky font-bold leading-relaxed">
-                    ¿No tienes hardware? Ejecuta el simulador:
-                    <code className="block mt-1 bg-surqo-sky/10 p-1.5 rounded font-mono text-[10px]">
-                      python simulator.py --farm-id {farm?.id || "UUID"}
-                    </code>
-                  </p>
+            {/* Simulator command */}
+            <div className="glass rounded-2xl border border-surqo-sky/20 overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-surqo-sky/10 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-surqo-sky" />
+                <p className="text-xs font-bold text-surqo-sky uppercase tracking-widest">Sin hardware</p>
+              </div>
+              <div className="p-5">
+                <p className="text-xs text-surqo-text-secondary font-medium mb-3">
+                  Usa el simulador para generar datos de prueba:
+                </p>
+                <div className="bg-black/30 rounded-xl p-3 flex items-start gap-2 border border-white/[0.06]">
+                  <code className="text-[11px] text-surqo-green font-mono flex-1 break-all leading-relaxed">
+                    {simCmd}
+                  </code>
+                  <CopyButton text={simCmd} />
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-6 group cursor-pointer hover:border-surqo-green/30 transition-all">
-              <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-surqo-green" />
-                <span className="font-bold text-sm tracking-tight">Documentación Técnica</span>
+            {/* Farm ID */}
+            {farm && (
+              <div className="glass rounded-2xl border border-white/[0.07] p-5">
+                <p className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest mb-2">Farm ID para config.h</p>
+                <div className="bg-black/30 rounded-xl p-3 flex items-center gap-2 border border-white/[0.06]">
+                  <code className="text-[11px] text-surqo-text font-mono flex-1 truncate">{farm.id}</code>
+                  <CopyButton text={farm.id} />
+                </div>
               </div>
-            </Card>
+            )}
+
           </div>
         </div>
+
       </div>
     </div>
   )
 }
 
 export default function SensorsPage() {
-  return (
-    <RequireAuth>
-      <SensorsContent />
-    </RequireAuth>
-  )
+  return <RequireAuth><SensorsContent /></RequireAuth>
 }
