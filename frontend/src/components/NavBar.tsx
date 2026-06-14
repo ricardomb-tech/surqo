@@ -61,7 +61,7 @@ export function NavBar() {
   return (
     <>
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/[0.06] bg-surqo-bg/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between gap-4">
 
           {/* Logo */}
           <Link
@@ -82,7 +82,7 @@ export function NavBar() {
                     key={href}
                     href={href}
                     className={cn(
-                      "relative px-3 py-2 text-sm font-semibold transition-colors duration-200",
+                      "relative px-3 py-2 text-base font-semibold transition-colors duration-200",
                       active
                         ? "text-surqo-text"
                         : "text-surqo-text-secondary hover:text-surqo-text"
@@ -106,7 +106,7 @@ export function NavBar() {
                   key={href}
                   href={href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200",
+                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-base font-semibold transition-all duration-200",
                     pathname.startsWith(href)
                       ? "bg-surqo-green/10 text-surqo-green border border-surqo-green/20"
                       : "text-surqo-text-secondary hover:text-surqo-text hover:bg-white/[0.05]"
