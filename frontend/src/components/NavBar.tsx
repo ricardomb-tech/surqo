@@ -68,8 +68,8 @@ export function NavBar() {
             href={user ? "/dashboard" : "/"}
             className="flex items-center gap-2 shrink-0 group"
           >
-            <SurqoIcon className="w-6 h-6 text-surqo-green group-hover:scale-110 transition-transform" />
-            <span className="text-lg font-black tracking-tighter text-gradient">SURQO</span>
+            <SurqoIcon className="w-10 h-10 text-surqo-green group-hover:scale-110 transition-transform" />
+            <span className="text-2xl font-black tracking-tighter text-gradient">SURQO</span>
           </Link>
 
           {/* ── PUBLIC center nav ── */}

@@ -31,8 +31,8 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <SurqoIcon className="w-6 h-6 text-surqo-green" />
-              <span className="text-lg font-black tracking-tighter text-gradient">SURQO</span>
+              <SurqoIcon className="w-10 h-10 text-surqo-green" />
+              <span className="text-2xl font-black tracking-tighter text-gradient">SURQO</span>
             </Link>
             <p className="text-sm text-surqo-text-muted font-medium leading-relaxed mb-5">
               Inteligencia agroclimática para el campo colombiano. IoT + IA al servicio del agricultor.

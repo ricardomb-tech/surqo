@@ -144,8 +144,8 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-surqo-bg">
       <div className="w-full max-w-sm text-center">
         <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8">
-          <SurqoIcon className="w-6 h-6 text-surqo-green" />
-          <span className="text-xl font-black tracking-tighter text-gradient">SURQO</span>
+          <SurqoIcon className="w-10 h-10 text-surqo-green" />
+          <span className="text-2xl font-black tracking-tighter text-gradient">SURQO</span>
         </Link>
         <div className="glass rounded-3xl border border-surqo-green/20 p-8 shadow-2xl">
           <div className="w-14 h-14 rounded-2xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center mx-auto mb-5">
@@ -180,8 +180,8 @@ export default function RegisterPage() {
         {/* Brand */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-6">
-            <SurqoIcon className="w-6 h-6 text-surqo-green" />
-            <span className="text-xl font-black tracking-tighter text-gradient">SURQO</span>
+            <SurqoIcon className="w-10 h-10 text-surqo-green" />
+            <span className="text-2xl font-black tracking-tighter text-gradient">SURQO</span>
           </Link>
           <h1 className="text-2xl font-black tracking-tight text-surqo-text">Crea tu cuenta</h1>
           <p className="text-sm text-surqo-text-secondary font-medium mt-1">

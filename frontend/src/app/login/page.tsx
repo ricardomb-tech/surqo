@@ -54,8 +54,8 @@ function LoginForm() {
         {/* Brand */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-7 group">
-            <SurqoIcon className="w-6 h-6 text-surqo-green" />
-            <span className="text-xl font-black tracking-tighter text-gradient">SURQO</span>
+            <SurqoIcon className="w-10 h-10 text-surqo-green" />
+            <span className="text-2xl font-black tracking-tighter text-gradient">SURQO</span>
           </Link>
           <h1 className="text-2xl font-black tracking-tight text-surqo-text">Bienvenido de vuelta</h1>
           <p className="text-sm text-surqo-text-secondary font-medium mt-1">Ingresa para continuar al dashboard</p>
