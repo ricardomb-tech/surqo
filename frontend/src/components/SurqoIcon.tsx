@@ -1,54 +1,25 @@
 export function SurqoIcon({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="40 18 600 548"
       xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 559 497"
       className={className}
       aria-label="Surqo"
     >
-      {/* ── ONDAS / CAMPO — 4 arcos cóncavos que forman el surco ── */}
-      <path d="M 58,338 Q 208,720 362,302" fill="none" stroke="currentColor" strokeWidth="20" strokeLinecap="round"/>
-      <path d="M 78,356 Q 208,680 342,320" fill="none" stroke="currentColor" strokeWidth="20" strokeLinecap="round"/>
-      <path d="M 98,374 Q 208,640 322,338" fill="none" stroke="currentColor" strokeWidth="20" strokeLinecap="round"/>
-      <path d="M 118,392 Q 208,600 302,356" fill="none" stroke="currentColor" strokeWidth="20" strokeLinecap="round"/>
-
-      {/* ── MONTAÑA con barras de estadística recortadas (evenodd) ── */}
-      <path
-        fillRule="evenodd"
+      <g
+        transform="translate(0,497) scale(0.1,-0.1)"
         fill="currentColor"
-        d="M 150,390 L 293,126 L 384,390 Z
-           M 200,390 L 200,332 L 228,332 L 228,390 Z
-           M 236,390 L 236,300 L 264,300 L 264,390 Z
-           M 272,390 L 272,268 L 300,268 L 300,390 Z"
-      />
-
-      {/* ── V / PALOMITA ASCENDENTE — estadísticas en crecimiento ── */}
-      <path
-        d="M 384,390 L 434,454 L 537,108"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="46"
-        strokeLinecap="butt"
-        strokeLinejoin="miter"
-      />
-
-      {/* ── GUIÓN HORIZONTAL derecho ── */}
-      <rect x="486" y="326" width="98" height="42" rx="5" fill="currentColor"/>
-
-      {/* ── TALLO ── */}
-      <path d="M 537,108 L 537,72" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round"/>
-
-      {/* ── 5 HOJAS ── */}
-      {/* Centro */}
-      <path d="M 537,72 C 528,58 528,38 537,28 C 546,38 546,58 537,72 Z" fill="currentColor"/>
-      {/* Izquierda media */}
-      <path d="M 528,79 C 508,67 496,45 504,35 C 518,31 530,72 528,79 Z" fill="currentColor"/>
-      {/* Derecha media */}
-      <path d="M 546,79 C 566,67 578,45 570,35 C 556,31 544,72 546,79 Z" fill="currentColor"/>
-      {/* Izquierda exterior */}
-      <path d="M 518,86 C 494,77 480,56 490,45 C 502,38 520,80 518,86 Z" fill="currentColor"/>
-      {/* Derecha exterior */}
-      <path d="M 556,86 C 580,77 594,56 584,45 C 572,38 554,80 556,86 Z" fill="currentColor"/>
+        stroke="none"
+      >
+        <path d="M4307 4738 c-105 -214 -148 -390 -148 -608 0 -152 21 -283 67 -420 31 -92 131 -300 144 -300 15 0 116 214 149 317 44 134 61 249 61 403 0 155 -17 264 -61 400 -32 100 -135 320 -148 320 -5 0 -33 -51 -64 -112z"/>
+        <path d="M3350 3845 c0 -78 51 -267 98 -360 108 -216 285 -361 544 -445 121 -39 129 -39 122 3 -45 269 -107 415 -237 553 -122 131 -277 217 -489 273 l-38 9 0 -33z"/>
+        <path d="M5255 3836 c-163 -47 -275 -103 -379 -190 -120 -99 -221 -263 -270 -438 -29 -101 -43 -208 -28 -208 5 0 49 11 97 25 309 90 511 272 611 550 28 78 64 235 64 276 0 12 -2 11 -95 -15z"/>
+        <path d="M3001 2762 c-91 -218 -194 -466 -229 -549 l-64 -153 -282 0 -282 0 -119 -307 c-65 -170 -123 -320 -129 -335 -6 -16 -18 -28 -27 -28 -9 0 -82 13 -162 30 -277 56 -617 100 -927 119 -240 16 -680 25 -680 15 0 -5 29 -49 64 -98 l64 -89 219 2 c557 5 1122 -78 1661 -245 488 -151 967 -396 1316 -674 l75 -60 126 51 c76 32 125 57 125 66 0 7 92 253 204 546 112 293 286 746 386 1007 100 261 199 520 221 576 21 55 39 103 39 107 0 4 -101 7 -224 7 -167 0 -226 -3 -233 -12 -10 -14 -34 -75 -163 -418 -161 -425 -222 -585 -230 -600 -7 -12 -11 -8 -20 15 -11 31 -60 156 -173 445 -35 91 -136 348 -223 573 -87 224 -161 407 -164 407 -3 0 -79 -179 -169 -398z m397 -590 c10 -7 12 -111 10 -488 l-3 -479 -130 0 -130 0 -3 475 c-1 261 0 481 3 488 5 14 231 18 253 4z m-380 -569 l-3 -398 -135 0 -135 0 -3 398 -2 397 140 0 140 0 -2 -397z m-400 -90 l-3 -308 -120 0 -120 0 -3 308 -2 307 125 0 125 0 -2 -307z"/>
+        <path d="M4465 1918 c-42 -106 -80 -199 -82 -205 -4 -10 76 -13 381 -13 l386 0 0 205 0 205 -303 0 -304 0 -78 -192z"/>
+        <path d="M472 1229 c-79 -4 -146 -10 -149 -12 -2 -3 31 -47 74 -97 l78 -93 216 2 c873 8 1656 -243 2250 -721 l107 -85 136 30 c75 17 136 34 136 38 0 12 -101 105 -185 169 -181 141 -374 260 -602 374 -614 306 -1296 437 -2061 395z"/>
+        <path d="M584 942 c-7 -4 13 -29 53 -64 l64 -58 148 0 c638 0 1240 -208 1690 -585 l102 -85 92 16 c51 9 96 20 100 24 27 24 -260 238 -473 353 -402 217 -957 367 -1450 391 -271 14 -316 15 -326 8z"/>
+        <path d="M880 661 c0 -25 180 -149 320 -220 181 -93 373 -162 612 -220 202 -50 532 -101 650 -101 l42 0 -83 61 c-414 304 -953 489 -1423 489 -66 0 -118 -4 -118 -9z"/>
+      </g>
     </svg>
   )
 }
