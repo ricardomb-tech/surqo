@@ -30,6 +30,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ["var(--font-outfit)", "var(--font-inter)", "system-ui", "sans-serif"],
+        archivo: ["var(--font-archivo)", "Archivo", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },
       animation: {
