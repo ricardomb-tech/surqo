@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy import select
 
 from app.config import settings
-from app.dependencies import CurrentUser, DBSession, PaidUser
+from app.dependencies import CurrentUser, DBSession
 from app.models.analysis import Analysis
 from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
