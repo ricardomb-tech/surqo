@@ -65,16 +65,18 @@ async def test_get_latest_returns_most_recent(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_timeseries_empty(client: AsyncClient) -> None:
-    farm_id = str(uuid.uuid4())
+async def test_timeseries_empty(client: AsyncClient, sample_farm_data: dict) -> None:
+    farm_resp = await client.post("/api/v1/farms/", json=sample_farm_data)
+    farm_id = farm_resp.json()["id"]
     resp = await client.get(f"/api/v1/sensors/timeseries/{farm_id}")
     assert resp.status_code == 200
     assert resp.json() == []
 
 
 @pytest.mark.asyncio
-async def test_timeseries_invalid_metric(client: AsyncClient) -> None:
-    farm_id = str(uuid.uuid4())
+async def test_timeseries_invalid_metric(client: AsyncClient, sample_farm_data: dict) -> None:
+    farm_resp = await client.post("/api/v1/farms/", json=sample_farm_data)
+    farm_id = farm_resp.json()["id"]
     resp = await client.get(f"/api/v1/sensors/timeseries/{farm_id}?metric=invalid_metric")
     assert resp.status_code == 400
 
@@ -104,8 +106,9 @@ async def test_timeseries_with_farm_data(client: AsyncClient, sample_farm_data: 
 
 
 @pytest.mark.asyncio
-async def test_stats_no_data(client: AsyncClient) -> None:
-    farm_id = str(uuid.uuid4())
+async def test_stats_no_data(client: AsyncClient, sample_farm_data: dict) -> None:
+    farm_resp = await client.post("/api/v1/farms/", json=sample_farm_data)
+    farm_id = farm_resp.json()["id"]
     resp = await client.get(f"/api/v1/sensors/stats/{farm_id}")
     assert resp.status_code == 200
     assert "error" in resp.json()

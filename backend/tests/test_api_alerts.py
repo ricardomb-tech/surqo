@@ -29,6 +29,18 @@ async def _create_alert(db: AsyncSession, **kwargs) -> Alert:
     return alert
 
 
+async def _create_user_farm(client: AsyncClient) -> uuid.UUID:
+    """Helper: create a farm owned by the mock test user via the API."""
+    resp = await client.post("/api/v1/farms/", json={
+        "name": "Finca Test",
+        "latitude": 8.7575,
+        "longitude": -75.8891,
+        "crop_type": "maíz",
+        "department": "Córdoba",
+    })
+    return uuid.UUID(resp.json()["id"])
+
+
 # ---------------------------------------------------------------------------
 # GET /active
 # ---------------------------------------------------------------------------
@@ -45,7 +57,8 @@ async def test_get_active_alerts_empty(client: AsyncClient) -> None:
 async def test_get_active_alerts_returns_unresolved(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    await _create_alert(db_session)
+    farm_id = await _create_user_farm(client)
+    await _create_alert(db_session, farm_id=farm_id)
     resp = await client.get("/api/v1/alerts/active")
     assert resp.status_code == 200
     alerts = resp.json()
@@ -87,8 +100,9 @@ async def test_get_active_alerts_filtered_by_farm(
 
 @pytest.mark.asyncio
 async def test_get_alert_history(client: AsyncClient, db_session: AsyncSession) -> None:
-    await _create_alert(db_session, is_resolved=True)
-    await _create_alert(db_session, is_resolved=False)
+    farm_id = await _create_user_farm(client)
+    await _create_alert(db_session, farm_id=farm_id, is_resolved=True)
+    await _create_alert(db_session, farm_id=farm_id, is_resolved=False)
 
     resp = await client.get("/api/v1/alerts/history")
     assert resp.status_code == 200
@@ -97,8 +111,9 @@ async def test_get_alert_history(client: AsyncClient, db_session: AsyncSession) 
 
 @pytest.mark.asyncio
 async def test_get_alert_history_limit(client: AsyncClient, db_session: AsyncSession) -> None:
+    farm_id = await _create_user_farm(client)
     for i in range(5):
-        await _create_alert(db_session, title=f"Alerta {i}")
+        await _create_alert(db_session, farm_id=farm_id, title=f"Alerta {i}")
 
     resp = await client.get("/api/v1/alerts/history?limit=3")
     assert resp.status_code == 200

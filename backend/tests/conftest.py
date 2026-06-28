@@ -12,7 +12,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base, get_db
-from app.dependencies import get_current_user, get_current_user_optional
+from app.dependencies import get_current_user, get_current_user_optional, get_paid_user
 from app.main import app
 from app.models.alert import Alert
 from app.models.analysis import Analysis
@@ -69,6 +69,7 @@ async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
 app.dependency_overrides[get_db] = _override_get_db
 app.dependency_overrides[get_current_user] = _fake_user
 app.dependency_overrides[get_current_user_optional] = _fake_user
+app.dependency_overrides[get_paid_user] = _fake_user
 
 # ---------------------------------------------------------------------------
 # Session-scoped: create tables + seed test user once
