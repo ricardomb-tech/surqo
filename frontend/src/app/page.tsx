@@ -45,15 +45,16 @@ export default function Home() {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         {/* Background photo — color fallback mientras carga */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
             src={PHOTO_HERO}
             alt="Campo colombiano visto desde el aire"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center"
-            style={{ transition: "opacity 0.5s ease" }}
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAeEAABBAMBAQAAAAAAAAAAAAABAAIDERIhMUFR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKlhL1H1DjRIpKISmNz0tzSWAA75wMfVFFAH/9k="
+            className="object-cover object-center transition-opacity duration-500"
           />
           {/* subtle gradient only on left so text is readable */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 to-transparent" />

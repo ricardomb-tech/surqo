@@ -63,14 +63,16 @@ export default function ComoFuncionaPage() {
       {/* ── HERO ── */}
       <section className="relative h-screen flex flex-col justify-end overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         {/* Imagen de fondo */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
             src="/hero-bg3.jpg"
             alt="Campo de trigo al atardecer"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABQQG/8QAHhAAAgICAwEBAAAAAAAAAAAAAQIDBAAREiFB/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJVj9SxsGlJFOSCOM43MvJxz7D9dFa0Stw7RcRSQIFmkUqm4jLEDB+igCig//9k="
+            className="object-cover object-center transition-opacity duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
         </div>

@@ -13,14 +13,16 @@ export default function SolucionesPage() {
       {/* ── HERO ── */}
       <section className="relative h-screen flex items-end overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         {/* Imagen de fondo */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
-            src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=85"
-            alt="Tractor en campo colombiano"
+            src="/campo-surqo.jpg"
+            alt="Campo colombiano"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoH BwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU FBQUFBQUFBQUFBT/wAARCAAIABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAA AAAABgUH/8QAIhAAAQQCAgMBAAAAAAAAAAAAAQIDBAUREiExQVH/xAAUAQEAAAAA AAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8A pui7MuNnVMNJkOS3HFBtllBWtZPYAAkk/wBHH60tEGTHiqjFbLLSUBxKT6lWBg kHuM4GOD4oopP/2Q=="
+            className="object-cover object-center transition-opacity duration-500"
           />
           {/* Gradiente oscuro de abajo hacia arriba para legibilidad del texto */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
@@ -52,13 +54,16 @@ export default function SolucionesPage() {
       {/* ── CTA ── */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         {/* Imagen aérea de cultivos */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
             src="/glavo-aerial-view-2830059.jpg"
             alt="Vista aérea de cultivo de maíz"
             fill
+            priority
             sizes="100vw"
-            className="object-cover object-center"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUH/8QAHhAAAgIDAQEBAAAAAAAAAAAAAQIDBBEhMUFR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJtjWI6ZweFt4sKLMiRlDdGWFgHAA5z/AFF7mIW+lNLfaMHXqXqQO/uaKKAP/9k="
+            className="object-cover object-center transition-opacity duration-500"
           />
         </div>
 

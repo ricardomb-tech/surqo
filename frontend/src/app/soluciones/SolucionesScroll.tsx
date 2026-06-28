@@ -206,7 +206,9 @@ export function SolucionesScroll() {
             alt="Agricultor colombiano"
             fill
             sizes="100vw"
-            className="object-cover object-center"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAeEAABBAMBAQAAAAAAAAAAAAABAAIDERIhMUFR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKlhL1H1DjRIpKISmNz0tzSWAA75wMfVFFAH/9k="
+            className="object-cover object-center transition-opacity duration-500"
           />
           <div className="absolute inset-0 bg-black/45" />
         </div>
