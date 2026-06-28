@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { getAccessToken } from "@/lib/auth"
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "wss://surqo-api.fly.dev"
+const WS_BASE = (process.env.NEXT_PUBLIC_WS_URL || "wss://surqo-api.fly.dev").replace(/^﻿/, "").trim()
 
 export function useWebSocket<T = unknown>(farmId: string | null) {
   const [data, setData] = useState<T | null>(null)

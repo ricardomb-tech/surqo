@@ -1,7 +1,7 @@
 import type { Analysis, Alert, Farm, KPIs, SensorReading, TimeseriesPoint } from "@/types"
 import { getAccessToken } from "@/lib/auth"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev").replace(/^﻿/, "").trim()
 
 async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
   const token = await getAccessToken()

@@ -54,7 +54,7 @@ export default function FarmsPage() {
     setDeleteId(id)
     try {
       const token = await import("@/lib/auth").then((m) => m.getAccessToken())
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
+      const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev").replace(/^﻿/, "").trim()
       await fetch(`${API_BASE}/api/v1/farms/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
       await Promise.all([load(), refreshPlanLimits()])
     } finally { setDeleteId(null) }
