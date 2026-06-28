@@ -76,6 +76,9 @@ export function NavBar() {
   // Light pill mode = scrolled o sin hero oscuro
   const isLight = !hasDarkHero || scrolled
 
+  // App pages use AppSidebar instead
+  if (showAppNav) return null
+
   return (
     <>
       <nav
