@@ -14,8 +14,8 @@ export default function SolucionesPage() {
       <section className="relative h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
-            src="/campo-surqo.webp"
-            alt="Campo colombiano"
+            src="/tractor.jpg"
+            alt="Tractor agrícola"
             fill
             priority
             quality={90}

@@ -86,8 +86,8 @@ export function NavBar() {
       >
         <div
           className={cn(
-            "pointer-events-auto w-full flex items-center justify-between gap-4 px-6 transition-all duration-300",
-            scrolled ? "max-w-5xl h-16 rounded-2xl" : "max-w-6xl h-20"
+            "pointer-events-auto w-full flex items-center justify-between gap-4 transition-all duration-300",
+            scrolled ? "max-w-5xl h-16 rounded-2xl px-6" : "max-w-6xl h-20 px-10"
           )}
           style={
             !scrolled
@@ -237,7 +237,12 @@ export function NavBar() {
             {(showPublicNav || showAppNav) && (
               <button
                 onClick={() => setMobileOpen((v) => !v)}
-                className="md:hidden p-2 rounded-xl text-white/70 hover:bg-white/[0.08] transition-all"
+                className={cn(
+                  "md:hidden p-2 rounded-xl transition-all",
+                  isLight
+                    ? "text-gray-700 hover:bg-black/[0.06]"
+                    : "text-white/70 hover:bg-white/[0.08]"
+                )}
                 aria-label="Menú"
               >
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
