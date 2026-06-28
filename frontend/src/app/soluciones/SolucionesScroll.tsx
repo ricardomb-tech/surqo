@@ -90,30 +90,29 @@ function SolutionCard({
       className="absolute inset-0"
       style={{ opacity: sOpacity, y: sY, scale: sScale }}
     >
-      {/* Glass card */}
+      {/* Glass card — white frosted */}
       <div
         className="w-full h-full rounded-3xl p-7 sm:p-10 flex flex-col sm:flex-row gap-7 sm:gap-10"
         style={{
-          background: "rgba(10,30,10,0.72)",
-          border: "1px solid rgba(255,255,255,0.22)",
-          backdropFilter: "blur(28px) saturate(160%)",
-          WebkitBackdropFilter: "blur(28px) saturate(160%)",
-          boxShadow: "0 12px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.82)",
+          backdropFilter: "blur(20px) saturate(140%)",
+          WebkitBackdropFilter: "blur(20px) saturate(140%)",
+          boxShadow: "0 16px 56px rgba(0,0,0,0.28)",
         }}
       >
         {/* Left: icon + badge */}
-        <div className="flex sm:flex-col items-center sm:items-start gap-4 sm:gap-5 shrink-0 sm:w-48">
+        <div className="flex sm:flex-col items-center sm:items-start gap-4 sm:gap-5 shrink-0 sm:w-44">
           <motion.div
             className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ background: "rgba(134,230,106,0.14)", border: "1px solid rgba(134,230,106,0.30)" }}
+            style={{ background: "rgba(134,230,106,0.18)", border: "2px solid rgba(134,230,106,0.45)" }}
             whileHover={{ scale: 1.08, rotate: 4 }}
             transition={{ type: "spring", stiffness: 280, damping: 14 }}
           >
-            <Icon className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: LIME }} />
+            <Icon className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: "#2d7a1f" }} />
           </motion.div>
           <span
-            className="text-[11px] sm:text-xs font-bold tracking-widest uppercase px-3 py-1.5 rounded-lg"
-            style={{ color: LIME, background: "rgba(134,230,106,0.10)", border: "1px solid rgba(134,230,106,0.22)" }}
+            className="text-[11px] sm:text-xs font-black tracking-widest uppercase px-3 py-1.5 rounded-lg"
+            style={{ color: "#fff", background: "#3a8a22", letterSpacing: "0.1em" }}
           >
             {solution.badge}
           </span>
@@ -121,19 +120,19 @@ function SolutionCard({
 
         {/* Right: content */}
         <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <h2 className="font-black tracking-tight text-white mb-3 leading-tight"
-            style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.4rem)" }}>
+          <h2 className="font-black tracking-tight mb-3 leading-tight"
+            style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.5rem)", color: "#1a3318" }}>
             {solution.title}
           </h2>
-          <p className="text-white/65 leading-relaxed font-medium mb-6"
-            style={{ fontSize: "clamp(0.9rem, 1.8vw, 1.1rem)" }}>
+          <p className="leading-relaxed font-bold mb-6"
+            style={{ fontSize: "clamp(0.9rem, 1.6vw, 1.05rem)", color: "#2a4a20" }}>
             {solution.description}
           </p>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {solution.points.map((p) => (
-              <li key={p} className="flex items-center gap-2.5 text-white/60 font-medium"
-                style={{ fontSize: "clamp(0.8rem, 1.4vw, 0.95rem)" }}>
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: LIME }} />
+              <li key={p} className="flex items-center gap-2.5 font-semibold"
+                style={{ fontSize: "clamp(0.8rem, 1.3vw, 0.92rem)", color: "#3a5a2a" }}>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#3a8a22" }} />
                 {p}
               </li>
             ))}
