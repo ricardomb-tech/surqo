@@ -5,8 +5,13 @@ import uuid
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 
+from sqlalchemy import delete as sql_delete
+
 from app.dependencies import CurrentUser, DBSession
+from app.models.alert import Alert
+from app.models.analysis import Analysis
 from app.models.farm import Farm
+from app.models.sensor_reading import SensorReading
 from app.models.user import UserProfile
 from app.schemas.farm import FarmCreate, FarmResponse, FarmUpdate
 
@@ -86,6 +91,10 @@ async def delete_farm(farm_id: uuid.UUID, current_user: CurrentUser, db: DBSessi
         raise HTTPException(status_code=404, detail="Finca no encontrada")
     if farm.user_id != current_user.user_id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="No tienes acceso a esta finca")
+    # Delete child records first to avoid FK constraint violations
+    await db.execute(sql_delete(Analysis).where(Analysis.farm_id == farm_id))
+    await db.execute(sql_delete(Alert).where(Alert.farm_id == farm_id))
+    await db.execute(sql_delete(SensorReading).where(SensorReading.farm_id == farm_id))
     await db.delete(farm)
     await db.commit()
 
