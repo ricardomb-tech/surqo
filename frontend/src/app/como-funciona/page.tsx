@@ -1,17 +1,10 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Terminal, ChevronDown } from "lucide-react"
+import { ArrowRight, Terminal, ChevronDown, Cpu, Wifi, LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { Footer } from "@/components/Footer"
 import { PasosScroll } from "./PasosScroll"
 
-const HARDWARE = [
-  { name: "ESP32 DevKit",                  price: "~$8 USD",    note: "Microcontrolador principal" },
-  { name: "DHT22",                         price: "~$4 USD",    note: "Temperatura + humedad del aire" },
-  { name: "Sensor capacitivo de suelo",    price: "~$3 USD",    note: "Humedad del suelo (más preciso que resistivo)" },
-  { name: "Batería LiPo 3000 mAh",        price: "~$6 USD",    note: "Semanas de autonomía con deep sleep" },
-  { name: "2N3904 (transistor NPN)",       price: "~$0.10 USD", note: "Corta alimentación de sensores en sleep" },
-]
 
 export default function ComoFuncionaPage() {
   return (
@@ -77,38 +70,31 @@ export default function ComoFuncionaPage() {
         <PasosScroll />
       </div>
 
-      {/* ── HARDWARE LIST ── */}
+      {/* ── HARDWARE ── */}
       <section className="border-t border-white/[0.06] bg-white/[0.02]">
         <div className="max-w-4xl mx-auto px-4 py-20">
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <p className="text-xs font-bold tracking-[0.2em] uppercase text-surqo-green-bright mb-4">Hardware</p>
-            <h2 className="text-4xl font-black tracking-tighter mb-3">¿Qué necesitas comprar?</h2>
-            <p className="text-surqo-text-secondary font-medium max-w-md mx-auto">
-              Todo el hardware cuesta menos de <span className="font-black text-surqo-text">$22 USD</span>.
-              Disponible en MercadoLibre Colombia.
+            <h2 className="text-4xl font-black tracking-tighter mb-4">Hardware listo para usar</h2>
+            <p className="text-surqo-text-secondary font-medium max-w-lg mx-auto leading-relaxed">
+              Surqo proporciona un <span className="font-black text-surqo-text">hardware especializado de bajo costo</span> diseñado para funcionar desde el primer día. Cubre todo el ciclo — desde la recolección de datos en campo hasta la transmisión segura al servidor.
             </p>
           </div>
 
-          <div className="glass rounded-2xl border border-white/[0.07] overflow-hidden">
-            <div className="grid grid-cols-3 px-6 py-3 border-b border-white/[0.06] bg-white/[0.02]">
-              <p className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest">Componente</p>
-              <p className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest text-center">Precio aprox.</p>
-              <p className="text-xs font-bold text-surqo-text-muted uppercase tracking-widest">Función</p>
-            </div>
-            {HARDWARE.map((h, i) => (
-              <div
-                key={h.name}
-                className={`grid grid-cols-3 px-6 py-4 items-center gap-4 ${i < HARDWARE.length - 1 ? "border-b border-white/[0.04]" : ""}`}
-              >
-                <p className="text-sm font-bold text-surqo-text">{h.name}</p>
-                <p className="text-sm font-black text-surqo-green text-center">{h.price}</p>
-                <p className="text-xs text-surqo-text-muted font-medium">{h.note}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: Cpu,           title: "Nodo de sensores",       desc: "Dispositivo compacto con sensores de temperatura, humedad del aire y del suelo. Diseñado para operar semanas con una sola carga." },
+              { icon: Wifi,          title: "Conectividad garantizada", desc: "Transmisión cifrada vía MQTT TLS. Compatible con WiFi o redes 4G según las condiciones de tu finca." },
+              { icon: LayoutDashboard, title: "Integración total",     desc: "El hardware se sincroniza automáticamente con la plataforma. Sin configuraciones complejas ni cables adicionales." },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="glass rounded-2xl border border-white/[0.07] p-6 flex flex-col gap-3">
+                <div className="w-10 h-10 rounded-xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-surqo-green" />
+                </div>
+                <p className="font-black text-surqo-text text-sm">{title}</p>
+                <p className="text-xs text-surqo-text-secondary font-medium leading-relaxed">{desc}</p>
               </div>
             ))}
-            <div className="px-6 py-4 border-t border-surqo-green/20 bg-surqo-green/5 flex items-center justify-between">
-              <p className="text-sm font-bold text-surqo-text">Total estimado</p>
-              <p className="text-lg font-black text-surqo-green">~ $21.10 USD</p>
-            </div>
           </div>
 
           <div className="mt-6 glass rounded-2xl border border-surqo-sky/20 p-5 flex items-start gap-4">
@@ -116,9 +102,9 @@ export default function ComoFuncionaPage() {
               <Terminal className="w-4 h-4 text-surqo-sky" />
             </div>
             <div>
-              <p className="text-sm font-bold text-surqo-text mb-1">¿Sin hardware aún?</p>
+              <p className="text-sm font-bold text-surqo-text mb-1">¿Quieres probar antes?</p>
               <p className="text-xs text-surqo-text-secondary font-medium leading-relaxed">
-                Usa el simulador Python para generar lecturas realistas y probar toda la plataforma. Lo encuentras en la sección <strong className="text-surqo-text">Sensores</strong> del dashboard.
+                Usa el simulador integrado para generar lecturas realistas y explorar toda la plataforma sin necesidad de hardware físico. Lo encuentras en la sección <strong className="text-surqo-text">Sensores</strong> del dashboard.
               </p>
             </div>
           </div>
