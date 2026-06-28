@@ -73,7 +73,7 @@ export function SolucionesScroll() {
         {/* Imagen de fondo fija */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/campesino.png"
+            src="/campesino.png.jpg"
             alt="Agricultor colombiano"
             fill
             sizes="100vw"

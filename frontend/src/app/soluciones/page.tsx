@@ -54,8 +54,8 @@ export default function SolucionesPage() {
         {/* Imagen aérea de cultivos */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/hero-bg.jpg"
-            alt="Vista aérea de cultivo"
+            src="/glavo-aerial-view-2830059.jpg"
+            alt="Vista aérea de cultivo de maíz"
             fill
             sizes="100vw"
             className="object-cover object-center"
