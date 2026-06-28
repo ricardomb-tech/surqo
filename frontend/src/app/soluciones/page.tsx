@@ -50,7 +50,7 @@ export default function SolucionesPage() {
 
 
       {/* ── CTA ── */}
-      <section className="relative min-h-[480px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         {/* Imagen aérea de cultivos */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -63,24 +63,25 @@ export default function SolucionesPage() {
         </div>
 
         {/* Blob blanco central */}
-        <div className="relative z-10 mx-4 text-center px-10 sm:px-16 py-12 sm:py-14 max-w-lg"
+        <div
+          className="relative z-10 w-[88vw] sm:w-auto sm:max-w-lg mx-auto text-center px-8 sm:px-16 py-14 sm:py-20"
           style={{
             background: "white",
             borderRadius: "62% 38% 55% 45% / 52% 48% 52% 48%",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+            boxShadow: "0 20px 80px rgba(0,0,0,0.22)",
           }}
         >
-          <h2 className="font-black leading-tight mb-3"
-            style={{ fontSize: "clamp(1.6rem, 4vw, 2.2rem)", color: "#1a3318" }}>
+          <h2 className="font-black leading-tight mb-4"
+            style={{ fontSize: "clamp(1.8rem, 5vw, 3rem)", color: "#1a3318" }}>
             ¿Listo para conectar<br />tu finca?
           </h2>
-          <p className="font-semibold mb-7 text-sm leading-relaxed" style={{ color: "#4a7c2f" }}>
+          <p className="font-semibold mb-8 leading-relaxed" style={{ fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", color: "#4a7c2f" }}>
             Crea tu cuenta gratis y empieza a<br />monitorear tu cultivo en minutos.
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 font-black px-7 py-3 rounded-full text-sm transition-all hover:scale-105"
-            style={{ border: "2px solid #3a6b1a", color: "#3a6b1a" }}
+            className="inline-flex items-center gap-2 font-black px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95"
+            style={{ fontSize: "clamp(0.85rem, 2vw, 1rem)", border: "2px solid #3a6b1a", color: "#3a6b1a" }}
           >
             Crear cuenta gratis <ArrowRight className="w-4 h-4" />
           </Link>
