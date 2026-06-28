@@ -14,7 +14,14 @@ from app.dependencies import CurrentUser, DBSession
 from app.models.analysis import Analysis
 from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
-from app.schemas.analysis import AnalysisRequest, AnalysisResponse, ChatRequest, ChatResponse, ComparisonResult, PromptEvalRequest
+from app.schemas.analysis import (
+    AnalysisRequest,
+    AnalysisResponse,
+    ChatRequest,
+    ChatResponse,
+    ComparisonResult,
+    PromptEvalRequest,
+)
 from app.services.alert_service import AlertService
 from app.services.cache_service import cache_service
 from app.services.climate_service import ClimateService
