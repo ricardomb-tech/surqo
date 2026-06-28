@@ -49,7 +49,7 @@ export function AppSidebar() {
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-gray-100 shrink-0 overflow-hidden">
         <Link href="/dashboard" className="flex items-center gap-3 shrink-0">
-          <SurqoIcon className="w-8 h-8 shrink-0" style={{ color: LIME }} />
+          <SurqoIcon className="w-8 h-8 shrink-0 text-[#86E66A]" />
           <span
             className={cn(
               "text-lg font-black tracking-tight text-gray-900 whitespace-nowrap transition-all duration-300",
