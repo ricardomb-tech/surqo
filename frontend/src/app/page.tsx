@@ -6,7 +6,7 @@ import { Footer } from "@/components/Footer"
 import { SurqoIcon } from "@/components/SurqoIcon"
 
 // ── PHOTOS (Unsplash) ─────────────────────────────────────────────────────────
-const PHOTO_HERO    = "/hero-bg.jpg" // reemplaza con tu imagen en frontend/public/hero-bg.jpg
+const PHOTO_HERO    = "/hero-bg.webp"
 const PHOTO_FARMER  = "https://images.unsplash.com/photo-1595872729893-6af3e84f3f69?w=900&q=80"
 const PHOTO_FIELD   = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1920&q=80"
 const PHOTO_TRACTOR = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=900&q=80"
@@ -51,6 +51,7 @@ export default function Home() {
             alt="Campo colombiano visto desde el aire"
             fill
             priority
+            quality={90}
             sizes="100vw"
             placeholder="blur"
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAeEAABBAMBAQAAAAAAAAAAAAABAAIDERIhMUFR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKlhL1H1DjRIpKISmNz0tzSWAA75wMfVFFAH/9k="
@@ -312,11 +313,12 @@ export default function Home() {
       <section className="relative py-24 lg:py-36 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/campo-surqo.jpg"
+            src="/campo-surqo.webp"
             alt="Campesino fumigando en campo colombiano"
             fill
+            sizes="100vw"
+            quality={85}
             className="object-cover object-center"
-            unoptimized
           />
           <div className="absolute inset-0 bg-black/60" />
         </div>
@@ -411,7 +413,7 @@ export default function Home() {
           <h2 className="font-archivo font-black leading-tight tracking-tight mb-6"
             style={{ fontSize: "clamp(2rem, 5vw, 5rem)" }}>
             <span style={{
-              backgroundImage: "url('/cta-bg.jpg')",
+              backgroundImage: "url('/cta-bg.webp')",
               backgroundSize: "cover",
               backgroundPosition: "center",
               WebkitBackgroundClip: "text",
@@ -424,7 +426,7 @@ export default function Home() {
               Tu campo inteligente
             </span>
             <span style={{
-              backgroundImage: "url('/cta-bg.jpg')",
+              backgroundImage: "url('/cta-bg.webp')",
               backgroundSize: "cover",
               backgroundPosition: "center 60%",
               WebkitBackgroundClip: "text",

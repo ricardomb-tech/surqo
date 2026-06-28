@@ -21,10 +21,11 @@ export default function ComoFuncionaPage() {
       <section className="relative h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
-            src="/hero-bg3.jpg"
+            src="/hero-bg3.webp"
             alt="Campo de trigo al atardecer"
             fill
             priority
+            quality={90}
             sizes="100vw"
             placeholder="blur"
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABQQG/8QAHhAAAgICAwEBAAAAAAAAAAAAAQIDBAAREiFB/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJVj9SxsGlJFOSCOM43MvJxz7D9dFa0Stw7RcRSQIFmkUqm4jLEDB+igCig//9k="

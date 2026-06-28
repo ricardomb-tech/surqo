@@ -14,10 +14,11 @@ export default function SolucionesPage() {
       <section className="relative h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
-            src="/campo-surqo.jpg"
+            src="/campo-surqo.webp"
             alt="Campo colombiano"
             fill
             priority
+            quality={90}
             sizes="100vw"
             placeholder="blur"
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAeEAABBAMBAQAAAAAAAAAAAAABAAIDBBESITH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AmtjlsxPnx3HXX0oW2htCiRygEgAn/9k="
@@ -55,10 +56,11 @@ export default function SolucionesPage() {
         {/* Imagen aérea de cultivos */}
         <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
-            src="/glavo-aerial-view-2830059.jpg"
+            src="/glavo-aerial-view-2830059.webp"
             alt="Vista aérea de cultivo de maíz"
             fill
             priority
+            quality={85}
             sizes="100vw"
             placeholder="blur"
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUH/8QAHhAAAgIDAQEBAAAAAAAAAAAAAQIDBBEhMUFR/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJtjWI6ZweFt4sKLMiRlDdGWFgHAA5z/AFF7mIW+lNLfaMHXqXqQO/uaKKAP/9k="

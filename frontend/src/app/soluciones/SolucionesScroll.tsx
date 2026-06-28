@@ -202,7 +202,7 @@ export function SolucionesScroll() {
         <div className="absolute inset-4 sm:inset-8 z-0 rounded-3xl overflow-hidden"
           style={{ border: "2px solid rgba(255,255,255,0.55)", boxShadow: "0 0 0 1px rgba(255,255,255,0.15)" }}>
           <Image
-            src="/campesino.png.jpg"
+            src="/campesino.png.webp"
             alt="Agricultor colombiano"
             fill
             sizes="100vw"

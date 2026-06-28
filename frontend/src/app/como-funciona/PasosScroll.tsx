@@ -102,11 +102,13 @@ function PasoCard({
   const Icon = paso.icon
 
   // Posición flotante relativa al card activo (0 = centro, ±1 = lados, ±2 = fondo)
-  const CARD_W = 320
+  // Responsive: 260px en mobile, 320px en desktop
+  const CARD_W = typeof window !== "undefined" && window.innerWidth < 640 ? 260 : 320
+  const GAP    = typeof window !== "undefined" && window.innerWidth < 640 ? 280 : 340
   const x = useTransform(scrollYProgress, (p) => {
     const active = p * (total - 1)
     const pos = index - active
-    return pos * 340 - CARD_W / 2
+    return pos * GAP - CARD_W / 2
   })
 
   const scale = useTransform(scrollYProgress, (p) => {
@@ -139,7 +141,7 @@ function PasoCard({
     >
       {/* Glass card — vidrio intenso */}
       <div
-        className="w-[320px] rounded-3xl p-7 flex flex-col gap-5"
+        className="w-[260px] sm:w-[320px] rounded-3xl p-5 sm:p-7 flex flex-col gap-4 sm:gap-5"
         style={{
           background: "linear-gradient(135deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 100%)",
           border: "1.5px solid rgba(255,255,255,0.75)",
@@ -279,7 +281,7 @@ export function PasosScroll() {
           }}
         >
           <Image
-            src="/fondosection3.jpg"
+            src="/fondosection3.webp"
             alt="Viñedo colombiano"
             fill
             sizes="100vw"
