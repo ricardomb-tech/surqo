@@ -3,6 +3,7 @@ import Image from "next/image"
 import { ArrowRight, Cpu, Wifi, Terminal, FlaskConical, Bell, LayoutDashboard, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { Footer } from "@/components/Footer"
+import Slider_01 from "@/components/ui/ruixen-carousel-wave"
 
 const STEPS = [
   {
@@ -102,6 +103,9 @@ export default function ComoFuncionaPage() {
           </Link>
         </div>
       </section>
+
+      {/* ── CAROUSEL RESUMEN ── */}
+      <Slider_01 />
 
       {/* ── STEPS ── */}
       <section id="pasos" className="max-w-4xl mx-auto px-4 pb-20 pt-16">
