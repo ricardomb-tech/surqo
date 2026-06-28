@@ -43,26 +43,6 @@ const SOLUTIONS = [
   },
 ]
 
-const TESTIMONIALS = [
-  {
-    quote: "Con Surqo ahorramos agua y llegamos a la cosecha con el cultivo en mejor estado. Antes adivinábamos cuándo regar.",
-    author: "Productor de maíz",
-    location: "Montería, Córdoba",
-    crop: "Maíz",
-  },
-  {
-    quote: "El análisis de IA me dice exactamente qué hacer esa semana. Es como tener un agrónomo que trabaja los 7 días.",
-    author: "Agricultora",
-    location: "Cereté, Córdoba",
-    crop: "Yuca",
-  },
-  {
-    quote: "Instalé el sensor en 20 minutos. Al día siguiente ya tenía datos del suelo de mi finca en el teléfono.",
-    author: "Productor familiar",
-    location: "Sahagún, Córdoba",
-    crop: "Ñame",
-  },
-]
 
 export default function SolucionesPage() {
   return (
@@ -108,7 +88,7 @@ export default function SolucionesPage() {
         {/* Imagen de fondo del agricultor */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/farmer.png"
+            src="/campesino.png"
             alt="Agricultor colombiano en campo"
             fill
             sizes="100vw"
@@ -176,41 +156,6 @@ export default function SolucionesPage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIOS ── */}
-      <section className="border-t border-white/[0.06] bg-white/[0.02]">
-        <div className="max-w-5xl mx-auto px-4 py-20">
-          <div className="text-center mb-14">
-            <p className="text-xs font-bold tracking-[0.2em] uppercase text-surqo-green-bright mb-4">Agricultores</p>
-            <h2 className="text-4xl font-black tracking-tighter">
-              Lo que dicen los que<br />
-              <span className="text-gradient">ya lo usan</span>
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="glass rounded-2xl border border-white/[0.07] p-6 flex flex-col gap-4">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, s) => (
-                    <span key={s} className="text-surqo-green text-sm">★</span>
-                  ))}
-                </div>
-                <p className="text-sm text-surqo-text-secondary leading-relaxed font-medium flex-1">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="border-t border-white/[0.06] pt-4 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center text-xs font-black text-surqo-green shrink-0">
-                    {t.author[0]}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-surqo-text">{t.author}</p>
-                    <p className="text-[11px] text-surqo-text-muted font-medium">{t.location} · {t.crop}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── CTA ── */}
       <section className="relative min-h-[480px] flex items-center justify-center overflow-hidden">
