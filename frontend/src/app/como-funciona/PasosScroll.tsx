@@ -267,20 +267,12 @@ export function PasosScroll() {
     offset: ["start start", "end end"],
   })
 
-  const smooth = useSpring(scrollYProgress, { stiffness: 70, damping: 24 })
-
   return (
     <div ref={containerRef} style={{ height: `${(PASOS.length + 1) * 100}vh` }}>
       <div className="sticky top-0 overflow-hidden" style={{ height: "100vh" }}>
 
-        {/* Fondo fondosection3.jpg */}
-        <div
-          className="absolute inset-4 sm:inset-8 z-0 rounded-3xl overflow-hidden"
-          style={{
-            border: "2px solid rgba(255,255,255,0.55)",
-            boxShadow: "0 0 0 1px rgba(255,255,255,0.15)",
-          }}
-        >
+        {/* Fondo fondosection3.webp — sin borde */}
+        <div className="absolute inset-0 z-0">
           <Image
             src="/fondosection3.webp"
             alt="Viñedo colombiano"
@@ -290,13 +282,13 @@ export function PasosScroll() {
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAeEAABBAMBAQAAAAAAAAAAAAABAAIDBBESITH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AmtjlsxPnx3HXX0oW2htCiRygEgAn/9k="
             className="object-cover object-center transition-opacity duration-500"
           />
-          <div className="absolute inset-0 bg-black/52" />
+          <div className="absolute inset-0 bg-black/50" />
         </div>
 
         {/* Contenido */}
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-4">
 
-          {/* Carousel de cards */}
+          {/* Carousel — scrollYProgress directo para evitar oscilación inicial del spring */}
           <div className="relative flex items-center justify-center w-full" style={{ height: "480px" }}>
             {PASOS.map((p, i) => (
               <PasoCard
@@ -304,7 +296,7 @@ export function PasosScroll() {
                 paso={p}
                 index={i}
                 total={PASOS.length}
-                scrollYProgress={smooth}
+                scrollYProgress={scrollYProgress}
               />
             ))}
           </div>
