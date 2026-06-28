@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, Cpu, Brain, Bell, BarChart3, Droplets, Thermometer, Wind, Zap } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { Footer } from "@/components/Footer"
@@ -74,16 +75,38 @@ export default function SolucionesPage() {
   return (
     <div className="min-h-screen bg-surqo-bg">
 
-      {/* ── HEADER ── */}
-      <section className="pt-28 pb-16 text-center max-w-3xl mx-auto px-4">
-        <p className="text-xs font-bold tracking-[0.2em] uppercase text-surqo-green-bright mb-4">Soluciones</p>
-        <h1 className="text-5xl sm:text-6xl font-black tracking-tighter mb-5">
-          Todo lo que necesita<br />
-          <span className="text-gradient">tu finca</span>
-        </h1>
-        <p className="text-lg text-surqo-text-secondary font-medium max-w-xl mx-auto">
-          Cuatro módulos integrados que cubren el ciclo completo: sensores en campo, análisis con IA, alertas automáticas y visualización.
-        </p>
+      {/* ── HERO ── */}
+      <section className="relative h-[70vh] min-h-[480px] flex items-end overflow-hidden">
+        {/* Imagen de fondo */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=85"
+            alt="Tractor en campo colombiano"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          {/* Gradiente oscuro de abajo hacia arriba para legibilidad del texto */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+        </div>
+
+        {/* Contenido sobre la imagen */}
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-16 pt-32">
+          <p className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: "#86E66A" }}>
+            Soluciones
+          </p>
+          <h1
+            className="font-black tracking-tighter text-white leading-none mb-5"
+            style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}
+          >
+            Todo lo que necesita<br />
+            <span style={{ color: "#86E66A" }}>tu finca</span>
+          </h1>
+          <p className="text-lg text-white/70 font-medium max-w-xl leading-relaxed">
+            Cuatro módulos integrados que cubren el ciclo completo: sensores en campo, análisis con IA, alertas automáticas y visualización.
+          </p>
+        </div>
       </section>
 
       {/* ── METRICS ── */}
