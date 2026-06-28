@@ -1,47 +1,9 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Cpu, Brain, Bell, BarChart3 } from "lucide-react"
-import { Button } from "@/components/ui/Primitives"
+import { ArrowRight } from "lucide-react"
 import { Footer } from "@/components/Footer"
+import { SolucionesScroll } from "./SolucionesScroll"
 
-const SOLUTIONS = [
-  {
-    icon: Cpu,
-    badge: "IoT",
-    color: "surqo-green",
-    title: "Sensores en campo real",
-    description:
-      "Nodos ESP32 con sensores DHT22 (temperatura + humedad del aire) y sensor capacitivo de suelo. Lecturas cada 15 minutos enviadas vía MQTT TLS directamente desde tu finca.",
-    points: ["Temperatura y humedad del aire", "Humedad y temperatura del suelo", "Índice UV y batería del nodo", "Deep sleep para durar semanas"],
-  },
-  {
-    icon: Brain,
-    badge: "Inteligencia Artificial",
-    color: "surqo-sky",
-    title: "Análisis agronómico con IA",
-    description:
-      "Llama 3.3 70B analiza el pronóstico climático de 7 días junto con el estado actual del suelo y genera recomendaciones específicas para tu cultivo en español claro.",
-    points: ["Pronóstico climático de 7 días (Open-Meteo)", "Índice de estrés hídrico", "Recomendación de riego y fertilización", "Evaluación de riesgo de plagas"],
-  },
-  {
-    icon: Bell,
-    badge: "Alertas",
-    color: "surqo-warning",
-    title: "Alertas antes de que sea tarde",
-    description:
-      "El sistema detecta automáticamente condiciones críticas y te notifica por correo electrónico antes de que el cultivo sufra daños.",
-    points: ["Estrés hídrico detectado", "Temperatura fuera de rango", "Humedad peligrosa para hongos", "Historial completo de alertas"],
-  },
-  {
-    icon: BarChart3,
-    badge: "Dashboard",
-    color: "surqo-green",
-    title: "Todo en un panel",
-    description:
-      "Dashboard profesional con KPIs en tiempo real, gráficas de evolución y acceso al historial completo de análisis desde cualquier dispositivo.",
-    points: ["VPD y ETc en tiempo real", "Gráfica de humedad histórica", "Últimos análisis con IA", "Estado del suelo y salud del cultivo"],
-  },
-]
 
 
 export default function SolucionesPage() {
@@ -83,78 +45,8 @@ export default function SolucionesPage() {
       </section>
 
 
-      {/* ── SOLUTIONS ── */}
-      <section className="relative py-20 overflow-hidden">
-        {/* Imagen de fondo del agricultor */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/campesino.png"
-            alt="Agricultor colombiano en campo"
-            fill
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-black/55" />
-        </div>
-
-        <div className="relative z-10 max-w-5xl mx-auto px-4 space-y-5">
-          {SOLUTIONS.map((s) => {
-            const Icon = s.icon
-            return (
-              <div
-                key={s.title}
-                className="rounded-3xl p-7 md:p-9 transition-all duration-300 hover:scale-[1.01]"
-                style={{
-                  background: "rgba(255,255,255,0.10)",
-                  border: "1px solid rgba(255,255,255,0.22)",
-                  backdropFilter: "blur(20px) saturate(150%)",
-                  WebkitBackdropFilter: "blur(20px) saturate(150%)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.18)",
-                }}
-              >
-                <div className="flex flex-col sm:flex-row gap-6">
-                  {/* Icono + badge */}
-                  <div className="flex sm:flex-col items-center sm:items-start gap-4 sm:w-44 shrink-0">
-                    <div
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-                      style={{
-                        background: "rgba(134,230,106,0.15)",
-                        border: "1px solid rgba(134,230,106,0.35)",
-                      }}
-                    >
-                      <Icon className="w-7 h-7" style={{ color: "#86E66A" }} />
-                    </div>
-                    <span
-                      className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-lg"
-                      style={{
-                        color: "#86E66A",
-                        background: "rgba(134,230,106,0.12)",
-                        border: "1px solid rgba(134,230,106,0.25)",
-                      }}
-                    >
-                      {s.badge}
-                    </span>
-                  </div>
-
-                  {/* Contenido */}
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl md:text-2xl font-black tracking-tight text-white mb-2">{s.title}</h2>
-                    <p className="text-sm text-white/70 leading-relaxed font-medium mb-4">{s.description}</p>
-                    <ul className="grid sm:grid-cols-2 gap-2">
-                      {s.points.map((p) => (
-                        <li key={p} className="flex items-center gap-2 text-xs text-white/65 font-medium">
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "#86E66A" }} />
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      {/* ── SOLUTIONS (scroll sticky) ── */}
+      <SolucionesScroll />
 
 
       {/* ── CTA ── */}
