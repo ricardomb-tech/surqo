@@ -43,30 +43,31 @@ export default function Home() {
     <div className="min-h-screen flex flex-col font-sans">
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative h-screen flex flex-col overflow-hidden">
-        {/* Background photo — bright, minimal overlay */}
+      <section className="relative h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
+        {/* Background photo — color fallback mientras carga */}
         <div className="absolute inset-0 z-0">
           <Image
             src={PHOTO_HERO}
             alt="Campo colombiano visto desde el aire"
             fill
             priority
+            sizes="100vw"
             className="object-cover object-center"
-            unoptimized
+            style={{ transition: "opacity 0.5s ease" }}
           />
           {/* subtle gradient only on left so text is readable */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 to-transparent" />
         </div>
 
         {/* Hero content */}
         <div className="relative z-10 flex flex-col flex-1 pt-20">
-          <div className="max-w-6xl mx-auto px-6 flex-1 flex items-center w-full">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex-1 flex items-center w-full">
             <div className="flex w-full items-center">
 
               {/* ── LEFT: title + CTAs ── */}
-              <div className="w-[420px] shrink-0 mr-auto">
-                {/* Glass card behind title — valores exactos del Claude Design */}
-                <div className="w-fit rounded-[36px] px-10 py-8 mb-8"
+              <div className="w-full lg:w-[420px] shrink-0 lg:mr-auto">
+                {/* Glass card behind title */}
+                <div className="w-fit rounded-[28px] sm:rounded-[36px] px-6 sm:px-10 py-6 sm:py-8 mb-6 sm:mb-8"
                   style={{
                     background: "linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 100%)",
                     border: "1px solid rgba(255,255,255,0.50)",
@@ -74,26 +75,26 @@ export default function Home() {
                     backdropFilter: "blur(16px) saturate(160%)",
                     WebkitBackdropFilter: "blur(16px) saturate(160%)",
                   }}>
-                  <h1 className="font-archivo font-black leading-none tracking-tight text-white whitespace-nowrap"
-                    style={{ fontSize: "clamp(2.8rem, 5.5vw, 5.5rem)" }}>
+                  <h1 className="font-archivo font-black leading-none tracking-tight text-white"
+                    style={{ fontSize: "clamp(2.4rem, 8vw, 5.5rem)" }}>
                     Del surco al
                     <br />
                     <span style={{ color: LIME }}>Insight.</span>
                   </h1>
                 </div>
-                <div className="flex gap-4 mt-2 ml-28">
+                <div className="flex flex-wrap gap-3 mt-2 sm:ml-28">
                   <Link
                     href="/register"
-                    className="inline-flex items-center gap-2 font-black px-8 py-2.5 rounded-full text-sm tracking-widest uppercase transition-all hover:scale-105"
+                    className="inline-flex items-center gap-2 font-black px-6 sm:px-8 py-2.5 rounded-full text-sm tracking-widest uppercase transition-all hover:scale-105"
                     style={{ border: `2px solid ${LIME}`, color: LIME }}
                   >
-                    START FREE <ArrowRight className="w-4 h-4" />
+                    EMPEZAR GRATIS <ArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/soluciones"
-                    className="inline-flex items-center gap-2 border-2 border-white/50 text-white font-black px-8 py-2.5 rounded-full text-sm tracking-widest uppercase hover:border-white transition-all"
+                    className="inline-flex items-center gap-2 border-2 border-white/50 text-white font-black px-6 sm:px-8 py-2.5 rounded-full text-sm tracking-widest uppercase hover:border-white transition-all"
                   >
-                    <Play className="w-4 h-4 fill-current" /> SEE
+                    <Play className="w-4 h-4 fill-current" /> VER
                   </Link>
                 </div>
               </div>
@@ -141,11 +142,10 @@ export default function Home() {
                       boxShadow: "0 20px 56px rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.75)",
                     }}>
                     <p className="text-[14px] text-white/90 leading-relaxed">
-                      Agroclimatic intelligence for the Colombian countryside.{" "}
-                      <span style={{ color: LIME }}>IoT + AI</span> that turns soil{" "}
-                      <span style={{ color: LIME }}>data</span> into concrete decisions.
+                      Inteligencia agroclimática para el campo colombiano.{" "}
+                      <span style={{ color: LIME }}>IoT + IA</span> que convierte datos del suelo{" "}
+                      en <span style={{ color: LIME }}>decisiones concretas</span>.
                     </p>
-                    {/* chat tail */}
                     <div className="absolute -bottom-2 left-5 w-4 h-4 overflow-hidden">
                       <div className="w-4 h-4 rotate-45 origin-top-right"
                         style={{
@@ -161,6 +161,25 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Mini feature pills — visible solo en móvil */}
+          <div className="lg:hidden flex gap-2 px-4 pb-4 overflow-x-auto scrollbar-none">
+            {[
+              { icon: Brain, label: "IA Agronómica" },
+              { icon: Cpu, label: "Sensores IoT" },
+              { icon: BarChart3, label: "Dashboard 24/7" },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white text-xs font-bold"
+                style={{
+                  background: "rgba(26,51,24,0.65)",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  backdropFilter: "blur(12px)",
+                }}>
+                <Icon className="w-3.5 h-3.5" style={{ color: LIME }} />
+                {label}
+              </div>
+            ))}
+          </div>
+
           {/* Scroll hint */}
           <div className="flex justify-center pb-6 relative z-10">
             <ChevronDown className="w-7 h-7 text-white/50 animate-bounce" />
@@ -169,46 +188,46 @@ export default function Home() {
       </section>
 
       {/* ── EL PROBLEMA ──────────────────────────────────────────────────── */}
-      <section className="mx-4 lg:mx-8 mt-4 rounded-3xl overflow-hidden" style={{ backgroundColor: "#E8EBE4" }}>
-        <div className="grid lg:grid-cols-2 min-h-[380px]">
+      <section className="mx-3 sm:mx-4 lg:mx-8 mt-4 rounded-3xl overflow-hidden" style={{ backgroundColor: "#E8EBE4" }}>
+        <div className="grid lg:grid-cols-2">
 
           {/* Left – text, vertically centered */}
-          <div className="flex flex-col justify-center px-12 py-44">
+          <div className="flex flex-col justify-center px-7 sm:px-12 py-12 lg:py-44">
             <h2 className="font-archivo font-black leading-tight tracking-tight mb-6"
-              style={{ fontSize: "clamp(2rem, 3.5vw, 3.2rem)", color: "#3a6b1a" }}>
-              The Colombian farmer makes decisions blindly.
+              style={{ fontSize: "clamp(1.8rem, 3.5vw, 3.2rem)", color: "#3a6b1a" }}>
+              El agricultor colombiano decide a ciegas.
             </h2>
-            <p className="text-slate-600 font-medium text-lg leading-relaxed max-w-sm">
-              Without local soil and climate data, every decision regarding irrigation,
-              fertilization, or fumigation is a gamble. Surqo bridges that gap
-              with accessible technology and artificial intelligence analysis.
+            <p className="text-slate-600 font-medium text-base lg:text-lg leading-relaxed max-w-sm">
+              Sin datos locales de suelo y clima, cada decisión de riego,
+              fertilización o fumigación es una apuesta. Surqo cierra esa brecha
+              con tecnología accesible e inteligencia artificial.
             </p>
           </div>
 
           {/* Right – farmer + floating questions */}
-          <div className="relative overflow-hidden">
-            {/* Farmer image — fills bottom, cropped naturally by overflow-hidden */}
-            <div className="absolute bottom-0 left-[100px] w-[480px] h-[110%]">
+          <div className="relative overflow-hidden min-h-[340px] lg:min-h-0">
+            {/* Farmer image */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 lg:left-[100px] lg:translate-x-0 w-[280px] sm:w-[360px] lg:w-[480px] h-[110%]">
               <Image
                 src="/farmer.png"
                 alt="Agricultor colombiano"
                 fill
+                sizes="(max-width: 640px) 280px, (max-width: 1024px) 360px, 480px"
                 className="object-contain object-bottom"
-                unoptimized
               />
             </div>
 
-            {/* Floating question bubbles */}
-            <div className="absolute top-[12%] left-[22%] max-w-[170px] text-center">
-              <p className="text-base text-slate-700 font-semibold leading-snug">How much water am I wasting without knowing it?</p>
+            {/* Floating question bubbles — hidden on small mobile, visible from sm */}
+            <div className="hidden sm:block absolute top-[12%] left-[22%] max-w-[170px] text-center">
+              <p className="text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿Cuánta agua estoy desperdiciando sin saberlo?</p>
             </div>
 
-            <div className="absolute top-[38%] left-[4%] max-w-[155px]">
-              <p className="text-base text-slate-700 font-semibold leading-snug">When exactly should I water?</p>
+            <div className="hidden sm:block absolute top-[38%] left-[4%] max-w-[155px]">
+              <p className="text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿Cuándo exactamente debo regar?</p>
             </div>
 
-            <div className="absolute top-[22%] right-[20%] max-w-[175px] text-right">
-              <p className="text-base text-slate-700 font-semibold leading-snug">Does this week's weather favor fungi or pests?</p>
+            <div className="hidden sm:block absolute top-[22%] right-[8%] lg:right-[20%] max-w-[160px] lg:max-w-[175px] text-right">
+              <p className="text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿El clima favorece hongos o plagas esta semana?</p>
             </div>
           </div>
 
@@ -223,53 +242,53 @@ export default function Home() {
           {/* Title */}
           <h2 className="font-archivo font-black text-center mb-10 tracking-tight"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)", color: "#4a6b0a" }}>
-            From 0 to real data in 3 steps
+            De 0 a datos reales en 3 pasos
           </h2>
 
-          {/* 3 cards row */}
-          <div className="flex items-stretch gap-0 rounded-3xl overflow-hidden" style={{ minHeight: "320px" }}>
+          {/* 3 cards — horizontal en desktop, vertical en móvil */}
+          <div className="flex flex-col lg:flex-row items-stretch gap-0 rounded-3xl overflow-hidden" style={{ minHeight: "320px" }}>
 
             {/* Step 1 — dark olive */}
-            <div className="flex-1 flex flex-col justify-end p-8 relative" style={{ backgroundColor: "#5a7a0a" }}>
-              <h3 className="text-2xl font-black text-white leading-tight mb-3">
-                Connect the<br />sensor
+            <div className="flex-1 flex flex-col justify-end p-7 lg:p-8" style={{ backgroundColor: "#5a7a0a" }}>
+              <h3 className="text-xl lg:text-2xl font-black text-white leading-tight mb-3">
+                Conecta el<br />sensor
               </h3>
               <p className="text-sm text-white/75 leading-relaxed">
-                ESP32 + DHT22 + soil sensor.<br />Easy installation. Data every 15 min.
+                ESP32 + DHT22 + sensor de suelo.<br />Instalación fácil. Datos cada 15 min.
               </p>
             </div>
 
             {/* Arrow 1 */}
-            <div className="flex items-center justify-center relative z-10 -mx-6">
-              <div className="w-20 h-20 rounded-full bg-white shadow-lg flex items-center justify-center">
-                <ArrowRight className="w-10 h-10" style={{ color: "#5a7a0a" }} />
+            <div className="flex items-center justify-center relative z-10 lg:-mx-6 -my-5 lg:my-0">
+              <div className="w-14 h-14 lg:w-20 lg:h-20 rounded-full bg-white shadow-lg flex items-center justify-center rotate-90 lg:rotate-0">
+                <ArrowRight className="w-7 h-7 lg:w-10 lg:h-10" style={{ color: "#5a7a0a" }} />
               </div>
             </div>
 
             {/* Step 2 — light gray */}
-            <div className="flex-1 flex flex-col justify-center p-8 text-center" style={{ backgroundColor: "#E8EBE4" }}>
+            <div className="flex-1 flex flex-col justify-center p-7 lg:p-8 text-center" style={{ backgroundColor: "#E8EBE4" }}>
               <p className="text-sm text-slate-500 leading-relaxed mb-3">
-                We combine your data with the<br />7-day forecast to generate accurate<br />recommendations.
+                Combinamos tus datos con el pronóstico de 7 días para generar recomendaciones precisas.
               </p>
-              <h3 className="text-2xl font-black" style={{ color: "#2D2D2D" }}>
-                AI analyzes
+              <h3 className="text-xl lg:text-2xl font-black" style={{ color: "#2D2D2D" }}>
+                La IA analiza
               </h3>
             </div>
 
             {/* Arrow 2 */}
-            <div className="flex items-center justify-center relative z-10 -mx-6">
-              <div className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center">
-                <ArrowRight className="w-7 h-7" style={{ color: "#a07800" }} />
+            <div className="flex items-center justify-center relative z-10 lg:-mx-6 -my-5 lg:my-0">
+              <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white shadow-lg flex items-center justify-center rotate-90 lg:rotate-0">
+                <ArrowRight className="w-6 h-6 lg:w-7 lg:h-7" style={{ color: "#a07800" }} />
               </div>
             </div>
 
             {/* Step 3 — gold/mustard */}
-            <div className="flex-1 flex flex-col justify-between p-8" style={{ backgroundColor: "#a07800" }}>
-              <h3 className="text-2xl font-black text-white text-right leading-tight">
-                Up to you
+            <div className="flex-1 flex flex-col justify-between p-7 lg:p-8" style={{ backgroundColor: "#a07800" }}>
+              <h3 className="text-xl lg:text-2xl font-black text-white lg:text-right leading-tight">
+                Tú decides
               </h3>
-              <p className="text-sm text-white/75 leading-relaxed text-right mt-4">
-                Real-time dashboard with KPIs, alerts, and historical analysis from any device.
+              <p className="text-sm text-white/75 leading-relaxed lg:text-right mt-4">
+                Dashboard en tiempo real con KPIs, alertas e historial desde cualquier dispositivo.
               </p>
             </div>
 
@@ -282,7 +301,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 font-black text-base hover:underline"
               style={{ color: "#5a7a0a" }}
             >
-              See Process <ArrowRight className="w-4 h-4" />
+              Ver proceso <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>

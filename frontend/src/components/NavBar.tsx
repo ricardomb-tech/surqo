@@ -219,7 +219,7 @@ export function NavBar() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <circle cx="12" cy="8" r="4" /><path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                     </svg>
-                    Login
+                    Iniciar sesión
                   </GlassButton>
                 </Link>
                 <Link href="/register">
@@ -285,7 +285,7 @@ export function NavBar() {
                     onClick={() => setMobileOpen(false)}
                     className="w-full text-center font-black text-sm tracking-widest uppercase px-5 py-3 rounded-full text-white/70 border border-white/20 hover:border-white/50 transition-all"
                   >
-                    Login
+                    Iniciar sesión
                   </Link>
                   <Link
                     href="/register"
