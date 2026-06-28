@@ -195,7 +195,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center overflow-hidden px-4 py-20">
+    <div className="min-h-screen relative flex items-center justify-center overflow-hidden px-4 pt-32 pb-12">
 
       {/* Background */}
       <div className="absolute inset-0 z-0">
