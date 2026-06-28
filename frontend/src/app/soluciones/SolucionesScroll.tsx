@@ -90,15 +90,15 @@ function SolutionCard({
       className="absolute inset-0"
       style={{ opacity: sOpacity, y: sY, scale: sScale }}
     >
-      {/* Glass card */}
+      {/* Glass card — mismo efecto que botones de navbar */}
       <div
         className="w-full h-full rounded-3xl p-7 sm:p-10 flex flex-col sm:flex-row gap-7 sm:gap-10"
         style={{
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.30)",
-          backdropFilter: "blur(24px) saturate(150%)",
-          WebkitBackdropFilter: "blur(24px) saturate(150%)",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.20)",
+          background: "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 100%)",
+          border: "1px solid rgba(255,255,255,0.50)",
+          backdropFilter: "blur(16px) saturate(160%)",
+          WebkitBackdropFilter: "blur(16px) saturate(160%)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.70), inset 0 -1px 0 rgba(0,0,0,0.06)",
         }}
       >
         {/* Left: icon + badge */}
