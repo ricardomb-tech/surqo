@@ -11,8 +11,7 @@ export default function SolucionesPage() {
     <div className="min-h-screen bg-surqo-bg">
 
       {/* ── HERO ── */}
-      <section className="relative h-screen flex items-end overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
-        {/* Imagen de fondo */}
+      <section className="relative h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         <div className="absolute inset-0 z-0" style={{ backgroundColor: "#1a3318" }}>
           <Image
             src="/campo-surqo.jpg"
@@ -21,26 +20,26 @@ export default function SolucionesPage() {
             priority
             sizes="100vw"
             placeholder="blur"
-            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoH BwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU FBQUFBQUFBQUFBT/wAARCAAIABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAA AAAABgUH/8QAIhAAAQQCAgMBAAAAAAAAAAAAAQIDBAUREiExQVH/xAAUAQEAAAAA AAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8A pui7MuNnVMNJkOS3HFBtllBWtZPYAAkk/wBHH60tEGTHiqjFbLLSUBxKT6lWBg kHuM4GOD4oopP/2Q=="
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/wAARCAAIABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAeEAABBAMBAQAAAAAAAAAAAAABAAIDBBESITH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AmtjlsxPnx3HXX0oW2htCiRygEgAn/9k="
             className="object-cover object-center transition-opacity duration-500"
           />
-          {/* Gradiente oscuro de abajo hacia arriba para legibilidad del texto */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
         </div>
 
-        {/* Contenido sobre la imagen */}
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-16 pt-32">
+        {/* Texto — mismo layout que hero de inicio */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center px-8 sm:px-14 lg:px-20 max-w-4xl">
           <p className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: "#86E66A" }}>
             Soluciones
           </p>
           <h1
-            className="font-black tracking-tighter text-white leading-none mb-5"
-            style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)" }}
+            className="font-black tracking-tight text-white leading-none mb-5"
+            style={{ fontSize: "clamp(2.8rem, 7vw, 5.5rem)" }}
           >
             Todo lo que necesita<br />
             <span style={{ color: "#86E66A" }}>tu finca</span>
           </h1>
-          <p className="text-lg text-white/70 font-medium max-w-xl leading-relaxed">
+          <p className="text-white/75 font-medium max-w-xl leading-relaxed"
+            style={{ fontSize: "clamp(1rem, 2vw, 1.2rem)" }}>
             Cuatro módulos integrados que cubren el ciclo completo: sensores en campo, análisis con IA, alertas automáticas y visualización.
           </p>
         </div>
