@@ -90,7 +90,15 @@ export function NavBar() {
             scrolled ? "max-w-5xl h-16 rounded-2xl px-6" : "max-w-6xl h-20 px-10"
           )}
           style={
-            !scrolled
+            showAppNav
+              ? {
+                  background: "rgba(8,20,8,0.94)",
+                  backdropFilter: "blur(20px) saturate(160%)",
+                  WebkitBackdropFilter: "blur(20px) saturate(160%)",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 2px 16px rgba(0,0,0,0.25)",
+                }
+              : !scrolled
               ? { background: "transparent" }
               : {
                   background: "linear-gradient(135deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 100%)",
