@@ -68,9 +68,13 @@ export function NavBar() {
     router.push("/")
   }
 
-  const isHome = pathname === "/"
-  // Light pill mode = scrolled or not on homepage
-  const isLight = !isHome || scrolled
+  // Páginas con hero de imagen oscura — nav en blanco hasta hacer scroll
+  const DARK_HERO_PATHS = ["/", "/soluciones", "/como-funciona"]
+  const hasDarkHero = DARK_HERO_PATHS.some((p) =>
+    p === "/" ? pathname === "/" : pathname.startsWith(p)
+  )
+  // Light pill mode = scrolled o sin hero oscuro
+  const isLight = !hasDarkHero || scrolled
 
   return (
     <>

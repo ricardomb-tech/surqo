@@ -127,43 +127,76 @@ export default function SolucionesPage() {
       </section>
 
       {/* ── SOLUTIONS ── */}
-      <section className="max-w-5xl mx-auto px-4 py-20 space-y-6">
-        {SOLUTIONS.map((s, i) => {
-          const Icon = s.icon
-          const isEven = i % 2 === 0
-          return (
-            <div
-              key={s.title}
-              className="glass rounded-3xl border border-white/[0.07] hover:border-surqo-green/20 transition-all duration-300 p-8 md:p-10"
-            >
-              <div className={`flex flex-col md:flex-row gap-8 ${isEven ? "" : "md:flex-row-reverse"}`}>
-                {/* Icon + badge */}
-                <div className="flex flex-col items-start gap-4 md:w-56 shrink-0">
-                  <div className="w-14 h-14 rounded-2xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center text-surqo-green">
-                    <Icon className="w-7 h-7" />
-                  </div>
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-surqo-green-bright bg-surqo-green/10 border border-surqo-green/20 px-3 py-1 rounded-lg">
-                    {s.badge}
-                  </span>
-                </div>
+      <section className="relative py-20 overflow-hidden">
+        {/* Imagen de fondo del agricultor */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/campo-surqo.jpg"
+            alt="Agricultor colombiano en campo"
+            fill
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-black/55" />
+        </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-black tracking-tight text-surqo-text mb-3">{s.title}</h2>
-                  <p className="text-sm text-surqo-text-secondary leading-relaxed font-medium mb-5">{s.description}</p>
-                  <ul className="grid sm:grid-cols-2 gap-2">
-                    {s.points.map((p) => (
-                      <li key={p} className="flex items-center gap-2 text-xs text-surqo-text-secondary font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-surqo-green shrink-0" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 space-y-5">
+          {SOLUTIONS.map((s) => {
+            const Icon = s.icon
+            return (
+              <div
+                key={s.title}
+                className="rounded-3xl p-7 md:p-9 transition-all duration-300 hover:scale-[1.01]"
+                style={{
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  backdropFilter: "blur(20px) saturate(150%)",
+                  WebkitBackdropFilter: "blur(20px) saturate(150%)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.18)",
+                }}
+              >
+                <div className="flex flex-col sm:flex-row gap-6">
+                  {/* Icono + badge */}
+                  <div className="flex sm:flex-col items-center sm:items-start gap-4 sm:w-44 shrink-0">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: "rgba(134,230,106,0.15)",
+                        border: "1px solid rgba(134,230,106,0.35)",
+                      }}
+                    >
+                      <Icon className="w-7 h-7" style={{ color: "#86E66A" }} />
+                    </div>
+                    <span
+                      className="text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-lg"
+                      style={{
+                        color: "#86E66A",
+                        background: "rgba(134,230,106,0.12)",
+                        border: "1px solid rgba(134,230,106,0.25)",
+                      }}
+                    >
+                      {s.badge}
+                    </span>
+                  </div>
+
+                  {/* Contenido */}
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl md:text-2xl font-black tracking-tight text-white mb-2">{s.title}</h2>
+                    <p className="text-sm text-white/70 leading-relaxed font-medium mb-4">{s.description}</p>
+                    <ul className="grid sm:grid-cols-2 gap-2">
+                      {s.points.map((p) => (
+                        <li key={p} className="flex items-center gap-2 text-xs text-white/65 font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "#86E66A" }} />
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </section>
 
       {/* ── TESTIMONIOS ── */}
