@@ -62,7 +62,7 @@ class GroqProvider:
         usage = data.get("usage", {})
         return text, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
 
-    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> str:
+    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> tuple[str, int, int]:
         payload = {
             "model": self.model,
             "messages": [{"role": "system", "content": system_prompt}] + messages,
@@ -73,7 +73,9 @@ class GroqProvider:
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.post(self.BASE_URL, json=payload, headers=headers)
             r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
+        data = r.json()
+        usage = data.get("usage", {})
+        return data["choices"][0]["message"]["content"], usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
 
 
 class AnthropicProvider:
@@ -98,12 +100,12 @@ class AnthropicProvider:
             response.usage.output_tokens,
         )
 
-    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> str:
+    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> tuple[str, int, int]:
         response = await self._client.messages.create(
             model=self.model, max_tokens=max_tokens,
             system=system_prompt, messages=messages,
         )
-        return response.content[0].text
+        return response.content[0].text, response.usage.input_tokens, response.usage.output_tokens
 
 
 class OllamaProvider:
@@ -135,7 +137,7 @@ class OllamaProvider:
         output_tokens = len(text.split())
         return text, prompt_tokens, output_tokens
 
-    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> str:
+    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> tuple[str, int, int]:
         payload = {
             "model": self.model,
             "messages": [{"role": "system", "content": system_prompt}] + messages,
@@ -145,7 +147,9 @@ class OllamaProvider:
         async with httpx.AsyncClient(timeout=60) as client:
             r = await client.post(f"{self.base_url}/api/chat", json=payload)
             r.raise_for_status()
-        return r.json()["message"]["content"]
+        text = r.json()["message"]["content"]
+        tokens = len(text.split())
+        return text, tokens, tokens
 
 
 def _build_provider() -> GroqProvider | AnthropicProvider | OllamaProvider:
@@ -430,7 +434,8 @@ class LLMService:
 
         msgs = [{"role": h["role"], "content": h["content"]} for h in history[-8:]]
         msgs.append({"role": "user", "content": message})
-        return await self._provider.chat(system_prompt=system, messages=msgs, max_tokens=600)
+        text, inp, out = await self._provider.chat(system_prompt=system, messages=msgs, max_tokens=600)
+        return text, inp, out
 
 
 class PromptEvaluator:

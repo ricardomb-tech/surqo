@@ -226,12 +226,12 @@ async def chat_with_analysis(
             }
 
     history = [{"role": m.role, "content": m.content} for m in body.history]
-    response_text = await llm_svc.chat_with_analysis(
+    response_text, inp, out = await llm_svc.chat_with_analysis(
         message=body.message,
         history=history,
         analysis_context=context,
     )
-    return ChatResponse(response=response_text)
+    return ChatResponse(response=response_text, input_tokens=inp, output_tokens=out)
 
 
 @router.post("/evaluate-prompts", response_model=ComparisonResult)

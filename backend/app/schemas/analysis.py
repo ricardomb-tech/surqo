@@ -81,3 +81,5 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    input_tokens: int = 0
+    output_tokens: int = 0

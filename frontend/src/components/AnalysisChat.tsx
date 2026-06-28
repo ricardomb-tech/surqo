@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, Bot, User, Lightbulb } from "lucide-react"
+import { Send, Loader2, Bot, User, Lightbulb, Zap } from "lucide-react"
 import { getAccessToken } from "@/lib/auth"
 import type { Analysis } from "@/types"
 
@@ -25,6 +25,7 @@ export default function AnalysisChat({ analysis }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [totalTokens, setTotalTokens] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function AnalysisChat({ analysis }: Props) {
       if (!res.ok) throw new Error("Error del servidor")
       const data = await res.json()
       setMessages((m) => [...m, { role: "assistant", content: data.response }])
+      setTotalTokens((t) => t + (data.input_tokens ?? 0) + (data.output_tokens ?? 0))
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Lo siento, no pude conectarme. Intenta de nuevo." }])
     } finally {
@@ -69,6 +71,11 @@ export default function AnalysisChat({ analysis }: Props) {
         <div>
           <p className="text-sm font-bold text-gray-900">Pregúntale a la IA</p>
           <p className="text-[11px] text-purple-500 font-medium">Contexto: análisis de {analysis.farm_name}</p>
+        {totalTokens > 0 && (
+          <span className="text-[10px] font-bold text-purple-400 flex items-center gap-0.5">
+            <Zap className="w-2.5 h-2.5" />{totalTokens.toLocaleString()} tokens usados en el chat
+          </span>
+        )}
         </div>
       </div>
 

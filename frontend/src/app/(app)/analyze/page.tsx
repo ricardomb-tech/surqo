@@ -10,7 +10,7 @@ import {
   Brain, Sparkles, Mail, Sprout,
   ArrowRight, Loader2, Clock, CheckCircle2,
   AlertTriangle, XCircle, ChevronDown, Map, Thermometer,
-  Droplets, Wind, CloudRain, Activity,
+  Droplets, Wind, CloudRain, Activity, Zap,
 } from "lucide-react"
 import "leaflet/dist/leaflet.css"
 
@@ -338,6 +338,16 @@ export default function AnalyzePage() {
                           {new Date(result.created_at).toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                           {result.model_used && ` · ${result.model_used.split("/").pop()}`}
                         </p>
+                      {(result.input_tokens || result.output_tokens) && (
+                        <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                          <Zap className="w-2.5 h-2.5 text-purple-400" />
+                          {((result.input_tokens ?? 0) + (result.output_tokens ?? 0)).toLocaleString()} tokens
+                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-300">{result.input_tokens?.toLocaleString()} entrada</span>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-300">{result.output_tokens?.toLocaleString()} salida</span>
+                        </p>
+                      )}
                       </div>
                     </div>
                   </div>

@@ -11,6 +11,7 @@ import {
 import { SensorChart } from "@/components/SensorChart"
 import { LiveFeed } from "@/components/LiveFeed"
 import { AnalysisResult } from "@/components/AnalysisResult"
+import WeatherBanner from "@/components/WeatherBanner"
 import { farmAPI, alertAPI, analysisAPI, sensorAPI } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { Farm, Alert, KPIs, Analysis, TimeseriesPoint } from "@/types"
@@ -211,6 +212,9 @@ export default function DashboardPage() {
           </button>
         </div>
       </header>
+
+      {/* ── Clima en tiempo real ── */}
+      <WeatherBanner />
 
       {/* ── Hero ── */}
       <div className="mx-6 mt-6 rounded-2xl overflow-hidden relative"
