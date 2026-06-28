@@ -5,9 +5,8 @@
       "name": "frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "cwd": "frontend",
-      "port": 3000,
-      "autoPort": false
+      "cwd": "C:\\Users\\rickm\\projects\\dev\\surqo\\frontend",
+      "port": 3000
     }
   ]
 }

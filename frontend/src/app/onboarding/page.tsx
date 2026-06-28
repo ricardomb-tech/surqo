@@ -1,38 +1,42 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
-import { Sprout, MapPin, Loader2, Zap, CheckCircle2 } from "lucide-react"
+import { Sprout, Loader2, Zap, CheckCircle2 } from "lucide-react"
 import { Button, Card } from "@/components/ui/Primitives"
 import { useAuth } from "@/components/AuthProvider"
 import { getAccessToken } from "@/lib/auth"
+import ColombiaLocationSelector from "@/components/ColombiaLocationSelector"
+import "leaflet/dist/leaflet.css"
+
+const FarmMapSelector = dynamic(() => import("@/components/FarmMapSelector"), { ssr: false })
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 
 const CROPS = [
-  "maíz", "yuca", "plátano", "café", "arroz",
-  "algodón", "sorgo", "soya", "cacao", "caña de azúcar",
+  "Maíz", "Yuca", "Plátano", "Café", "Arroz",
+  "Algodón", "Sorgo", "Soya", "Cacao", "Caña de azúcar",
+  "Aguacate", "Palma de aceite", "Ñame", "Otro",
 ]
 
-const DEPARTMENTS = [
-  "Córdoba", "Antioquia", "Cundinamarca", "Valle del Cauca",
-  "Bolívar", "Atlántico", "Magdalena", "Cesar", "Sucre",
-  "Cauca", "Nariño", "Meta", "Huila", "Tolima", "Boyacá",
-]
+interface MapData {
+  latitude: number
+  longitude: number
+  area_hectares: number | null
+  altitude_masl: number | null
+  boundary_points: { lat: number; lng: number }[]
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
   const { user, loading, refreshPlanLimits } = useAuth()
 
-  const [form, setForm] = useState({
-    name: "",
-    crop_type: "maíz",
-    latitude: "",
-    longitude: "",
-    area_hectares: "",
-    department: "Córdoba",
-    municipality: "",
-  })
+  const [name, setName] = useState("")
+  const [cropType, setCropType] = useState("Maíz")
+  const [department, setDepartment] = useState("")
+  const [municipality, setMunicipality] = useState("")
+  const [mapData, setMapData] = useState<MapData | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,21 +44,22 @@ export default function OnboardingPage() {
     if (!loading && !user) router.replace("/login")
   }, [loading, user, router])
 
+  const handleMapData = useCallback((data: MapData) => {
+    setMapData(data)
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
 
-    const lat = parseFloat(form.latitude)
-    const lon = parseFloat(form.longitude)
-
-    if (isNaN(lat) || lat < -90 || lat > 90) {
-      setError("La latitud debe ser un número entre -90 y 90")
+    if (!mapData || mapData.boundary_points.length < 3) {
+      setError("Marca al menos 3 puntos en el mapa para definir los límites de tu finca.")
       setSubmitting(false)
       return
     }
-    if (isNaN(lon) || lon < -180 || lon > 180) {
-      setError("La longitud debe ser un número entre -180 y 180")
+    if (!department) {
+      setError("Selecciona el departamento donde se encuentra tu finca.")
       setSubmitting(false)
       return
     }
@@ -68,13 +73,14 @@ export default function OnboardingPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: form.name,
-          crop_type: form.crop_type,
-          latitude: lat,
-          longitude: lon,
-          area_hectares: form.area_hectares ? parseFloat(form.area_hectares) : null,
-          department: form.department,
-          municipality: form.municipality || null,
+          name,
+          crop_type: cropType,
+          latitude: mapData.latitude,
+          longitude: mapData.longitude,
+          area_hectares: mapData.area_hectares,
+          altitude_masl: mapData.altitude_masl,
+          department,
+          municipality: municipality || null,
         }),
       })
 
@@ -122,15 +128,15 @@ export default function OnboardingPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Farm name */}
             <div>
-              <label htmlFor="name" className="flex items-center gap-2">
+              <label htmlFor="name" className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
                 <Sprout className="w-4 h-4 text-surqo-green" />
-                Nombre de la finca
+                Nombre de la finca *
               </label>
               <input
                 id="name"
                 type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Ej: Finca El Porvenir"
                 className="w-full"
                 required
@@ -139,103 +145,51 @@ export default function OnboardingPage() {
 
             {/* Crop type */}
             <div>
-              <label htmlFor="crop_type" className="flex items-center gap-2">
+              <label htmlFor="crop_type" className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
                 <Sprout className="w-4 h-4 text-surqo-green" />
                 Tipo de cultivo principal
               </label>
               <select
                 id="crop_type"
-                value={form.crop_type}
-                onChange={(e) => setForm({ ...form, crop_type: e.target.value })}
+                value={cropType}
+                onChange={(e) => setCropType(e.target.value)}
                 className="w-full"
               >
                 {CROPS.map((c) => (
-                  <option key={c} value={c}>
-                    {c.charAt(0).toUpperCase() + c.slice(1)}
-                  </option>
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
 
-            {/* Coordinates */}
+            {/* Location selectors */}
             <div>
-              <label className="flex items-center gap-2 mb-2">
-                <MapPin className="w-4 h-4 text-surqo-green" />
-                Coordenadas GPS
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <input
-                    type="number"
-                    step="any"
-                    value={form.latitude}
-                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                    placeholder="Latitud (Ej: 8.7575)"
-                    className="w-full"
-                    required
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1 font-medium">Norte: positivo · Sur: negativo</p>
-                </div>
-                <div>
-                  <input
-                    type="number"
-                    step="any"
-                    value={form.longitude}
-                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                    placeholder="Longitud (Ej: -75.8891)"
-                    className="w-full"
-                    required
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1 font-medium">Este: positivo · Oeste: negativo</p>
-                </div>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2 font-medium">
-                Puedes obtener las coordenadas desde Google Maps → clic derecho sobre tu finca.
-              </p>
-            </div>
-
-            {/* Area */}
-            <div>
-              <label htmlFor="area">Área de la finca (hectáreas) — opcional</label>
-              <input
-                id="area"
-                type="number"
-                step="0.1"
-                min="0"
-                value={form.area_hectares}
-                onChange={(e) => setForm({ ...form, area_hectares: e.target.value })}
-                placeholder="Ej: 5.5"
-                className="w-full"
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Ubicación</p>
+              <ColombiaLocationSelector
+                department={department}
+                municipality={municipality}
+                onDepartmentChange={setDepartment}
+                onMunicipalityChange={setMunicipality}
+                required
               />
             </div>
 
-            {/* Location */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="department">Departamento</label>
-                <select
-                  id="department"
-                  value={form.department}
-                  onChange={(e) => setForm({ ...form, department: e.target.value })}
-                  className="w-full"
-                >
-                  {DEPARTMENTS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="municipality">Municipio — opcional</label>
-                <input
-                  id="municipality"
-                  type="text"
-                  value={form.municipality}
-                  onChange={(e) => setForm({ ...form, municipality: e.target.value })}
-                  placeholder="Ej: Montería"
-                  className="w-full"
-                />
-              </div>
+            {/* Interactive map */}
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                Límites de la finca en el mapa *
+              </p>
+              <FarmMapSelector onData={handleMapData} />
             </div>
+
+            {/* Summary of captured data */}
+            {mapData && mapData.boundary_points.length >= 3 && (
+              <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-green-800">
+                <span>Lat: <strong>{mapData.latitude}</strong></span>
+                <span>Lng: <strong>{mapData.longitude}</strong></span>
+                {mapData.area_hectares !== null && <span>Área: <strong>{mapData.area_hectares} ha</strong></span>}
+                {mapData.altitude_masl !== null && <span>Altitud: <strong>{mapData.altitude_masl} msnm</strong></span>}
+              </div>
+            )}
 
             {error && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -247,7 +201,7 @@ export default function OnboardingPage() {
               {submitting ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Registrando...
+                  Registrando…
                 </>
               ) : (
                 <>

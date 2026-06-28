@@ -1,17 +1,38 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { farmAPI } from "@/lib/api"
 import { useAuth } from "@/components/AuthProvider"
 import type { Farm } from "@/types"
 import { Plus, Sprout, MapPin, Loader2, Trash2, X, Edit2, AlertCircle, CheckCircle2, Mountain } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
+import ColombiaLocationSelector from "@/components/ColombiaLocationSelector"
+import "leaflet/dist/leaflet.css"
 
-const CROP_OPTIONS = ["Maíz","Yuca","Ñame","Arroz","Algodón","Sorgo","Plátano","Aguacate","Cacao","Café","Caña de azúcar","Palma de aceite","Otro"]
-const DEPARTMENTS  = ["Córdoba","Antioquia","Cundinamarca","Bolívar","Sucre","Cesar","Magdalena","Atlántico","Tolima","Huila","Valle del Cauca","Cauca","Nariño","Meta","Casanare","Santander","Norte de Santander","Boyacá","Caldas","Otro"]
+const FarmMapSelector = dynamic(() => import("@/components/FarmMapSelector"), { ssr: false })
 
-interface FormState { name: string; department: string; municipality: string; crop_type: string; area_hectares: string; latitude: string; longitude: string; altitude_masl: string }
-const EMPTY: FormState = { name:"", department:"", municipality:"", crop_type:"", area_hectares:"", latitude:"", longitude:"", altitude_masl:"" }
+const CROP_OPTIONS = [
+  "Maíz","Yuca","Ñame","Arroz","Algodón","Sorgo","Plátano",
+  "Aguacate","Cacao","Café","Caña de azúcar","Palma de aceite","Otro",
+]
+
+interface MapData {
+  latitude: number
+  longitude: number
+  area_hectares: number | null
+  altitude_masl: number | null
+  boundary_points: { lat: number; lng: number }[]
+}
+
+interface FormState {
+  name: string
+  department: string
+  municipality: string
+  crop_type: string
+}
+
+const EMPTY: FormState = { name: "", department: "", municipality: "", crop_type: "" }
 
 export default function FarmsPage() {
   const { planLimits, refreshPlanLimits } = useAuth()
@@ -22,6 +43,7 @@ export default function FarmsPage() {
   const [error,      setError]      = useState<string | null>(null)
   const [deleteId,   setDeleteId]   = useState<string | null>(null)
   const [form,       setForm]       = useState<FormState>(EMPTY)
+  const [mapData,    setMapData]    = useState<MapData | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -30,22 +52,48 @@ export default function FarmsPage() {
 
   useEffect(() => { load() }, [load])
 
-  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const handleMapData = useCallback((data: MapData) => setMapData(data), [])
+
+  const set = (k: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault(); setSubmitting(true); setError(null)
-    const lat = parseFloat(form.latitude), lon = parseFloat(form.longitude)
-    if (isNaN(lat) || isNaN(lon)) { setError("Ingresa coordenadas válidas."); setSubmitting(false); return }
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+
+    if (!mapData || mapData.boundary_points.length < 3) {
+      setError("Marca al menos 3 puntos en el mapa para definir los límites de la finca.")
+      setSubmitting(false)
+      return
+    }
+    if (!form.department) {
+      setError("Selecciona el departamento.")
+      setSubmitting(false)
+      return
+    }
+
     try {
-      await farmAPI.create({ name: form.name, crop_type: form.crop_type, latitude: lat, longitude: lon,
-        area_hectares: form.area_hectares ? parseFloat(form.area_hectares) : null,
-        department: form.department, municipality: form.municipality || null,
-        altitude_masl: form.altitude_masl ? parseFloat(form.altitude_masl) : null })
-      setShowForm(false); setForm(EMPTY)
+      await farmAPI.create({
+        name: form.name,
+        crop_type: form.crop_type,
+        latitude: mapData.latitude,
+        longitude: mapData.longitude,
+        area_hectares: mapData.area_hectares ?? undefined,
+        altitude_masl: mapData.altitude_masl ?? undefined,
+        department: form.department,
+        municipality: form.municipality || undefined,
+      })
+      setShowForm(false)
+      setForm(EMPTY)
+      setMapData(null)
       await Promise.all([load(), refreshPlanLimits()])
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error al crear la finca"
-      setError(msg.includes("400") || msg.toLowerCase().includes("limit") ? "Solo puedes registrar 1 finca por cuenta." : msg)
+      setError(msg.includes("400") || msg.toLowerCase().includes("limit")
+        ? "Solo puedes registrar 1 finca por cuenta."
+        : msg)
       setSubmitting(false)
     }
   }
@@ -55,10 +103,15 @@ export default function FarmsPage() {
     try {
       const token = await import("@/lib/auth").then((m) => m.getAccessToken())
       const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev").replace(/^﻿/, "").trim()
-      await fetch(`${API_BASE}/api/v1/farms/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
+      await fetch(`${API_BASE}/api/v1/farms/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
       await Promise.all([load(), refreshPlanLimits()])
     } finally { setDeleteId(null) }
   }
+
+  const closeForm = () => { setShowForm(false); setError(null); setForm(EMPTY); setMapData(null) }
 
   const atLimit = (planLimits?.farms.used ?? 0) >= (planLimits?.farms.limit ?? 1)
 
@@ -102,8 +155,8 @@ export default function FarmsPage() {
 
         {/* Modal */}
         {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-3xl border border-gray-100 shadow-2xl overflow-hidden bg-white">
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
+            <div className="w-full max-w-2xl rounded-3xl border border-gray-100 shadow-2xl overflow-hidden bg-white my-8">
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center text-green-700">
@@ -111,66 +164,68 @@ export default function FarmsPage() {
                   </div>
                   <h2 className="text-lg font-black tracking-tight text-gray-900">Registrar finca</h2>
                 </div>
-                <button onClick={() => { setShowForm(false); setError(null); setForm(EMPTY) }}
+                <button onClick={closeForm}
                   className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <form onSubmit={handleCreate} className="p-6 space-y-4">
+
+              <form onSubmit={handleCreate} className="p-6 space-y-5">
+                {/* Name */}
                 <div>
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Nombre de la finca *</label>
                   <input placeholder="Ej: Finca El Paraíso" value={form.name} onChange={set("name")} required className="w-full" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Departamento *</label>
-                    <select value={form.department} onChange={set("department")} required className="w-full">
-                      <option value="">Seleccionar…</option>
-                      {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Municipio</label>
-                    <input placeholder="Ej: Montería" value={form.municipality} onChange={set("municipality")} className="w-full" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Cultivo principal</label>
-                    <select value={form.crop_type} onChange={set("crop_type")} className="w-full">
-                      <option value="">Seleccionar…</option>
-                      {CROP_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Área (ha)</label>
-                    <input type="number" placeholder="0.0" min="0" step="0.1" value={form.area_hectares} onChange={set("area_hectares")} className="w-full" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Latitud *</label>
-                    <input type="number" step="any" placeholder="Ej: 8.7575" value={form.latitude} onChange={set("latitude")} required className="w-full" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Longitud *</label>
-                    <input type="number" step="any" placeholder="Ej: -75.889" value={form.longitude} onChange={set("longitude")} required className="w-full" />
-                  </div>
-                </div>
+
+                {/* Crop */}
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Altitud (msnm) — opcional</label>
-                  <input type="number" placeholder="Ej: 120" min="0" step="1" value={form.altitude_masl} onChange={set("altitude_masl")} className="w-full" />
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Cultivo principal</label>
+                  <select value={form.crop_type} onChange={set("crop_type")} className="w-full">
+                    <option value="">Seleccionar…</option>
+                    {CROP_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
+
+                {/* Department / Municipality */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Ubicación</p>
+                  <ColombiaLocationSelector
+                    department={form.department}
+                    municipality={form.municipality}
+                    onDepartmentChange={(v) => setForm((f) => ({ ...f, department: v }))}
+                    onMunicipalityChange={(v) => setForm((f) => ({ ...f, municipality: v }))}
+                    required
+                  />
+                </div>
+
+                {/* Map */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Límites de la finca en el mapa *</p>
+                  <FarmMapSelector onData={handleMapData} />
+                </div>
+
+                {/* Captured summary */}
+                {mapData && mapData.boundary_points.length >= 3 && (
+                  <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs font-medium text-green-800">
+                    <span>Lat: <strong>{mapData.latitude}</strong></span>
+                    <span>Lng: <strong>{mapData.longitude}</strong></span>
+                    {mapData.area_hectares !== null && <span>Área: <strong>{mapData.area_hectares} ha</strong></span>}
+                    {mapData.altitude_masl !== null && <span>Altitud: <strong>{mapData.altitude_masl} msnm</strong></span>}
+                  </div>
+                )}
+
                 {error && (
                   <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
                     <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                     <p className="text-sm text-red-600 font-medium">{error}</p>
                   </div>
                 )}
+
                 <div className="flex gap-3 pt-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => { setShowForm(false); setError(null); setForm(EMPTY) }}>Cancelar</Button>
+                  <Button type="button" variant="outline" className="flex-1" onClick={closeForm}>Cancelar</Button>
                   <Button type="submit" className="flex-1 gap-2" disabled={submitting}>
-                    {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}Registrar
+                    {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    Registrar
                   </Button>
                 </div>
               </form>
@@ -178,6 +233,7 @@ export default function FarmsPage() {
           </div>
         )}
 
+        {/* Farm cards */}
         {farms.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-20 flex flex-col items-center gap-5 text-center">
             <div className="w-16 h-16 rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center">
@@ -192,7 +248,8 @@ export default function FarmsPage() {
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {farms.map((farm) => (
-              <div key={farm.id} className="rounded-2xl border border-gray-100 bg-white hover:border-green-200 transition-all duration-200 group overflow-hidden"
+              <div key={farm.id}
+                className="rounded-2xl border border-gray-100 bg-white hover:border-green-200 transition-all duration-200 group overflow-hidden"
                 style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
                 <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
