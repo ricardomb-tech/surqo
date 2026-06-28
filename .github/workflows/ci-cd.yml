@@ -93,6 +93,9 @@ jobs:
           echo "  Frontend (Vercel)  -> $FRONTEND"
           if [[ "$BACKEND" == "success" && "$FRONTEND" == "success" ]]; then
             echo "Deploy completo — surqo.vercel.app esta actualizado"
+          elif [[ "$BACKEND" == "skipped" && "$FRONTEND" == "skipped" ]]; then
+            echo "Deploy omitido — los tests fallaron o este evento no es un push a master."
+            exit 1
           else
             echo "Algun deploy fallo. Revisa los logs de cada job."
             exit 1
