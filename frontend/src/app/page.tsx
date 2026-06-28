@@ -219,17 +219,17 @@ export default function Home() {
               />
             </div>
 
-            {/* Floating question bubbles — hidden on small mobile, visible from sm */}
-            <div className="hidden sm:block absolute top-[12%] left-[22%] max-w-[170px] text-center">
-              <p className="text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿Cuánta agua estoy desperdiciando sin saberlo?</p>
+            {/* Floating question bubbles */}
+            <div className="absolute top-[6%] left-[2%] max-w-[140px] sm:top-[12%] sm:left-[22%] sm:max-w-[170px] text-center">
+              <p className="text-xs sm:text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿Cuánta agua estoy desperdiciando sin saberlo?</p>
             </div>
 
-            <div className="hidden sm:block absolute top-[38%] left-[4%] max-w-[155px]">
-              <p className="text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿Cuándo exactamente debo regar?</p>
+            <div className="absolute top-[32%] left-[2%] max-w-[130px] sm:top-[38%] sm:left-[4%] sm:max-w-[155px]">
+              <p className="text-xs sm:text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿Cuándo exactamente debo regar?</p>
             </div>
 
-            <div className="hidden sm:block absolute top-[22%] right-[8%] lg:right-[20%] max-w-[160px] lg:max-w-[175px] text-right">
-              <p className="text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿El clima favorece hongos o plagas esta semana?</p>
+            <div className="absolute top-[6%] right-[2%] max-w-[130px] sm:top-[22%] sm:right-[8%] lg:right-[20%] sm:max-w-[160px] lg:max-w-[175px] text-right">
+              <p className="text-xs sm:text-sm lg:text-base text-slate-700 font-semibold leading-snug">¿El clima favorece hongos o plagas esta semana?</p>
             </div>
           </div>
 
