@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     # App — CORS_ORIGINS como str para evitar conflicto con pydantic-settings JSON parser
     APP_ENV: str = "development"
-    CORS_ORIGINS_RAW: str = "http://localhost:3000,https://surqo.vercel.app"
+    CORS_ORIGINS_RAW: str = "http://localhost:3000,https://surqo.vercel.app,https://www.surqo.online,https://surqo.online"
     LOGFIRE_TOKEN: str = ""
 
     @property
