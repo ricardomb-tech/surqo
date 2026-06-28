@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { ArrowRight, Cpu, Wifi, Terminal, FlaskConical, Bell, LayoutDashboard } from "lucide-react"
+import Image from "next/image"
+import { ArrowRight, Cpu, Wifi, Terminal, FlaskConical, Bell, LayoutDashboard, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { Footer } from "@/components/Footer"
 
@@ -58,20 +59,52 @@ export default function ComoFuncionaPage() {
   return (
     <div className="min-h-screen bg-surqo-bg">
 
-      {/* ── HEADER ── */}
-      <section className="pt-28 pb-16 text-center max-w-3xl mx-auto px-4">
-        <p className="text-xs font-bold tracking-[0.2em] uppercase text-surqo-green-bright mb-4">Proceso</p>
-        <h1 className="text-5xl sm:text-6xl font-black tracking-tighter mb-5">
-          Del sensor al<br />
-          <span className="text-gradient">análisis en 5 pasos</span>
-        </h1>
-        <p className="text-lg text-surqo-text-secondary font-medium max-w-xl mx-auto">
-          Un flujo completo desde el hardware en campo hasta la recomendación agronómica en tu pantalla.
-        </p>
+      {/* ── HERO ── */}
+      <section className="relative h-screen flex flex-col justify-end overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
+        {/* Imagen de fondo */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/campo-trigo.jpg"
+            alt="Campo de trigo al atardecer"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+        </div>
+
+        {/* Texto hero */}
+        <div className="relative z-10 px-6 sm:px-12 pb-28 max-w-4xl">
+          <h1 className="font-black text-white leading-none tracking-tight mb-5"
+            style={{ fontSize: "clamp(2.8rem, 7vw, 5.5rem)" }}>
+            Del sensor al análisis<br />en 5 pasos
+          </h1>
+          <p className="text-white/75 font-medium max-w-xl leading-relaxed"
+            style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)" }}>
+            Un flujo completo desde el hardware en campo hasta la recomendación agronómica en tu pantalla.
+          </p>
+        </div>
+
+        {/* Botón scroll */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+          <Link href="#pasos"
+            className="flex items-center justify-center w-14 h-14 rounded-full transition-transform hover:scale-110 active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 100%)",
+              border: "1px solid rgba(255,255,255,0.50)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.70)",
+            }}
+          >
+            <ChevronDown className="w-6 h-6 text-surqo-green" strokeWidth={2.5} />
+          </Link>
+        </div>
       </section>
 
       {/* ── STEPS ── */}
-      <section className="max-w-4xl mx-auto px-4 pb-20">
+      <section id="pasos" className="max-w-4xl mx-auto px-4 pb-20 pt-16">
         <div className="relative">
           {/* Vertical line */}
           <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-surqo-green/30 via-surqo-green/10 to-transparent hidden md:block" />
