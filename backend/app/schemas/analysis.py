@@ -66,3 +66,18 @@ class ComparisonResult(BaseModel):
     v1: PromptEvalResult
     v2: PromptEvalResult
     recommendation: str
+
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    analysis_id: uuid.UUID | None = None
+    message: str = Field(..., max_length=2000)
+    history: list[ChatMessage] = []
+
+
+class ChatResponse(BaseModel):
+    response: str

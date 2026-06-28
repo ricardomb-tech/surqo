@@ -62,6 +62,19 @@ class GroqProvider:
         usage = data.get("usage", {})
         return text, usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
 
+    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> str:
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "system", "content": system_prompt}] + messages,
+            "max_tokens": max_tokens,
+            "temperature": 0.4,
+        }
+        headers = {"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"}
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.post(self.BASE_URL, json=payload, headers=headers)
+            r.raise_for_status()
+        return r.json()["choices"][0]["message"]["content"]
+
 
 class AnthropicProvider:
     """Proveedor Anthropic Claude (fallback de pago)."""
@@ -84,6 +97,13 @@ class AnthropicProvider:
             response.usage.input_tokens,
             response.usage.output_tokens,
         )
+
+    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> str:
+        response = await self._client.messages.create(
+            model=self.model, max_tokens=max_tokens,
+            system=system_prompt, messages=messages,
+        )
+        return response.content[0].text
 
 
 class OllamaProvider:
@@ -114,6 +134,18 @@ class OllamaProvider:
         prompt_tokens = len(system_prompt.split()) + len(user_content.split())
         output_tokens = len(text.split())
         return text, prompt_tokens, output_tokens
+
+    async def chat(self, system_prompt: str, messages: list[dict], max_tokens: int = 800) -> str:
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "system", "content": system_prompt}] + messages,
+            "options": {"temperature": 0.4, "num_predict": max_tokens},
+            "stream": False,
+        }
+        async with httpx.AsyncClient(timeout=60) as client:
+            r = await client.post(f"{self.base_url}/api/chat", json=payload)
+            r.raise_for_status()
+        return r.json()["message"]["content"]
 
 
 def _build_provider() -> GroqProvider | AnthropicProvider | OllamaProvider:
@@ -365,6 +397,26 @@ class LLMService:
                 top_priority=data.get("top_priority", ""),
                 week_outlook=data.get("week_outlook", ""),
             )
+
+    async def chat_with_analysis(
+        self,
+        message: str,
+        history: list[dict],
+        analysis_context: dict | None = None,
+    ) -> str:
+        system = (
+            "Eres SURQO, asistente agronómico experto en agricultura tropical colombiana. "
+            "Ayudas a agricultores a entender sus análisis de finca, interpretar datos climáticos "
+            "y de sensores IoT, y tomar mejores decisiones agronómicas.\n"
+            "Responde SIEMPRE en español, con lenguaje sencillo y práctico. "
+            "Sé empático, breve y útil. No inventes datos que no estén en el contexto."
+        )
+        if analysis_context:
+            system += f"\n\n## ANÁLISIS ACTUAL DE LA FINCA\n{json.dumps(analysis_context, ensure_ascii=False, indent=2)}"
+
+        msgs = [{"role": h["role"], "content": h["content"]} for h in history[-8:]]
+        msgs.append({"role": "user", "content": message})
+        return await self._provider.chat(system_prompt=system, messages=msgs, max_tokens=600)
 
 
 class PromptEvaluator:

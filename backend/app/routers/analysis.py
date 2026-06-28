@@ -14,7 +14,7 @@ from app.dependencies import CurrentUser, DBSession
 from app.models.analysis import Analysis
 from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
-from app.schemas.analysis import AnalysisRequest, AnalysisResponse, ComparisonResult, PromptEvalRequest
+from app.schemas.analysis import AnalysisRequest, AnalysisResponse, ChatRequest, ChatResponse, ComparisonResult, PromptEvalRequest
 from app.services.alert_service import AlertService
 from app.services.cache_service import cache_service
 from app.services.climate_service import ClimateService
@@ -184,6 +184,47 @@ async def get_analysis(analysis_id: uuid.UUID, current_user: CurrentUser, db: DB
         if not farm or farm.user_id != current_user.user_id:
             raise HTTPException(status_code=403, detail="Sin acceso a este análisis")
     return analysis
+
+
+@router.post("/chat", response_model=ChatResponse)
+@limiter.limit("20/minute")
+async def chat_with_analysis(
+    request: Request,
+    body: ChatRequest,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> ChatResponse:
+    context: dict | None = None
+    if body.analysis_id:
+        analysis = await db.get(Analysis, body.analysis_id)
+        if analysis:
+            if analysis.farm_id:
+                farm = await db.get(Farm, analysis.farm_id)
+                if farm and farm.user_id != current_user.user_id:
+                    raise HTTPException(status_code=403, detail="Sin acceso a este análisis")
+            context = {
+                "finca": analysis.farm_name,
+                "cultivo": analysis.crop_type,
+                "nivel_alerta": analysis.alert_level,
+                "alerta_principal": analysis.main_alert,
+                "resumen": analysis.summary_for_farmer,
+                "estres_hidrico": float(analysis.water_stress_index) if analysis.water_stress_index else None,
+                "riego_necesario": analysis.irrigation_needed,
+                "proxima_irrigacion": analysis.next_irrigation_date,
+                "temperatura_promedio_c": float(analysis.avg_temperature_c) if analysis.avg_temperature_c else None,
+                "lluvia_7d_mm": float(analysis.total_rain_7d_mm) if analysis.total_rain_7d_mm else None,
+                "vpd_kpa": float(analysis.avg_vpd_kpa) if analysis.avg_vpd_kpa else None,
+                "et0_7d_mm": float(analysis.et0_7d_mm) if analysis.et0_7d_mm else None,
+                "recomendaciones": analysis.recommendations or [],
+            }
+
+    history = [{"role": m.role, "content": m.content} for m in body.history]
+    response_text = await llm_svc.chat_with_analysis(
+        message=body.message,
+        history=history,
+        analysis_context=context,
+    )
+    return ChatResponse(response=response_text)
 
 
 @router.post("/evaluate-prompts", response_model=ComparisonResult)
