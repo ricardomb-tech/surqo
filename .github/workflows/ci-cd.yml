@@ -62,24 +62,8 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-  deploy-frontend:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: "--prod"
-          working-directory: ./frontend
-
   notify-deploy:
-    needs: [deploy-backend, deploy-frontend]
+    needs: [deploy-backend]
     runs-on: ubuntu-latest
     if: always() && github.ref == 'refs/heads/master' && github.event_name == 'push'
 
@@ -87,16 +71,15 @@ jobs:
       - name: Summarize deploy
         run: |
           BACKEND="${{ needs.deploy-backend.result }}"
-          FRONTEND="${{ needs.deploy-frontend.result }}"
           echo "Surqo deploy summary"
           echo "  Backend  (Fly.io)  -> $BACKEND"
-          echo "  Frontend (Vercel)  -> $FRONTEND"
-          if [[ "$BACKEND" == "success" && "$FRONTEND" == "success" ]]; then
-            echo "Deploy completo — surqo.vercel.app esta actualizado"
-          elif [[ "$BACKEND" == "skipped" && "$FRONTEND" == "skipped" ]]; then
-            echo "Deploy omitido — los tests fallaron o este evento no es un push a master."
+          echo "  Frontend (Vercel)  -> auto-deploy via GitHub integration"
+          if [[ "$BACKEND" == "success" ]]; then
+            echo "Deploy completo — surqo-api.fly.dev y surqo.vercel.app actualizados"
+          elif [[ "$BACKEND" == "skipped" ]]; then
+            echo "Deploy omitido — los tests fallaron o este evento no es push a master."
             exit 1
           else
-            echo "Algun deploy fallo. Revisa los logs de cada job."
+            echo "Backend deploy fallo. Revisa los logs del job deploy-backend."
             exit 1
           fi
