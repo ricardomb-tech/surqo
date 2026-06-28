@@ -64,7 +64,7 @@ export default function ComoFuncionaPage() {
         {/* Imagen de fondo */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/campo-trigo.jpg"
+            src="/hero-bg3.jpg"
             alt="Campo de trigo al atardecer"
             fill
             priority
