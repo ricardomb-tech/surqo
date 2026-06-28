@@ -61,7 +61,14 @@ export function NavBar() {
     p === "/" ? pathname === "/" : pathname.startsWith(p)
   )
   const showAppNav    = !!user && !isPublicPage
-  const showPublicNav = !user && isPublicPage
+  const showPublicNav = isPublicPage  // siempre visible en páginas públicas
+
+  // Redirigir al dashboard si el usuario ya está autenticado y está en la landing
+  useEffect(() => {
+    if (user && pathname === "/") {
+      router.replace("/dashboard")
+    }
+  }, [user, pathname, router])
 
   const handleSignOut = async () => {
     await signOut()
