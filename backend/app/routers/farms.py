@@ -3,9 +3,9 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import func, select
-
-from sqlalchemy import delete as sql_delete, update as sql_update
+from sqlalchemy import update as sql_update
 
 from app.dependencies import CurrentUser, DBSession
 from app.models.alert import Alert
