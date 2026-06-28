@@ -58,7 +58,7 @@ function LoginForm() {
       {/* ── Background image ── */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/glavo-aerial-view-2830059.webp"
+          src="/cta-bg.webp"
           alt="Vista aérea campo agrícola"
           fill
           priority
