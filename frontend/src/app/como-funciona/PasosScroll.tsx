@@ -102,12 +102,11 @@ function PasoCard({
   const Icon = paso.icon
 
   // Posición flotante relativa al card activo (0 = centro, ±1 = lados, ±2 = fondo)
-  // pos=0 → center of container (offset -half card width), cada paso se desplaza 300px
-  const CARD_W = 285
+  const CARD_W = 320
   const x = useTransform(scrollYProgress, (p) => {
     const active = p * (total - 1)
     const pos = index - active
-    return pos * 300 - CARD_W / 2
+    return pos * 340 - CARD_W / 2
   })
 
   const scale = useTransform(scrollYProgress, (p) => {
@@ -138,34 +137,35 @@ function PasoCard({
       className="absolute left-1/2"
       style={{ x: sx, scale: sScale, opacity: sOpacity, zIndex }}
     >
-      {/* Glass card */}
+      {/* Glass card — vidrio intenso */}
       <div
-        className="w-[270px] sm:w-[300px] rounded-3xl p-6 flex flex-col gap-4"
+        className="w-[320px] rounded-3xl p-7 flex flex-col gap-5"
         style={{
-          background: "linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.10) 100%)",
-          border: "1px solid rgba(255,255,255,0.50)",
-          backdropFilter: "blur(16px) saturate(160%)",
-          WebkitBackdropFilter: "blur(16px) saturate(160%)",
+          background: "linear-gradient(135deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 100%)",
+          border: "1.5px solid rgba(255,255,255,0.75)",
+          backdropFilter: "blur(28px) saturate(200%) brightness(1.08)",
+          WebkitBackdropFilter: "blur(28px) saturate(200%) brightness(1.08)",
           boxShadow:
-            "0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.70), inset 0 -1px 0 rgba(0,0,0,0.06)",
+            "0 16px 48px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.15), inset 0 1.5px 0 rgba(255,255,255,0.90), inset 0 -1px 0 rgba(0,0,0,0.08)",
         }}
       >
         {/* Número + icono */}
         <div className="flex items-center justify-between">
           <span
-            className="text-5xl font-black leading-none tracking-tighter select-none"
-            style={{ color: "rgba(134,230,106,0.22)" }}
+            className="text-6xl font-black leading-none tracking-tighter select-none"
+            style={{ color: "rgba(134,230,106,0.28)" }}
           >
             {paso.number}
           </span>
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{
-              background: "rgba(134,230,106,0.18)",
-              border: "1.5px solid rgba(134,230,106,0.50)",
+              background: "rgba(134,230,106,0.22)",
+              border: "1.5px solid rgba(134,230,106,0.60)",
+              boxShadow: "0 4px 16px rgba(134,230,106,0.18)",
             }}
           >
-            <Icon className="w-7 h-7" style={{ color: LIME }} />
+            <Icon className="w-8 h-8" style={{ color: LIME }} />
           </div>
         </div>
 
@@ -182,10 +182,10 @@ function PasoCard({
         </span>
 
         {/* Título */}
-        <h3 className="text-lg font-black text-white leading-tight">{paso.title}</h3>
+        <h3 className="text-xl font-black text-white leading-tight">{paso.title}</h3>
 
         {/* Descripción */}
-        <p className="text-sm text-white/70 leading-relaxed">{paso.description}</p>
+        <p className="text-sm text-white/80 leading-relaxed">{paso.description}</p>
 
         {/* Puntos */}
         <ul className="space-y-1.5 pt-1">
@@ -293,15 +293,8 @@ export function PasosScroll() {
         {/* Contenido */}
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-4">
 
-          {/* Barras de progreso */}
-          <div className="flex gap-2 w-full max-w-xl mb-10 px-4">
-            {PASOS.map((_, i) => (
-              <ProgressBar key={i} index={i} total={PASOS.length} scrollYProgress={smooth} />
-            ))}
-          </div>
-
-          {/* Carousel de cards — posición absoluta centrada */}
-          <div className="relative flex items-center justify-center w-full" style={{ height: "420px" }}>
+          {/* Carousel de cards */}
+          <div className="relative flex items-center justify-center w-full" style={{ height: "480px" }}>
             {PASOS.map((p, i) => (
               <PasoCard
                 key={p.title}
@@ -313,8 +306,7 @@ export function PasosScroll() {
             ))}
           </div>
 
-          {/* Nombre del paso activo */}
-          <p className="text-white/30 text-xs font-semibold tracking-widest uppercase mt-8">
+          <p className="text-white/25 text-xs font-semibold tracking-widest uppercase mt-6">
             Desliza para continuar
           </p>
         </div>
