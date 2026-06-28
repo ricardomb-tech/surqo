@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ChevronDown } from "lucide-react"
 import { Footer } from "@/components/Footer"
 import { SolucionesScroll } from "./SolucionesScroll"
 
@@ -43,6 +43,13 @@ export default function SolucionesPage() {
             style={{ fontSize: "clamp(1rem, 2vw, 1.2rem)" }}>
             Cuatro módulos integrados que cubren el ciclo completo: sensores en campo, análisis con IA, alertas automáticas y visualización.
           </p>
+        </div>
+
+        {/* Scroll hint */}
+        <div className="relative z-10 flex justify-center pb-6">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)" }}>
+            <ChevronDown className="w-5 h-5 text-white/70 animate-bounce" />
+          </div>
         </div>
       </section>
 
