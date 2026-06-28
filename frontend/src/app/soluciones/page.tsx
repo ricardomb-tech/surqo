@@ -11,7 +11,7 @@ export default function SolucionesPage() {
     <div className="min-h-screen bg-surqo-bg">
 
       {/* ── HERO ── */}
-      <section className="relative h-[70vh] min-h-[480px] flex items-end overflow-hidden">
+      <section className="relative h-screen flex items-end overflow-hidden" style={{ backgroundColor: "#1a3318" }}>
         {/* Imagen de fondo */}
         <div className="absolute inset-0 z-0">
           <Image
