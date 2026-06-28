@@ -218,18 +218,17 @@ export function NavBar() {
             ) : (
               /* Public auth buttons */
               <div className="hidden md:flex items-center gap-3">
-                <Link href="/login">
-                  <GlassButton size="sm" contentClassName="flex items-center gap-1.5 font-black tracking-widest uppercase">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="4" /><path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                    </svg>
-                    Iniciar sesión
-                  </GlassButton>
-                </Link>
-                <Link href="/register">
-                  <GlassButton size="sm" contentClassName="font-black tracking-widest uppercase" style={{ color: LIME } as React.CSSProperties}>
-                    Empezar gratis
-                  </GlassButton>
+                <Link
+                  href="/login"
+                  className={cn(
+                    "flex items-center gap-1.5 text-sm font-black tracking-widest uppercase transition-colors duration-200",
+                    isLight ? "text-gray-500 hover:text-gray-900" : "text-white hover:text-[#86E66A]"
+                  )}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" /><path strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
+                  Iniciar sesión
                 </Link>
               </div>
             )}
@@ -283,21 +282,13 @@ export function NavBar() {
                     </Link>
                   )
                 })}
-                <div className="border-t border-white/10 pt-3 mt-2 flex flex-col gap-2">
+                <div className="border-t border-white/10 pt-3 mt-2">
                   <Link
                     href="/login"
                     onClick={() => setMobileOpen(false)}
                     className="w-full text-center font-black text-sm tracking-widest uppercase px-5 py-3 rounded-full text-white/70 border border-white/20 hover:border-white/50 transition-all"
                   >
                     Iniciar sesión
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setMobileOpen(false)}
-                    className="w-full text-center font-black text-sm tracking-widest uppercase px-5 py-3 rounded-full transition-all"
-                    style={{ border: `2px solid ${LIME}`, color: LIME }}
-                  >
-                    Empezar gratis
                   </Link>
                 </div>
               </>
