@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Cpu, Brain, Bell, BarChart3, Droplets, Thermometer, Wind, Zap } from "lucide-react"
+import { ArrowRight, Cpu, Brain, Bell, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { Footer } from "@/components/Footer"
 
@@ -41,13 +41,6 @@ const SOLUTIONS = [
       "Dashboard profesional con KPIs en tiempo real, gráficas de evolución y acceso al historial completo de análisis desde cualquier dispositivo.",
     points: ["VPD y ETc en tiempo real", "Gráfica de humedad histórica", "Últimos análisis con IA", "Estado del suelo y salud del cultivo"],
   },
-]
-
-const METRICS = [
-  { icon: Droplets, value: "45%", label: "Ahorro promedio de agua" },
-  { icon: Thermometer, value: "±0.5°C", label: "Precisión de temperatura" },
-  { icon: Wind, value: "1.2 kPa", label: "Resolución VPD" },
-  { icon: Zap, value: "15 min", label: "Frecuencia de lectura" },
 ]
 
 const TESTIMONIALS = [
@@ -109,29 +102,13 @@ export default function SolucionesPage() {
         </div>
       </section>
 
-      {/* ── METRICS ── */}
-      <section className="border-y border-white/[0.06] bg-white/[0.02]">
-        <div className="max-w-5xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {METRICS.map(({ icon: Icon, value, label }) => (
-              <div key={label} className="text-center">
-                <div className="w-10 h-10 rounded-xl bg-surqo-green/10 border border-surqo-green/20 flex items-center justify-center text-surqo-green mx-auto mb-3">
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="text-2xl font-black text-gradient mb-1">{value}</div>
-                <div className="text-xs font-bold text-surqo-text-muted tracking-widest uppercase">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── SOLUTIONS ── */}
       <section className="relative py-20 overflow-hidden">
         {/* Imagen de fondo del agricultor */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/campo-surqo.jpg"
+            src="/farmer.png"
             alt="Agricultor colombiano en campo"
             fill
             sizes="100vw"
