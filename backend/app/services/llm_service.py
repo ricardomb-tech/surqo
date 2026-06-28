@@ -224,6 +224,7 @@ class LLMService:
         crop_type: str,
         farm_name: str,
         sensor_data: dict | None = None,
+        max_output_tokens: int = 800,
     ) -> AnalysisResult:
         with logfire.span("llm.analyze_farm", farm=farm_name, crop=crop_type):
             prompt_cfg = self.load_prompt("farm_analysis_v1.0.yaml")
@@ -264,7 +265,7 @@ class LLMService:
             raw_text, input_tokens, output_tokens = await self._provider.complete(
                 system_prompt=prompt_cfg["system_prompt"],
                 user_content=user_content,
-                max_tokens=prompt_cfg.get("max_tokens", settings.LLM_MAX_TOKENS),
+                max_tokens=max_output_tokens,
             )
             raw_text = raw_text.strip()
 

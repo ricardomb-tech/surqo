@@ -39,7 +39,8 @@ async def test_get_plan_limits(client: AsyncClient) -> None:
     assert "plan" in data
     assert "farms" in data
     assert data["farms"]["used"] == 0
-    assert data["farms"]["limit"] >= 1
+    assert "limit" in data["farms"]
+    assert "ai_analysis" in data
 
 
 @pytest.mark.asyncio

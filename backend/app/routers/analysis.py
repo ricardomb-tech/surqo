@@ -36,9 +36,25 @@ async def analyze_farm(
     request: Request,
     body: AnalysisRequest,
     background_tasks: BackgroundTasks,
-    current_user: PaidUser,
+    current_user: CurrentUser,
     db: DBSession,
 ) -> Analysis:
+    # Verificar cuota de análisis IA
+    if not current_user.can_use_ai_analysis:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "analysis_quota_exceeded",
+                "message": (
+                    f"Usaste tus {current_user.FREE_ANALYSES_LIMIT} análisis IA gratuitos. "
+                    "Contacta a nuestro equipo para activar el plan premium y tener análisis ilimitados."
+                ),
+                "analyses_used": current_user.analyses_used,
+                "analyses_limit": current_user.FREE_ANALYSES_LIMIT,
+                "contact_url": "https://surqo.co/upgrade",
+            },
+        )
+
     cache_key = f"analysis:{body.lat:.3f}:{body.lon:.3f}:{body.crop_type}"
     cached = await cache_service.get(cache_key)
     if cached and not body.farm_id:
@@ -81,6 +97,7 @@ async def analyze_farm(
             crop_type=body.crop_type,
             farm_name=body.farm_name,
             sensor_data=sensor_dict,
+            max_output_tokens=current_user.max_output_tokens,
         )
 
         analysis = Analysis(
@@ -105,6 +122,12 @@ async def analyze_farm(
             cost_usd=result_data.cost_usd,
         )
         db.add(analysis)
+
+        # Actualizar contadores de cuota en el perfil del usuario
+        current_user.analyses_used += 1
+        current_user.tokens_used += result_data.output_tokens
+        db.add(current_user)
+
         await db.commit()
         await db.refresh(analysis)
 

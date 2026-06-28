@@ -56,16 +56,28 @@ async def get_plan_limits(current_user: CurrentUser, db: DBSession) -> dict:
     )
     farms_count = farm_count_result.scalar() or 0
 
+    is_paid = current_user.is_paid or current_user.is_admin
     return {
-        "plan": "free",
+        "plan": current_user.plan,
         "farms": {
             "used": farms_count,
-            "limit": UserProfile.MAX_FARMS,
-            "unlimited": False,
-            "remaining": max(0, UserProfile.MAX_FARMS - farms_count),
+            "limit": None if is_paid else UserProfile.MAX_FARMS,
+            "unlimited": is_paid,
+            "remaining": None if is_paid else max(0, UserProfile.MAX_FARMS - farms_count),
         },
-        "ai_analysis": {"allowed": True},
-        "email_alerts": {"unlimited": True},
+        "ai_analysis": {
+            "allowed": current_user.can_use_ai_analysis,
+            "used": current_user.analyses_used,
+            "limit": None if is_paid else UserProfile.FREE_ANALYSES_LIMIT,
+            "remaining": current_user.analyses_remaining,
+            "tokens_used": current_user.tokens_used,
+            "tokens_limit": None if is_paid else UserProfile.FREE_TOKENS_LIMIT,
+            "max_tokens_per_analysis": current_user.max_output_tokens,
+        },
+        "email_alerts": {
+            "unlimited": True,
+            "used_this_month": current_user.email_alerts_this_month,
+        },
     }
 
 

@@ -32,6 +32,10 @@ class UserProfile(Base):
     email_alerts_this_month: Mapped[int] = mapped_column(Integer, default=0)
     alerts_reset_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Cuota de análisis IA (lifetime para free, ilimitado para paid)
+    analyses_used: Mapped[int] = mapped_column(Integer, default=0)
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0)
+
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -42,16 +46,33 @@ class UserProfile(Base):
 
     farms: Mapped[list[Farm]] = relationship("Farm", back_populates="owner", lazy="noload")
 
-    # 1 finca por usuario — todos los demás features sin límite
+    FREE_ANALYSES_LIMIT = 4
+    FREE_TOKENS_LIMIT = 3_200   # 4 × 800 tokens output
+    FREE_OUTPUT_TOKENS_PER_ANALYSIS = 800
+    PAID_OUTPUT_TOKENS_PER_ANALYSIS = 2_048
     MAX_FARMS = 1
 
     @property
     def is_paid(self) -> bool:
-        return True  # todos son "paid" — sin restricciones
+        return self.plan == "paid"
 
     @property
     def can_use_ai_analysis(self) -> bool:
-        return True
+        if self.is_admin or self.is_paid:
+            return True
+        return self.analyses_used < self.FREE_ANALYSES_LIMIT
+
+    @property
+    def analyses_remaining(self) -> int | None:
+        """None = ilimitado (plan paid). Entero = restantes en free."""
+        if self.is_paid or self.is_admin:
+            return None
+        return max(0, self.FREE_ANALYSES_LIMIT - self.analyses_used)
+
+    @property
+    def max_output_tokens(self) -> int:
+        """Tokens máximos de output por análisis según plan."""
+        return self.PAID_OUTPUT_TOKENS_PER_ANALYSIS if self.is_paid else self.FREE_OUTPUT_TOKENS_PER_ANALYSIS
 
     @property
     def can_send_email_alert(self) -> bool:

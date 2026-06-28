@@ -50,6 +50,10 @@ def _fake_user() -> SimpleNamespace:
         can_use_ai_analysis=True,
         can_send_email_alert=True,
         email_alerts_this_month=0,
+        analyses_used=0,
+        tokens_used=0,
+        analyses_remaining=4,
+        max_output_tokens=800,
         created_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
