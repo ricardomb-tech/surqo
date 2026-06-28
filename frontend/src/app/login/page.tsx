@@ -31,16 +31,40 @@ function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
     setError(null)
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (!email.trim()) {
+      setError("Ingresa tu correo electrónico.")
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Ingresa un correo electrónico válido.")
+      return
+    }
+    if (!password) {
+      setError("Ingresa tu contraseña.")
+      return
+    }
+
+    setSubmitting(true)
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
     if (authError) {
+      const msg = authError.message.toLowerCase()
       setError(
-        authError.message.includes("Invalid login")
+        msg.includes("invalid login") || msg.includes("invalid credentials")
           ? "Correo o contraseña incorrectos."
-          : authError.message
+          : msg.includes("email not confirmed")
+          ? "Debes confirmar tu correo electrónico antes de iniciar sesión."
+          : msg.includes("too many requests")
+          ? "Demasiados intentos. Espera unos minutos e intenta de nuevo."
+          : "Ocurrió un error al iniciar sesión. Intenta de nuevo."
       )
       setSubmitting(false)
+    } else {
+      router.replace(redirectTo)
     }
   }
 
