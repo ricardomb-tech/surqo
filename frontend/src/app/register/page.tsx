@@ -32,41 +32,31 @@ function getStrength(pw: string): { score: number; label: string; color: string 
   return map[Math.min(score, 4) - 1]
 }
 
-function FloatingOrb({ style, delay = 0 }: { style: React.CSSProperties; delay?: number }) {
-  return (
-    <motion.div
-      className="absolute rounded-full blur-3xl pointer-events-none"
-      style={style}
-      animate={{ y: [0, -20, 0], opacity: [0.3, 0.55, 0.3] }}
-      transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay }}
-    />
-  )
-}
-
 function GlassInput({
-  id, type, placeholder, value, onChange, onFocus, onBlur, focused, error, autoComplete, minLength, required, children,
+  id, type, placeholder, value, onChange, onFocus, onBlur,
+  focused, error, autoComplete, minLength, required, children,
 }: {
   id: string; type: string; placeholder: string; value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onFocus?: () => void; onBlur?: () => void
-  focused?: boolean; error?: boolean; autoComplete?: string; minLength?: number; required?: boolean
-  children?: React.ReactNode
+  focused?: boolean; error?: boolean; autoComplete?: string
+  minLength?: number; required?: boolean; children?: React.ReactNode
 }) {
   return (
     <motion.div
       className="relative"
-      animate={{ boxShadow: focused ? `0 0 0 2px ${LIME}40` : "0 0 0 0px transparent" }}
-      transition={{ duration: 0.2 }}
-      style={{ borderRadius: "12px" }}
+      animate={{ boxShadow: focused ? `0 0 0 2.5px ${LIME}50` : "0 0 0 0px transparent" }}
+      transition={{ duration: 0.18 }}
+      style={{ borderRadius: 12 }}
     >
       <input
         id={id} type={type} placeholder={placeholder} value={value}
         onChange={onChange} onFocus={onFocus} onBlur={onBlur}
         autoComplete={autoComplete} minLength={minLength} required={required}
-        className="w-full px-4 py-3 rounded-xl text-white placeholder-white/25 text-sm font-medium outline-none transition-all"
+        className="w-full rounded-xl px-4 py-3 text-sm font-medium text-white placeholder-white/25 outline-none transition-colors"
         style={{
-          background: "rgba(255,255,255,0.06)",
-          border: `1px solid ${error ? "rgba(239,68,68,0.5)" : focused ? `${LIME}60` : "rgba(255,255,255,0.1)"}`,
+          background: "rgba(255,255,255,0.07)",
+          border: `1.5px solid ${error ? "rgba(239,68,68,0.5)" : focused ? `${LIME}55` : "rgba(255,255,255,0.11)"}`,
           paddingRight: children ? "44px" : undefined,
         }}
       />
@@ -79,7 +69,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
 
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", confirm: "" })
+  const [form, setForm]       = useState({ fullName: "", email: "", password: "", confirm: "" })
   const [touched, setTouched] = useState({ fullName: false, email: false, password: false, confirm: false })
   const [focused, setFocused] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -134,7 +124,7 @@ export default function RegisterPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#0d1f0d" }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0a180a" }}>
       <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
         <Loader2 className="w-7 h-7" style={{ color: LIME }} />
       </motion.div>
@@ -143,25 +133,25 @@ export default function RegisterPage() {
 
   // ── Success
   if (success) return (
-    <div className="min-h-screen relative flex items-center justify-center overflow-hidden" style={{ backgroundColor: "#0d1f0d" }}>
+    <div className="min-h-screen relative flex items-center justify-center overflow-hidden px-4">
       <div className="absolute inset-0 z-0">
-        <Image src="/campo-surqo.webp" alt="Campo" fill quality={80} sizes="100vw" className="object-cover opacity-25" />
-        <div className="absolute inset-0" style={{ background: "rgba(13,31,13,0.88)" }} />
+        <Image src="/cta-bg.webp" alt="Campo" fill quality={90} sizes="100vw" className="object-cover object-center" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(5,15,5,0.88) 0%, rgba(5,15,5,0.72) 50%, rgba(5,15,5,0.55) 100%)" }} />
       </div>
       <motion.div
-        className="relative z-10 w-full max-w-md mx-4 text-center"
+        className="relative z-10 w-full max-w-[420px] text-center"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
         <div
-          className="p-10 rounded-3xl"
+          className="px-7 pt-8 pb-9 rounded-[20px]"
           style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-            border: "1px solid rgba(134,230,106,0.25)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            boxShadow: "0 32px 80px rgba(0,0,0,0.4)",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
+            border: "1px solid rgba(134,230,106,0.22)",
+            backdropFilter: "blur(28px) saturate(160%)",
+            WebkitBackdropFilter: "blur(28px) saturate(160%)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)",
           }}
         >
           <motion.div
@@ -185,7 +175,7 @@ export default function RegisterPage() {
               whileHover={{ scale: 1.03, y: -1 }}
               whileTap={{ scale: 0.97 }}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm"
-              style={{ background: `linear-gradient(135deg, ${LIME} 0%, #6abf50 100%)`, color: "#0d1f0d", boxShadow: `0 8px 24px ${LIME}40` }}
+              style={{ background: `linear-gradient(135deg, ${LIME} 0%, #6abf52 100%)`, color: "#071207", boxShadow: `0 6px 22px ${LIME}45` }}
             >
               <ArrowRight className="w-4 h-4" />
               Ir a iniciar sesión
@@ -200,63 +190,101 @@ export default function RegisterPage() {
   const strengthWidth = ["0%", "25%", "50%", "75%", "100%"][strength.score]
 
   const fieldVariants = {
-    hidden: { opacity: 0, x: -12 },
-    visible: (i: number) => ({ opacity: 1, x: 0, transition: { delay: 0.25 + i * 0.07, duration: 0.4 } }),
+    hidden: { opacity: 0, x: -10 },
+    visible: (i: number) => ({ opacity: 1, x: 0, transition: { delay: 0.28 + i * 0.07, duration: 0.4 } }),
   }
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center overflow-hidden py-10" style={{ backgroundColor: "#0d1f0d" }}>
+    <div className="min-h-screen relative flex items-center justify-center overflow-hidden px-4 py-20">
 
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <Image src="/tractor.jpg" alt="Campo" fill quality={80} sizes="100vw" className="object-cover object-center opacity-20" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(13,31,13,0.95) 0%, rgba(13,31,13,0.80) 100%)" }} />
+        <Image
+          src="/cta-bg.webp"
+          alt="Vista aérea campo agrícola"
+          fill
+          priority
+          quality={90}
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(120deg, rgba(5,15,5,0.88) 0%, rgba(5,15,5,0.72) 50%, rgba(5,15,5,0.55) 100%)" }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/3 pointer-events-none"
+          style={{ background: "linear-gradient(to top, rgba(134,230,106,0.06), transparent)" }}
+        />
       </div>
 
       {/* Orbs */}
-      <FloatingOrb style={{ width: 320, height: 320, top: -80, right: -80, background: "rgba(134,230,106,0.10)" }} delay={0} />
-      <FloatingOrb style={{ width: 240, height: 240, bottom: -60, left: -60, background: "rgba(134,230,106,0.07)" }} delay={3} />
+      {[
+        { w: 300, h: 300, top: -80, right: -80, delay: 0 },
+        { w: 220, h: 220, bottom: -60, left: -60, delay: 3 },
+      ].map((orb, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full blur-3xl pointer-events-none"
+          style={{
+            width: orb.w, height: orb.h,
+            top: (orb as any).top, right: (orb as any).right,
+            bottom: (orb as any).bottom, left: (orb as any).left,
+            background: "rgba(134,230,106,0.09)",
+          }}
+          animate={{ y: [0, -20, 0], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 7 + i, repeat: Infinity, ease: "easeInOut", delay: orb.delay }}
+        />
+      ))}
 
       <motion.div
-        className="relative z-10 w-full max-w-md mx-4"
-        initial={{ opacity: 0, y: 32 }}
+        className="relative z-10 w-full max-w-[420px]"
+        initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       >
+
         {/* Brand */}
-        <motion.div className="text-center mb-7" initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-          <Link href="/" className="inline-flex items-center gap-2.5 group mb-4">
-            <motion.div whileHover={{ rotate: 10, scale: 1.1 }} transition={{ type: "spring", stiffness: 300 }}>
-              <SurqoIcon className="w-10 h-10" style={{ color: LIME }} />
+        <motion.div
+          className="flex flex-col items-center mb-7"
+          initial={{ opacity: 0, y: -14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group">
+            <motion.div whileHover={{ rotate: 12, scale: 1.12 }} transition={{ type: "spring", stiffness: 280 }}>
+              <SurqoIcon className="w-11 h-11 text-white drop-shadow-lg" />
             </motion.div>
-            <span className="text-3xl font-black tracking-tighter text-white">SURQO</span>
+            <span className="text-3xl font-black tracking-tighter text-white drop-shadow-md">SURQO</span>
           </Link>
-          <h1 className="text-2xl font-black tracking-tight text-white">Crea tu cuenta</h1>
-          <p className="text-sm font-medium mt-1.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <h1 className="text-[1.75rem] font-black tracking-tight text-white leading-tight text-center">
+            Crea tu cuenta
+          </h1>
+          <p className="text-sm font-medium mt-1.5 text-center" style={{ color: "rgba(255,255,255,0.52)" }}>
             Gratis · Análisis IA · Dashboard en tiempo real
           </p>
         </motion.div>
 
         {/* Glass card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.18 }}
           style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            backdropFilter: "blur(24px) saturate(160%)",
-            WebkitBackdropFilter: "blur(24px) saturate(160%)",
-            borderRadius: "24px",
-            boxShadow: "0 32px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            backdropFilter: "blur(28px) saturate(160%)",
+            WebkitBackdropFilter: "blur(28px) saturate(160%)",
+            borderRadius: "20px",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.1)",
           }}
-          className="p-7"
+          className="px-7 pt-7 pb-8"
         >
           <form onSubmit={handleRegister} className="flex flex-col gap-4" noValidate>
 
             {/* Nombre */}
             <motion.div custom={0} variants={fieldVariants} initial="hidden" animate="visible">
-              <label htmlFor="fullName" className="flex items-center gap-1.5 text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <label htmlFor="fullName" className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.42)" }}>
                 <User className="w-3.5 h-3.5" /> Nombre completo
               </label>
               <GlassInput
@@ -270,7 +298,7 @@ export default function RegisterPage() {
                 {errors.fullName && (
                   <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                     className="flex items-center gap-1.5 text-xs font-medium mt-1.5 text-red-400">
-                    <AlertCircle className="w-3 h-3" />{errors.fullName}
+                    <AlertCircle className="w-3 h-3 shrink-0" />{errors.fullName}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -278,7 +306,7 @@ export default function RegisterPage() {
 
             {/* Email */}
             <motion.div custom={1} variants={fieldVariants} initial="hidden" animate="visible">
-              <label htmlFor="email" className="flex items-center gap-1.5 text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <label htmlFor="email" className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.42)" }}>
                 <Mail className="w-3.5 h-3.5" /> Correo electrónico
               </label>
               <GlassInput
@@ -292,7 +320,7 @@ export default function RegisterPage() {
                 {errors.email && (
                   <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                     className="flex items-center gap-1.5 text-xs font-medium mt-1.5 text-red-400">
-                    <AlertCircle className="w-3 h-3" />{errors.email}
+                    <AlertCircle className="w-3 h-3 shrink-0" />{errors.email}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -300,7 +328,7 @@ export default function RegisterPage() {
 
             {/* Password */}
             <motion.div custom={2} variants={fieldVariants} initial="hidden" animate="visible">
-              <label htmlFor="password" className="flex items-center gap-1.5 text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <label htmlFor="password" className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.42)" }}>
                 <Lock className="w-3.5 h-3.5" /> Contraseña
               </label>
               <GlassInput
@@ -310,12 +338,11 @@ export default function RegisterPage() {
                 focused={focused === "password"} error={!!errors.password}
                 autoComplete="new-password" minLength={6} required
               >
-                <motion.button type="button" onClick={() => setShowPassword(v => !v)} whileTap={{ scale: 0.85 }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "rgba(255,255,255,0.35)" }}>
+                <motion.button type="button" onClick={() => setShowPassword(v => !v)} whileTap={{ scale: 0.82 }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "rgba(255,255,255,0.38)" }}>
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </motion.button>
               </GlassInput>
-              {/* Strength bar */}
               <AnimatePresence>
                 {form.password.length > 0 && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-2 space-y-1">
@@ -329,12 +356,10 @@ export default function RegisterPage() {
                     <p className="text-[11px] font-medium" style={{ color: strength.color }}>{strength.label}</p>
                   </motion.div>
                 )}
-              </AnimatePresence>
-              <AnimatePresence>
                 {errors.password && (
                   <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                     className="flex items-center gap-1.5 text-xs font-medium mt-1.5 text-red-400">
-                    <AlertCircle className="w-3 h-3" />{errors.password}
+                    <AlertCircle className="w-3 h-3 shrink-0" />{errors.password}
                   </motion.p>
                 )}
               </AnimatePresence>
@@ -342,7 +367,7 @@ export default function RegisterPage() {
 
             {/* Confirm */}
             <motion.div custom={3} variants={fieldVariants} initial="hidden" animate="visible">
-              <label htmlFor="confirm" className="flex items-center gap-1.5 text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <label htmlFor="confirm" className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.15em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.42)" }}>
                 <Lock className="w-3.5 h-3.5" /> Confirmar contraseña
               </label>
               <GlassInput
@@ -352,8 +377,8 @@ export default function RegisterPage() {
                 focused={focused === "confirm"} error={!!errors.confirm}
                 autoComplete="new-password" required
               >
-                <motion.button type="button" onClick={() => setShowConfirm(v => !v)} whileTap={{ scale: 0.85 }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "rgba(255,255,255,0.35)" }}>
+                <motion.button type="button" onClick={() => setShowConfirm(v => !v)} whileTap={{ scale: 0.82 }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "rgba(255,255,255,0.38)" }}>
                   {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </motion.button>
               </GlassInput>
@@ -367,30 +392,24 @@ export default function RegisterPage() {
                 {errors.confirm && (
                   <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                     className="flex items-center gap-1.5 text-xs font-medium mt-1.5 text-red-400">
-                    <AlertCircle className="w-3 h-3" />{errors.confirm}
+                    <AlertCircle className="w-3 h-3 shrink-0" />{errors.confirm}
                   </motion.p>
                 )}
               </AnimatePresence>
             </motion.div>
 
             {/* Terms */}
-            <motion.label
-              custom={4} variants={fieldVariants} initial="hidden" animate="visible"
-              className="flex items-start gap-3 cursor-pointer group"
-            >
+            <motion.label custom={4} variants={fieldVariants} initial="hidden" animate="visible" className="flex items-start gap-3 cursor-pointer">
               <div className="relative mt-0.5 shrink-0">
                 <input type="checkbox" checked={acceptTerms} onChange={e => setAcceptTerms(e.target.checked)} className="sr-only" />
                 <motion.div
-                  animate={{
-                    background: acceptTerms ? LIME : "rgba(255,255,255,0.04)",
-                    borderColor: acceptTerms ? LIME : "rgba(255,255,255,0.2)",
-                  }}
-                  className="w-4 h-4 rounded border-2 flex items-center justify-center transition-colors"
+                  animate={{ background: acceptTerms ? LIME : "rgba(255,255,255,0.04)", borderColor: acceptTerms ? LIME : "rgba(255,255,255,0.2)" }}
+                  className="w-4 h-4 rounded border-2 flex items-center justify-center"
                 >
                   <AnimatePresence>
                     {acceptTerms && (
                       <motion.svg initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
-                        className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="#0d1f0d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="#071207" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="2,6 5,9 10,3" />
                       </motion.svg>
                     )}
@@ -409,8 +428,8 @@ export default function RegisterPage() {
             <AnimatePresence>
               {serverError && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-2.5 rounded-xl px-3 py-2.5"
-                  style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  className="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5"
+                  style={{ background: "rgba(239,68,68,0.13)", border: "1px solid rgba(239,68,68,0.28)" }}>
                   <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-red-400 font-medium">{serverError}</p>
@@ -426,15 +445,15 @@ export default function RegisterPage() {
             <motion.button
               type="submit"
               disabled={submitting || !canSubmit}
-              whileHover={!submitting && canSubmit ? { scale: 1.02, y: -1 } : {}}
-              whileTap={!submitting && canSubmit ? { scale: 0.98 } : {}}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black tracking-wide text-sm mt-1 transition-all"
+              whileHover={!submitting && canSubmit ? { scale: 1.025, y: -1 } : {}}
+              whileTap={!submitting && canSubmit ? { scale: 0.975 } : {}}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black tracking-wide text-[0.9rem] mt-1 transition-all"
               style={{
                 background: canSubmit && !submitting
-                  ? `linear-gradient(135deg, ${LIME} 0%, #6abf50 100%)`
+                  ? `linear-gradient(135deg, ${LIME} 0%, #6abf52 100%)`
                   : "rgba(255,255,255,0.08)",
-                color: canSubmit && !submitting ? "#0d1f0d" : "rgba(255,255,255,0.3)",
-                boxShadow: canSubmit && !submitting ? `0 8px 24px ${LIME}40` : "none",
+                color: canSubmit && !submitting ? "#071207" : "rgba(255,255,255,0.28)",
+                boxShadow: canSubmit && !submitting ? `0 6px 22px ${LIME}45` : "none",
                 cursor: canSubmit && !submitting ? "pointer" : "not-allowed",
               }}
             >
@@ -442,7 +461,6 @@ export default function RegisterPage() {
               {submitting ? "Creando cuenta..." : "Crear cuenta gratis"}
             </motion.button>
 
-            {/* Security badge */}
             <div className="flex items-center justify-center gap-1.5" style={{ color: "rgba(255,255,255,0.2)" }}>
               <Shield className="w-3 h-3" />
               <span className="text-[11px] font-medium">Autenticación segura · Supabase Auth</span>
@@ -452,23 +470,24 @@ export default function RegisterPage() {
         </motion.div>
 
         {/* Footer */}
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
-          className="text-center text-sm font-medium mt-6" style={{ color: "rgba(255,255,255,0.4)" }}
-        >
-          ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="font-bold hover:underline" style={{ color: LIME }}>
-            Iniciar sesión
-          </Link>
-        </motion.p>
-
         <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-          className="flex items-center justify-center gap-1.5 mt-4" style={{ color: "rgba(255,255,255,0.2)" }}
+          className="flex flex-col items-center gap-3 mt-7"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.65 }}
         >
-          <Leaf className="w-3 h-3" />
-          <span className="text-xs font-medium tracking-wide">Plataforma agro-inteligente</span>
+          <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.42)" }}>
+            ¿Ya tienes cuenta?{" "}
+            <Link href="/login" className="font-bold hover:underline" style={{ color: LIME }}>
+              Iniciar sesión
+            </Link>
+          </p>
+          <div className="flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.22)" }}>
+            <Leaf className="w-3 h-3" />
+            <span className="text-[11px] font-medium tracking-wide">Plataforma agro-inteligente</span>
+          </div>
         </motion.div>
+
       </motion.div>
     </div>
   )

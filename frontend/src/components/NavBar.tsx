@@ -69,7 +69,7 @@ export function NavBar() {
   }
 
   // Páginas con hero de imagen oscura — nav en blanco hasta hacer scroll
-  const DARK_HERO_PATHS = ["/", "/soluciones", "/como-funciona"]
+  const DARK_HERO_PATHS = ["/", "/soluciones", "/como-funciona", "/login", "/register"]
   const hasDarkHero = DARK_HERO_PATHS.some((p) =>
     p === "/" ? pathname === "/" : pathname.startsWith(p)
   )
