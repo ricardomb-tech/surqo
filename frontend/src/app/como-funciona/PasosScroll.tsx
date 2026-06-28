@@ -114,13 +114,14 @@ function PasoCard({
   const scale = useTransform(scrollYProgress, (p) => {
     const active = p * (total - 1)
     const dist = Math.abs(index - active)
-    return Math.max(0.72, 1 - dist * 0.12)
+    // Centro grande (1.08), lados muy pequeños (0.68)
+    return Math.max(0.55, 1.08 - dist * 0.40)
   })
 
   const opacity = useTransform(scrollYProgress, (p) => {
     const active = p * (total - 1)
     const dist = Math.abs(index - active)
-    return Math.max(0.10, 1 - dist * 0.44)
+    return Math.max(0.08, 1 - dist * 0.50)
   })
 
   const zIndex = useTransform(scrollYProgress, (p) => {
@@ -139,35 +140,35 @@ function PasoCard({
       className="absolute left-1/2"
       style={{ x: sx, scale: sScale, opacity: sOpacity, zIndex }}
     >
-      {/* Glass card — vidrio intenso */}
+      {/* Glass card — mismo efecto que botones de inicio sesión */}
       <div
         className="w-[260px] sm:w-[320px] rounded-3xl p-5 sm:p-7 flex flex-col gap-4 sm:gap-5"
         style={{
-          background: "linear-gradient(135deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 100%)",
-          border: "1.5px solid rgba(255,255,255,0.75)",
-          backdropFilter: "blur(28px) saturate(200%) brightness(1.08)",
-          WebkitBackdropFilter: "blur(28px) saturate(200%) brightness(1.08)",
+          background: "linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.60) 100%)",
+          border: "1.5px solid rgba(255,255,255,0.90)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: "blur(24px) saturate(180%)",
           boxShadow:
-            "0 16px 48px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.15), inset 0 1.5px 0 rgba(255,255,255,0.90), inset 0 -1px 0 rgba(0,0,0,0.08)",
+            "0 20px 60px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(0,0,0,0.05)",
         }}
       >
         {/* Número + icono */}
         <div className="flex items-center justify-between">
           <span
             className="text-6xl font-black leading-none tracking-tighter select-none"
-            style={{ color: "rgba(134,230,106,0.28)" }}
+            style={{ color: "rgba(26,51,24,0.12)" }}
           >
             {paso.number}
           </span>
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center"
             style={{
-              background: "rgba(134,230,106,0.22)",
-              border: "1.5px solid rgba(134,230,106,0.60)",
-              boxShadow: "0 4px 16px rgba(134,230,106,0.18)",
+              background: "rgba(134,230,106,0.20)",
+              border: "1.5px solid rgba(134,230,106,0.55)",
+              boxShadow: "0 4px 16px rgba(134,230,106,0.15)",
             }}
           >
-            <Icon className="w-8 h-8" style={{ color: LIME }} />
+            <Icon className="w-8 h-8" style={{ color: "#2d7a1f" }} />
           </div>
         </div>
 
@@ -175,27 +176,27 @@ function PasoCard({
         <span
           className="self-start text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-lg"
           style={{
-            color: LIME,
-            background: "rgba(134,230,106,0.15)",
-            border: "1px solid rgba(134,230,106,0.35)",
+            color: "#2d7a1f",
+            background: "rgba(134,230,106,0.18)",
+            border: "1px solid rgba(134,230,106,0.45)",
           }}
         >
           {paso.badge}
         </span>
 
         {/* Título */}
-        <h3 className="text-xl font-black text-white leading-tight">{paso.title}</h3>
+        <h3 className="text-xl font-black leading-tight" style={{ color: "#1a3318" }}>{paso.title}</h3>
 
         {/* Descripción */}
-        <p className="text-sm text-white/80 leading-relaxed">{paso.description}</p>
+        <p className="text-sm leading-relaxed" style={{ color: "#3a5c38" }}>{paso.description}</p>
 
         {/* Puntos */}
         <ul className="space-y-1.5 pt-1">
           {paso.points.map((pt) => (
-            <li key={pt} className="flex items-start gap-2 text-xs text-white/55 font-medium">
+            <li key={pt} className="flex items-start gap-2 text-xs font-medium" style={{ color: "#4a7c46" }}>
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0 mt-[3px]"
-                style={{ backgroundColor: LIME }}
+                style={{ backgroundColor: "#2d7a1f" }}
               />
               {pt}
             </li>
