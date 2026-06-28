@@ -176,6 +176,32 @@ async def get_current_user_optional(
         return None
 
 
+async def get_paid_user(user: Annotated[UserProfile, Depends(get_current_user)]) -> UserProfile:
+    if user.plan != "paid" and not user.is_admin:
+        raise HTTPException(status_code=402, detail="Esta función requiere un plan de pago.")
+    return user
+
+
+async def validate_ws_token(token: str, db: AsyncSession) -> UserProfile:
+    """Valida un Bearer token recibido como query param en WebSocket."""
+    try:
+        payload = _decode_token(token)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token inválido.")
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail="Token sin sub claim.")
+
+    user_id = uuid.UUID(user_id_str)
+    profile = await db.get(UserProfile, user_id)
+    if profile is None:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado.")
+    return profile
+
+
 CurrentUser = Annotated[UserProfile, Depends(get_current_user)]
 CurrentUserOptional = Annotated[UserProfile | None, Depends(get_current_user_optional)]
-PaidUser = Annotated[UserProfile, Depends(get_current_user)]
+PaidUser = Annotated[UserProfile, Depends(get_paid_user)]

@@ -59,13 +59,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logfire.info("Surqo API detenida")
 
 
+_is_production = settings.APP_ENV == "production"
+
 app = FastAPI(
     title="Surqo API",
     description="Del surco al insight — inteligencia en tiempo real para el campo colombiano",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 app.state.limiter = limiter

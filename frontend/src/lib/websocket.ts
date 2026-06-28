@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react"
+import { getAccessToken } from "@/lib/auth"
 
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "wss://surqo-api.fly.dev"
 
@@ -8,16 +9,22 @@ export function useWebSocket<T = unknown>(farmId: string | null) {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!farmId) return
-    const url = `${WS_BASE}/api/v1/sensors/ws/live/${farmId}`
 
+    let token: string | null = null
+    try {
+      token = await getAccessToken()
+    } catch {
+      return
+    }
+    if (!token) return
+
+    const url = `${WS_BASE}/api/v1/sensors/ws/live/${farmId}?token=${encodeURIComponent(token)}`
     const ws = new WebSocket(url)
     wsRef.current = ws
 
-    ws.onopen = () => {
-      setConnected(true)
-    }
+    ws.onopen = () => { setConnected(true) }
 
     ws.onmessage = (event) => {
       try {
@@ -26,19 +33,16 @@ export function useWebSocket<T = unknown>(farmId: string | null) {
           setData(msg.data as T)
         }
       } catch {
-        // Ignorar mensajes malformados
+        // ignorar mensajes malformados
       }
     }
 
     ws.onclose = () => {
       setConnected(false)
-      // Reconectar en 3s
-      reconnectTimer.current = setTimeout(connect, 3000)
+      reconnectTimer.current = setTimeout(connect, 5000)
     }
 
-    ws.onerror = () => {
-      ws.close()
-    }
+    ws.onerror = () => { ws.close() }
   }, [farmId])
 
   useEffect(() => {

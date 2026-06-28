@@ -4,11 +4,14 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import logfire
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
-from app.dependencies import DBSession
+from app.database import get_db
+from app.dependencies import CurrentUser, DBSession, validate_ws_token
+from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
+from app.models.user import UserProfile
 from app.schemas.sensor import SensorReadingCreate, SensorReadingResponse, TimeseriesPoint
 from app.services.kpi_service import KPIService
 from app.websocket.manager import manager
@@ -17,8 +20,22 @@ router = APIRouter()
 kpi_svc = KPIService()
 
 
+async def _require_farm_access(db: DBSession, farm_id: uuid.UUID, user: UserProfile) -> None:
+    farm = await db.get(Farm, farm_id)
+    if not farm or farm.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Sin acceso a esta finca")
+
+
 @router.post("/reading", response_model=SensorReadingResponse, status_code=201)
-async def ingest_reading(body: SensorReadingCreate, db: DBSession) -> SensorReading:
+async def ingest_reading(
+    body: SensorReadingCreate,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> SensorReading:
+    # Verifica que el farm_id pertenece al usuario autenticado
+    if body.farm_id:
+        await _require_farm_access(db, body.farm_id, current_user)
+
     vpd = None
     if body.air_temp_c is not None and body.air_humidity_pct is not None:
         vpd = kpi_svc.calculate_vpd(body.air_temp_c, body.air_humidity_pct)
@@ -52,7 +69,7 @@ async def ingest_reading(body: SensorReadingCreate, db: DBSession) -> SensorRead
 
 
 @router.get("/latest/{device_id}", response_model=SensorReadingResponse)
-async def get_latest(device_id: str, db: DBSession) -> SensorReading:
+async def get_latest(device_id: str, db: DBSession, current_user: CurrentUser) -> SensorReading:
     stmt = (
         select(SensorReading)
         .where(SensorReading.device_id == device_id)
@@ -63,6 +80,9 @@ async def get_latest(device_id: str, db: DBSession) -> SensorReading:
     reading = result.scalar_one_or_none()
     if not reading:
         raise HTTPException(status_code=404, detail="No hay lecturas para este dispositivo")
+    # Verify the reading's farm belongs to the user
+    if reading.farm_id:
+        await _require_farm_access(db, reading.farm_id, current_user)
     return reading
 
 
@@ -70,9 +90,12 @@ async def get_latest(device_id: str, db: DBSession) -> SensorReading:
 async def get_timeseries(
     farm_id: uuid.UUID,
     db: DBSession,
+    current_user: CurrentUser,
     hours: int = 24,
     metric: str = "soil_moisture_pct",
 ) -> list[TimeseriesPoint]:
+    await _require_farm_access(db, farm_id, current_user)
+
     allowed_metrics = {
         "soil_moisture_pct", "soil_temp_c", "air_temp_c",
         "air_humidity_pct", "uv_index", "vpd_kpa",
@@ -102,7 +125,9 @@ async def get_timeseries(
 
 
 @router.get("/stats/{farm_id}")
-async def get_stats(farm_id: uuid.UUID, db: DBSession) -> dict:
+async def get_stats(farm_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict:
+    await _require_farm_access(db, farm_id, current_user)
+
     since = datetime.now(UTC) - timedelta(hours=24)
     stmt = (
         select(SensorReading)
@@ -132,27 +157,54 @@ async def get_stats(farm_id: uuid.UUID, db: DBSession) -> dict:
 
 
 @router.websocket("/ws/live/{farm_id}")
-async def websocket_live(websocket: WebSocket, farm_id: str, db: DBSession) -> None:
-    await manager.connect(websocket, farm_id)
-    try:
-        # Enviar última lectura al conectar
-        stmt = (
-            select(SensorReading)
-            .where(SensorReading.farm_id == uuid.UUID(farm_id))
-            .order_by(SensorReading.created_at.desc())
-            .limit(1)
-        )
-        result = await db.execute(stmt)
-        latest = result.scalar_one_or_none()
-        if latest:
-            await websocket.send_json({
-                "type": "initial",
-                "data": SensorReadingResponse.model_validate(latest).model_dump(mode="json"),
-            })
+async def websocket_live(
+    websocket: WebSocket,
+    farm_id: str,
+    token: str | None = Query(default=None),
+) -> None:
+    # Autenticar antes de aceptar la conexión WebSocket
+    if not token:
+        await websocket.close(code=4001)
+        return
 
-        while True:
-            await websocket.receive_text()  # Mantener conexión activa
-    except WebSocketDisconnect:
-        await manager.disconnect(websocket, farm_id)
-    except Exception:
-        await manager.disconnect(websocket, farm_id)
+    async for db in get_db():
+        try:
+            user = await validate_ws_token(token, db)
+        except HTTPException:
+            await websocket.close(code=4001)
+            return
+
+        try:
+            farm_uuid = uuid.UUID(farm_id)
+        except ValueError:
+            await websocket.close(code=4002)
+            return
+
+        farm = await db.get(Farm, farm_uuid)
+        if not farm or farm.user_id != user.user_id:
+            await websocket.close(code=4003)
+            return
+
+        await manager.connect(websocket, farm_id)
+        try:
+            stmt = (
+                select(SensorReading)
+                .where(SensorReading.farm_id == farm_uuid)
+                .order_by(SensorReading.created_at.desc())
+                .limit(1)
+            )
+            result = await db.execute(stmt)
+            latest = result.scalar_one_or_none()
+            if latest:
+                await websocket.send_json({
+                    "type": "initial",
+                    "data": SensorReadingResponse.model_validate(latest).model_dump(mode="json"),
+                })
+
+            while True:
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            await manager.disconnect(websocket, farm_id)
+        except Exception:
+            await manager.disconnect(websocket, farm_id)
+        break

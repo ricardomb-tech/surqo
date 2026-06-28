@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class AnalysisRequest(BaseModel):
@@ -12,7 +12,7 @@ class AnalysisRequest(BaseModel):
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
     crop_type: str = Field(..., description="maíz|yuca|plátano|café|arroz|algodón")
-    alert_email: str | None = None
+    alert_email: EmailStr | None = None
 
 
 class RecommendationItem(BaseModel):

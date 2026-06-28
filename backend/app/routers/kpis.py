@@ -3,10 +3,11 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
-from app.dependencies import DBSession
+from app.dependencies import CurrentUser, DBSession
+from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
 from app.services.kpi_service import KPIService
 
@@ -14,13 +15,21 @@ router = APIRouter()
 kpi_svc = KPIService()
 
 
+async def _require_farm_access(db: DBSession, farm_id: uuid.UUID, current_user: CurrentUser) -> None:
+    farm = await db.get(Farm, farm_id)
+    if not farm or farm.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Sin acceso a esta finca")
+
+
 @router.get("/farm/{farm_id}")
-async def get_farm_kpis(farm_id: uuid.UUID, db: DBSession) -> dict:
+async def get_farm_kpis(farm_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict:
+    await _require_farm_access(db, farm_id, current_user)
     return await kpi_svc.get_farm_kpis(str(farm_id), db)
 
 
 @router.get("/farm/{farm_id}/vpd-history")
-async def get_vpd_history(farm_id: uuid.UUID, db: DBSession) -> list[dict]:
+async def get_vpd_history(farm_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> list[dict]:
+    await _require_farm_access(db, farm_id, current_user)
     since = datetime.now(UTC) - timedelta(hours=48)
     stmt = (
         select(SensorReading)
@@ -40,9 +49,9 @@ async def get_vpd_history(farm_id: uuid.UUID, db: DBSession) -> list[dict]:
 
 
 @router.get("/farm/{farm_id}/water-balance")
-async def get_water_balance(farm_id: uuid.UUID, db: DBSession) -> dict:
+async def get_water_balance(farm_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict:
     """Balance hídrico estimado de los últimos 7 días."""
-    # Datos de sensor para ETc aproximada
+    await _require_farm_access(db, farm_id, current_user)
     since = datetime.now(UTC) - timedelta(days=7)
     stmt = (
         select(SensorReading)
@@ -60,7 +69,7 @@ async def get_water_balance(farm_id: uuid.UUID, db: DBSession) -> dict:
 
     et0_approx = 4.5  # mm/día approx para zona tropical colombiana
     etc_7d = kpi_svc.calculate_etc(et0_approx * 7, "maíz")
-    rain_approx = 0.0  # Se actualizaría con datos reales de la API
+    rain_approx = 0.0
 
     return {
         "farm_id": str(farm_id),
@@ -74,7 +83,8 @@ async def get_water_balance(farm_id: uuid.UUID, db: DBSession) -> dict:
 
 
 @router.get("/farm/{farm_id}/pest-risk")
-async def get_pest_risk(farm_id: uuid.UUID, db: DBSession) -> dict:
+async def get_pest_risk(farm_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict:
+    await _require_farm_access(db, farm_id, current_user)
     since = datetime.now(UTC) - timedelta(hours=24)
     stmt = (
         select(SensorReading)

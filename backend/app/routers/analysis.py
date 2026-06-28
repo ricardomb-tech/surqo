@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pathlib
 import uuid
 
 import logfire
@@ -11,6 +12,7 @@ from sqlalchemy import select
 from app.config import settings
 from app.dependencies import CurrentUser, DBSession, PaidUser
 from app.models.analysis import Analysis
+from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
 from app.schemas.analysis import AnalysisRequest, AnalysisResponse, ComparisonResult, PromptEvalRequest
 from app.services.alert_service import AlertService
@@ -24,33 +26,38 @@ llm_svc = LLMService()
 alert_svc = AlertService()
 limiter = Limiter(key_func=get_remote_address)
 
+# Directorio base de prompts — usado para validar path traversal
+_PROMPTS_DIR = (pathlib.Path(__file__).parent.parent / "services" / "prompts").resolve()
+
 
 @router.post("/analyze", response_model=AnalysisResponse, status_code=201)
-@limiter.limit("10/minute")   # máximo 10 análisis por IP por minuto
+@limiter.limit("10/minute")
 async def analyze_farm(
     request: Request,
     body: AnalysisRequest,
     background_tasks: BackgroundTasks,
-    current_user: PaidUser,   # 402 automático si plan free
+    current_user: PaidUser,
     db: DBSession,
 ) -> Analysis:
     cache_key = f"analysis:{body.lat:.3f}:{body.lon:.3f}:{body.crop_type}"
     cached = await cache_service.get(cache_key)
     if cached and not body.farm_id:
         logfire.info("Cache hit para análisis", key=cache_key)
-        # Retornar desde cache si no tiene farm_id específico
         return Analysis(**{
             k: v for k, v in cached.items()
             if k in Analysis.__table__.columns.keys()
         })
 
     with logfire.span("analysis.analyze_farm", farm=body.farm_name, crop=body.crop_type):
-        # Fetch clima
         climate_data = await climate_svc.fetch_forecast(body.lat, body.lon)
 
-        # Última lectura de sensor si hay farm_id
         sensor_dict: dict | None = None
         if body.farm_id:
+            # Verificar que la finca pertenece al usuario
+            farm = await db.get(Farm, body.farm_id)
+            if not farm or farm.user_id != current_user.user_id:
+                raise HTTPException(status_code=403, detail="Sin acceso a esta finca")
+
             stmt = (
                 select(SensorReading)
                 .where(SensorReading.farm_id == body.farm_id)
@@ -69,7 +76,6 @@ async def analyze_farm(
                     "Batería": f"{latest.battery_mv}mV" if latest.battery_mv else "N/A",
                 }
 
-        # LLM análisis
         result_data = await llm_svc.analyze_farm(
             climate_data=climate_data,
             crop_type=body.crop_type,
@@ -77,7 +83,6 @@ async def analyze_farm(
             sensor_data=sensor_dict,
         )
 
-        # Guardar en DB
         analysis = Analysis(
             farm_id=body.farm_id,
             farm_name=body.farm_name,
@@ -103,7 +108,6 @@ async def analyze_farm(
         await db.commit()
         await db.refresh(analysis)
 
-        # Cache
         await cache_service.set(cache_key, {
             "id": str(analysis.id),
             "farm_name": analysis.farm_name,
@@ -111,7 +115,6 @@ async def analyze_farm(
             "summary_for_farmer": analysis.summary_for_farmer,
         }, settings.CACHE_TTL_ANALYSIS)
 
-        # Email si crítico
         if result_data.alert_level == "critical" and body.alert_email:
             background_tasks.add_task(
                 alert_svc.send_email_alert,
@@ -133,6 +136,10 @@ async def analyze_farm(
 
 @router.get("/history/{farm_id}", response_model=list[AnalysisResponse])
 async def get_history(farm_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> list[Analysis]:
+    farm = await db.get(Farm, farm_id)
+    if not farm or farm.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Sin acceso a esta finca")
+
     stmt = (
         select(Analysis)
         .where(Analysis.farm_id == farm_id)
@@ -148,11 +155,29 @@ async def get_analysis(analysis_id: uuid.UUID, current_user: CurrentUser, db: DB
     analysis = await db.get(Analysis, analysis_id)
     if not analysis:
         raise HTTPException(status_code=404, detail="Análisis no encontrado")
+    # Verificar que el análisis pertenece a una finca del usuario
+    if analysis.farm_id:
+        farm = await db.get(Farm, analysis.farm_id)
+        if not farm or farm.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="Sin acceso a este análisis")
     return analysis
 
 
 @router.post("/evaluate-prompts", response_model=ComparisonResult)
-async def evaluate_prompts(body: PromptEvalRequest) -> ComparisonResult:
+async def evaluate_prompts(
+    body: PromptEvalRequest,
+    current_user: CurrentUser,
+) -> ComparisonResult:
+    # Solo administradores pueden evaluar prompts
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden usar esta función")
+
+    # Prevenir path traversal: los paths deben resolverse dentro del directorio de prompts
+    for path_str in (body.v1_path, body.v2_path):
+        resolved = (_PROMPTS_DIR / path_str).resolve()
+        if not resolved.is_relative_to(_PROMPTS_DIR):
+            raise HTTPException(status_code=400, detail=f"Ruta inválida: {path_str}")
+
     evaluator = PromptEvaluator(llm_svc)
     result = await evaluator.compare_versions(
         body.v1_path, body.v2_path, body.test_cases
