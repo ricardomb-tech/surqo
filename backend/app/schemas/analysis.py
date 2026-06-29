@@ -77,6 +77,8 @@ class ChatRequest(BaseModel):
     analysis_id: uuid.UUID | None = None
     message: str = Field(..., max_length=2000)
     history: list[ChatMessage] = []
+    image_base64: str | None = None
+    image_mime: str = "image/jpeg"
 
 
 class ChatResponse(BaseModel):

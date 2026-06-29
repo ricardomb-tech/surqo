@@ -230,6 +230,8 @@ async def chat_with_analysis(
         message=body.message,
         history=history,
         analysis_context=context,
+        image_base64=body.image_base64,
+        image_mime=body.image_mime,
     )
     return ChatResponse(response=response_text, input_tokens=inp, output_tokens=out)
 
