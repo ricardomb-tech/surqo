@@ -30,7 +30,7 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 | **Documentación interactiva (Swagger)** | [https://surqo-api.fly.dev/docs](https://surqo-api.fly.dev/docs) |
 | **Documentación alternativa (ReDoc)** | [https://surqo-api.fly.dev/redoc](https://surqo-api.fly.dev/redoc) |
 | **Health check** | [https://surqo-api.fly.dev/health](https://surqo-api.fly.dev/health) |
-| **Frontend** | [https://surqo.vercel.app](https://surqo.vercel.app) |
+| **Frontend** | [https://surqo.vercel.app]((https://www.surqo.online)) |
 
 > El backend corre en **Fly.io** (Dallas — `dfw`) con `auto_stop_machines = false` y `min_machines_running = 1`. Siempre hay al menos una máquina activa; **no hay cold starts**. Las respuestas son inmediatas desde el primer request.
 
