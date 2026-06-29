@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import delete as sql_delete
 from sqlalchemy import func, select
 from sqlalchemy import update as sql_update
@@ -16,10 +18,12 @@ from app.models.user import UserProfile
 from app.schemas.farm import FarmCreate, FarmResponse, FarmUpdate
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/", response_model=FarmResponse, status_code=status.HTTP_201_CREATED)
-async def create_farm(body: FarmCreate, current_user: CurrentUser, db: DBSession) -> Farm:
+@limiter.limit("10/minute")
+async def create_farm(request: Request, body: FarmCreate, current_user: CurrentUser, db: DBSession) -> Farm:
     # 1 finca por usuario
     count_result = await db.execute(
         select(func.count()).where(Farm.user_id == current_user.user_id)

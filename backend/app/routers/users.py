@@ -3,7 +3,9 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import func, select
 
 from app.dependencies import CurrentUser, DBSession
@@ -12,10 +14,12 @@ from app.models.user import UserProfile
 from app.schemas.user import UserPlanUpdate, UserProfileResponse, UserProfileUpdate
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/me", response_model=UserProfileResponse)
-async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
+@limiter.limit("60/minute")
+async def get_my_profile(request: Request, current_user: CurrentUser, db: DBSession) -> dict:
     """Retorna el perfil del usuario autenticado con stats actualizados."""
     farms_result = await db.execute(
         select(Farm).where(Farm.user_id == current_user.user_id).order_by(Farm.created_at.desc())
@@ -62,8 +66,9 @@ async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
 
 
 @router.patch("/me", response_model=UserProfileResponse)
+@limiter.limit("20/minute")
 async def update_my_profile(
-    body: UserProfileUpdate, current_user: CurrentUser, db: DBSession
+    request: Request, body: UserProfileUpdate, current_user: CurrentUser, db: DBSession
 ) -> dict:
     for field in ("full_name", "phone", "bio", "avatar_url", "cover_url"):
         value = getattr(body, field, None)

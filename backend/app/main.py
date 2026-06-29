@@ -5,7 +5,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import logfire
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -78,9 +78,21 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next) -> Response:
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    if settings.is_production:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 if settings.LOGFIRE_TOKEN:
     logfire.instrument_fastapi(app)
@@ -95,10 +107,12 @@ app.include_router(kpis.router, prefix="/api/v1/kpis", tags=["kpis"])
 
 @app.get("/health", tags=["system"])
 async def health() -> dict:
+    # En producción devuelve mínima info para no exponer estado interno
+    if _is_production:
+        return {"status": "ok" if _db_ok else "degraded"}
     return {
         "status": "healthy",
         "service": "surqo-api",
-        "tagline": "Del surco al insight",
         "version": "1.0.0",
         "env": settings.APP_ENV,
         "db": "ok" if _db_ok else "unavailable",

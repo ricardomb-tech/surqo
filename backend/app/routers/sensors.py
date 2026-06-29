@@ -4,7 +4,9 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import logfire
-from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 
 from app.database import get_db
@@ -18,6 +20,7 @@ from app.websocket.manager import manager
 
 router = APIRouter()
 kpi_svc = KPIService()
+limiter = Limiter(key_func=get_remote_address)
 
 
 async def _require_farm_access(db: DBSession, farm_id: uuid.UUID, user: UserProfile) -> None:
@@ -27,7 +30,9 @@ async def _require_farm_access(db: DBSession, farm_id: uuid.UUID, user: UserProf
 
 
 @router.post("/reading", response_model=SensorReadingResponse, status_code=201)
+@limiter.limit("120/minute")
 async def ingest_reading(
+    request: Request,
     body: SensorReadingCreate,
     db: DBSession,
     current_user: CurrentUser,
@@ -91,7 +96,7 @@ async def get_timeseries(
     farm_id: uuid.UUID,
     db: DBSession,
     current_user: CurrentUser,
-    hours: int = 24,
+    hours: int = Query(default=24, ge=1, le=8760),
     metric: str = "soil_moisture_pct",
 ) -> list[TimeseriesPoint]:
     await _require_farm_access(db, farm_id, current_user)
