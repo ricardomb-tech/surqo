@@ -204,7 +204,7 @@ export default function ProfilePage() {
 
   const memberSince = new Date(profile.created_at).toLocaleDateString("es-CO", { month: "long", year: "numeric" })
 
-  return (
+  return (<>
     <div className="min-h-screen" style={{ background: "#f4f7f4" }}>
       {/* Cover */}
       <div className="relative h-48 sm:h-56 overflow-hidden"
@@ -471,7 +471,7 @@ export default function ProfilePage() {
     {showConfirm && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
         style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-center w-12 h-12 rounded-full mb-4 mx-auto"
             style={{ background: "#f0fdf4" }}>
             <Save className="w-5 h-5" style={{ color: "#2d6e10" }} />
@@ -496,5 +496,5 @@ export default function ProfilePage() {
         </div>
       </div>
     )}
-  )
+  </>)
 }
