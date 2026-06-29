@@ -120,7 +120,17 @@ async def create_tables():
 @pytest_asyncio.fixture(autouse=True)
 async def clean_data():
     """Delete mutable data between tests for isolation (order matters for FKs)."""
+    # Resetear contadores de rate limit entre tests
+    from app.routers import farms as farms_router
+    from app.routers import sensors as sensors_router
+    from app.routers import users as users_router
+    from app.routers import analysis as analysis_router
+    for mod in (farms_router, sensors_router, users_router, analysis_router):
+        if hasattr(mod, "limiter"):
+            mod.limiter._storage.reset()
+
     yield
+
     async with TestSessionLocal() as session:
         await session.execute(delete(Alert))
         await session.execute(delete(Analysis))
