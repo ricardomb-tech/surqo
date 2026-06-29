@@ -26,12 +26,17 @@ async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
         "user_id": current_user.user_id,
         "email": current_user.email,
         "full_name": current_user.full_name,
+        "phone": current_user.phone,
+        "bio": current_user.bio,
+        "avatar_url": current_user.avatar_url,
+        "cover_url": current_user.cover_url,
         "plan": current_user.plan,
         "is_paid": current_user.is_paid,
         "can_use_ai_analysis": current_user.can_use_ai_analysis,
         "can_send_email_alert": current_user.can_send_email_alert,
         "email_alerts_this_month": current_user.email_alerts_this_month,
         "farms_count": farms_count,
+        "analyses_used": current_user.analyses_used,
         "created_at": current_user.created_at,
     }
     return data
@@ -41,8 +46,10 @@ async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
 async def update_my_profile(
     body: UserProfileUpdate, current_user: CurrentUser, db: DBSession
 ) -> dict:
-    if body.full_name is not None:
-        current_user.full_name = body.full_name
+    for field in ("full_name", "phone", "bio", "avatar_url", "cover_url"):
+        value = getattr(body, field, None)
+        if value is not None:
+            setattr(current_user, field, value)
     await db.commit()
     await db.refresh(current_user)
     return await get_my_profile(current_user, db)

@@ -23,6 +23,10 @@ class UserProfile(Base):
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Plan: "free" | "paid"
     plan: Mapped[str] = mapped_column(String(20), default="free", nullable=False)

@@ -2,16 +2,18 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   LayoutDashboard, Activity, Bell,
-  FlaskConical, Sprout, LogOut, ChevronRight,
+  FlaskConical, Sprout, LogOut, ChevronRight, UserCircle2,
 } from "lucide-react"
 import { useAuth } from "@/components/AuthProvider"
 import { SurqoIcon } from "@/components/SurqoIcon"
 import { cn } from "@/lib/utils"
+import { getAccessToken } from "@/lib/auth"
 
 const LIME = "#86E66A"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard",   icon: LayoutDashboard },
@@ -19,6 +21,7 @@ const NAV = [
   { href: "/alerts",    label: "Alertas",     icon: Bell },
   { href: "/analyze",   label: "Análisis IA", icon: FlaskConical },
   { href: "/farms",     label: "Fincas",      icon: Sprout },
+  { href: "/profile",   label: "Mi perfil",   icon: UserCircle2 },
 ]
 
 export function AppSidebar() {
@@ -26,6 +29,17 @@ export function AppSidebar() {
   const router   = useRouter()
   const { user, signOut } = useAuth()
   const [expanded, setExpanded] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user) return
+    getAccessToken().then((token) =>
+      fetch(`${API_BASE}/api/v1/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+    ).then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) { setAvatarUrl(d.avatar_url); setDisplayName(d.full_name) } })
+      .catch(() => {})
+  }, [user])
 
   const handleSignOut = async () => {
     await signOut()
@@ -123,22 +137,27 @@ export function AppSidebar() {
       {/* User + sign out */}
       <div className="px-2 pb-4 border-t border-gray-100 pt-3 space-y-1 overflow-hidden">
         {/* User chip */}
-        <div className="flex items-center gap-3 px-2.5 py-2 rounded-xl">
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0"
-            style={{ background: `${LIME}30`, color: "#2d6e10", border: `1.5px solid ${LIME}60` }}
-          >
-            {user?.email?.[0]?.toUpperCase() ?? "U"}
-          </div>
+        <Link href="/profile" className="flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-gray-50 transition-colors">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="avatar"
+              className="w-7 h-7 rounded-full object-cover shrink-0 border border-gray-200" />
+          ) : (
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0"
+              style={{ background: `${LIME}30`, color: "#2d6e10", border: `1.5px solid ${LIME}60` }}
+            >
+              {(displayName ?? user?.email ?? "U")[0].toUpperCase()}
+            </div>
+          )}
           <span
             className={cn(
               "text-xs font-medium text-gray-500 truncate max-w-[120px] transition-all duration-300",
               expanded ? "opacity-100 w-auto" : "opacity-0 w-0"
             )}
           >
-            {user?.email}
+            {displayName || user?.email}
           </span>
-        </div>
+        </Link>
 
         {/* Sign out */}
         <button

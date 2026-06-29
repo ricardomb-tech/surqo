@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserProfileResponse(BaseModel):
@@ -12,12 +12,17 @@ class UserProfileResponse(BaseModel):
     user_id: uuid.UUID
     email: str
     full_name: str | None
+    phone: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
+    cover_url: str | None = None
     plan: str
     is_paid: bool
     can_use_ai_analysis: bool
     can_send_email_alert: bool
     email_alerts_this_month: int
     farms_count: int = 0
+    analyses_used: int = 0
     created_at: datetime
 
 
@@ -26,4 +31,8 @@ class UserPlanUpdate(BaseModel):
 
 
 class UserProfileUpdate(BaseModel):
-    full_name: str | None = None
+    full_name: str | None = Field(None, max_length=200)
+    phone: str | None = Field(None, max_length=30)
+    bio: str | None = Field(None, max_length=500)
+    avatar_url: str | None = Field(None, max_length=500)
+    cover_url: str | None = Field(None, max_length=500)

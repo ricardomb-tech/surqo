@@ -6,16 +6,19 @@ import {
   RefreshCcw, BarChart3, Waves, ArrowRight,
   Loader2, MapPin, Sprout, Activity, Brain,
   Clock, Wifi, WifiOff, TrendingUp, TrendingDown, Minus,
-  ChevronRight, Bell,
+  ChevronRight, Bell, UserCircle2,
 } from "lucide-react"
 import { SensorChart } from "@/components/SensorChart"
 import { LiveFeed } from "@/components/LiveFeed"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import WeatherBanner from "@/components/WeatherBanner"
 import { farmAPI, alertAPI, analysisAPI, sensorAPI } from "@/lib/api"
+import { getAccessToken } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import type { Farm, Alert, KPIs, Analysis, TimeseriesPoint } from "@/types"
 import Link from "next/link"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 
 const LIME = "#86E66A"
 const LIME_DARK = "#2d6e10"
@@ -133,6 +136,15 @@ export default function DashboardPage() {
   const [loading,      setLoading]      = useState(true)
   const [refreshing,   setRefreshing]   = useState(false)
   const [lastSync,     setLastSync]     = useState<string | null>(null)
+  const [userProfile,  setUserProfile]  = useState<{ avatar_url?: string | null; cover_url?: string | null; full_name?: string | null } | null>(null)
+
+  useEffect(() => {
+    getAccessToken().then((token) =>
+      fetch(`${API_BASE}/api/v1/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+    ).then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setUserProfile(d) })
+      .catch(() => {})
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -218,10 +230,36 @@ export default function DashboardPage() {
 
       {/* ── Hero ── */}
       <div className="mx-6 mt-6 rounded-2xl overflow-hidden relative"
-        style={{ background: "linear-gradient(135deg, #0f2e10 0%, #1a4a1a 60%, #1f5a20 100%)", minHeight: 130 }}>
-        <div className="absolute inset-0 opacity-5"
-          style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #86E66A 0%, transparent 50%), radial-gradient(circle at 80% 20%, #86E66A 0%, transparent 40%)" }} />
+        style={{ minHeight: 130 }}>
+        {/* Fondo: foto de portada del usuario o gradiente por defecto */}
+        {userProfile?.cover_url ? (
+          <>
+            <img src={userProfile.cover_url} alt="portada"
+              className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/50" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0"
+              style={{ background: "linear-gradient(135deg, #0f2e10 0%, #1a4a1a 60%, #1f5a20 100%)" }} />
+            <div className="absolute inset-0 opacity-5"
+              style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #86E66A 0%, transparent 50%), radial-gradient(circle at 80% 20%, #86E66A 0%, transparent 40%)" }} />
+          </>
+        )}
         <div className="relative z-10 px-8 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {/* Avatar del usuario */}
+            <Link href="/profile" className="shrink-0 hover:opacity-90 transition-opacity">
+              {userProfile?.avatar_url ? (
+                <img src={userProfile.avatar_url} alt="avatar"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white/60 shadow-md" />
+              ) : (
+                <div className="w-12 h-12 rounded-full flex items-center justify-center border-2 border-white/40 shadow-md text-base font-black text-white"
+                  style={{ background: "rgba(134,230,106,0.3)" }}>
+                  {(userProfile?.full_name ?? "U")[0]?.toUpperCase() ?? <UserCircle2 className="w-6 h-6" />}
+                </div>
+              )}
+            </Link>
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full"
@@ -250,6 +288,7 @@ export default function DashboardPage() {
                 </span>
               )}
             </div>
+          </div>
           </div>
           {hasSensorData && (
             <div className="shrink-0 text-center px-6 py-4 rounded-xl"
