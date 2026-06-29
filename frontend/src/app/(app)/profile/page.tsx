@@ -128,6 +128,10 @@ export default function ProfilePage() {
     if (!res.ok) throw new Error("Error al guardar")
     const data = await res.json()
     setProfile(data)
+    // Notificar al sidebar para que actualice nombre y avatar
+    window.dispatchEvent(new CustomEvent("profile-updated", {
+      detail: { full_name: data.full_name, avatar_url: data.avatar_url }
+    }))
     return data
   }
 

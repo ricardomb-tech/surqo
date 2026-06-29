@@ -37,9 +37,24 @@ export function AppSidebar() {
     getAccessToken().then((token) =>
       fetch(`${API_BASE}/api/v1/users/me`, { headers: { Authorization: `Bearer ${token}` } })
     ).then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) { setAvatarUrl(d.avatar_url); setDisplayName(d.full_name) } })
+      .then((d) => {
+        if (d) {
+          setAvatarUrl(d.avatar_url)
+          setDisplayName(d.full_name || d.email?.split("@")[0] || null)
+        }
+      })
       .catch(() => {})
   }, [user])
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail?.full_name !== undefined) setDisplayName(detail.full_name || null)
+      if (detail?.avatar_url !== undefined) setAvatarUrl(detail.avatar_url)
+    }
+    window.addEventListener("profile-updated", handler)
+    return () => window.removeEventListener("profile-updated", handler)
+  }, [])
 
   const handleSignOut = async () => {
     await signOut()
