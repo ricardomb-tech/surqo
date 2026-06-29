@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)](https://python.org)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs)](https://nextjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
-[![Fly.io](https://img.shields.io/badge/Backend-Fly.io-8B5CF6?logo=fly.io)](https://fly.io)
+[![Fly.io](https://img.shields.io/badge/Backend-Fly.io-8B5CF6)](https://fly.io)
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com)
 
 ---
@@ -21,18 +21,17 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 
 ---
 
-## API en Producción
-
-> **Base URL:** `https://surqo-api.fly.dev`
+## URLs de Producción
 
 | Recurso | URL |
 |---------|-----|
-| **Documentación interactiva (Swagger)** | [https://surqo-api.fly.dev/docs](https://surqo-api.fly.dev/docs) |
-| **Documentación alternativa (ReDoc)** | [https://surqo-api.fly.dev/redoc](https://surqo-api.fly.dev/redoc) |
+| **Sitio web** | [https://surqo.online](https://surqo.online) |
+| **API Backend** | [https://surqo-api.fly.dev](https://surqo-api.fly.dev) |
 | **Health check** | [https://surqo-api.fly.dev/health](https://surqo-api.fly.dev/health) |
-| **Frontend** | [https://surqo.vercel.app](https://surqo.vercel.app) |
 
-> El backend corre en **Fly.io** (Dallas — `dfw`) con `auto_stop_machines = false` y `min_machines_running = 1`. Siempre hay al menos una máquina activa; **no hay cold starts**. Las respuestas son inmediatas desde el primer request.
+> El backend corre en **Fly.io** (Dallas — `dfw`) con `auto_stop_machines = false` y `min_machines_running = 1`. Siempre hay al menos una máquina activa — **no hay cold starts**.
+
+> En producción el Swagger/ReDoc está deshabilitado por seguridad. Para desarrollo local: `http://localhost:8000/docs`
 
 ---
 
@@ -90,7 +89,7 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
                     ▼                                 ▼
           ┌─────────────────────────────────────────────────┐
           │              Next.js 15 Frontend                │
-          │              (Vercel — Edge Network)            │
+          │         (Vercel — surqo.online)                 │
           │                                                 │
           │  Dashboard · Sensores · Análisis IA             │
           │  Alertas · Fincas · Upgrade                     │
@@ -99,11 +98,11 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 
 ### Flujo de datos completo
 
-1. **Sensor → Nube:** El ESP32 despierta cada 15 min, lee sensores, conecta a WiFi, publica vía MQTT TLS a HiveMQ Cloud y vuelve a deep sleep (consumo ~10µA en reposo)
-2. **MQTT → Backend:** El consumer en FastAPI recibe el mensaje, calcula VPD/ETc en tiempo real, persiste en PostgreSQL y evalúa umbrales de alerta
-3. **Alerta → Email:** Si hay violación de umbral, verifica cooldown en Redis (30 min) y envía email HTML vía Resend con la acción recomendada
+1. **Sensor → Nube:** El ESP32 despierta cada 15 min, lee sensores, conecta a WiFi, publica vía MQTT TLS a HiveMQ Cloud y vuelve a deep sleep (~10µA en reposo)
+2. **MQTT → Backend:** El consumer en FastAPI recibe el mensaje, calcula VPD en tiempo real, persiste en PostgreSQL y evalúa umbrales de alerta
+3. **Alerta → Email:** Si hay violación de umbral, verifica cooldown en Redis (30 min) y envía email HTML vía Resend
 4. **Backend → Frontend:** WebSocket broadcast a todos los clientes conectados para actualización en tiempo real sin polling
-5. **Análisis IA:** Fusiona datos de Open-Meteo (pronóstico 7 días), lecturas del sensor y KPIs calculados → prompt estructurado → Groq (Llama 3.3 70B) → JSON con recomendaciones, plan de riego y nivel de alerta
+5. **Análisis IA:** Fusiona datos de Open-Meteo (pronóstico 7 días), lecturas del sensor y KPIs → prompt YAML → Groq Llama 3.3 70B → JSON con recomendaciones
 
 ---
 
@@ -116,21 +115,22 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 | **Backend** | FastAPI + Uvicorn | 0.115 | Async nativo, tipado estricto, Swagger automático |
 | **ORM** | SQLAlchemy 2.0 (async) | 2.0 | Async sessions, typed queries |
 | **Base de datos** | Supabase PostgreSQL | — | Managed, RLS, Auth integrado |
-| **Cache** | Upstash Redis | — | Serverless, TTL para clima/análisis |
+| **Cache** | Upstash Redis | — | Serverless, TTL para clima/análisis, cooldown alertas |
 | **IA (primario)** | Groq — Llama 3.3 70B | — | 14.4K req/día gratis, latencia < 1s |
-| **IA (fallback)** | Anthropic Claude | 4.x | Calidad de respuesta premium |
+| **IA (fallback)** | Anthropic Claude Haiku | 4.x | Calidad de respuesta premium |
 | **IA (dev local)** | Ollama | — | Sin costo, sin red |
 | **Email** | Resend API | — | Alta deliverability, API simple |
 | **Clima** | Open-Meteo | — | Pronóstico 7 días gratuito, cacheado |
 | **Frontend** | Next.js 15 + React 19 | 15.0 | App Router, RSC, SSR, Middleware |
-| **Auth** | Supabase Auth + SSR | — | JWT ES256, cookies SSR |
+| **Auth** | Supabase Auth + SSR | — | JWT ES256, cookies HTTP-only SSR |
 | **Estilos** | Tailwind CSS + dark mode | 3.4 | Utility-first, consistencia de diseño |
 | **Animaciones** | Framer Motion | 11 | Transiciones fluidas, glass morphism |
 | **Gráficas** | Recharts | 2.x | Declarativo, SVG, responsive |
 | **Deploy Backend** | Fly.io (Dallas `dfw`) | — | Always-on, sin cold starts, flyctl |
-| **Deploy Frontend** | Vercel | — | Edge network, preview deployments |
+| **Deploy Frontend** | Vercel + dominio `surqo.online` | — | Edge network, preview deployments |
 | **CI/CD** | GitHub Actions | — | Lint → Test → Deploy automático |
 | **Observabilidad** | Logfire (Pydantic) | — | Structured logging, tracing |
+| **Rate limiting** | slowapi | — | Por IP en endpoints críticos |
 | **Package manager** | uv (Astral) | — | Instalación 10-100× más rápida que pip |
 
 ---
@@ -142,79 +142,104 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 ```
 backend/
 ├── app/
-│   ├── main.py              # App FastAPI, lifespan, CORS, routers
+│   ├── main.py              # App FastAPI, lifespan, CORS, seguridad, routers
 │   ├── config.py            # Settings via pydantic-settings (.env)
 │   ├── database.py          # SQLAlchemy async engine + session factory
-│   ├── dependencies.py      # CurrentUser, DBSession, PaidUser (Depends)
+│   ├── dependencies.py      # CurrentUser, DBSession (Depends)
 │   │
 │   ├── models/
-│   │   ├── user.py          # UserProfile (plan, email_count, supabase_id)
-│   │   ├── farm.py          # Farm (nombre, cultivo, lat/lon, área)
+│   │   ├── user.py          # UserProfile (plan, cuota análisis, tokens, supabase_id)
+│   │   ├── farm.py          # Farm (nombre, cultivo, lat/lon, área, alert_email)
 │   │   ├── sensor_reading.py # SensorReading (temp, humedad, suelo, UV, VPD)
 │   │   ├── analysis.py      # Analysis (recomendaciones, KPIs, tokens, costo)
 │   │   └── alert.py         # Alert (severidad, acción, resuelto, email_sent)
 │   │
 │   ├── routers/
-│   │   ├── users.py         # /api/v1/users — perfil, plan, límites
+│   │   ├── users.py         # /api/v1/users — perfil, plan, límites de cuota
 │   │   ├── farms.py         # /api/v1/farms — CRUD + KPIs
 │   │   ├── sensors.py       # /api/v1/sensors — lecturas + WebSocket
-│   │   ├── analysis.py      # /api/v1/analysis — análisis IA + historial
-│   │   ├── alerts.py        # /api/v1/alerts — activas, historial, resolve
+│   │   ├── analysis.py      # /api/v1/analysis — análisis IA + chat + historial
+│   │   ├── alerts.py        # /api/v1/alerts — activas, historial, resolve, notify
 │   │   └── kpis.py          # /api/v1/kpis — VPD, ETc, riesgo plagas
 │   │
 │   ├── services/
 │   │   ├── llm_service.py   # Multi-provider LLM (Groq/Anthropic/Ollama)
 │   │   ├── kpi_service.py   # VPD Magnus, ETc Penman-Monteith, GDD, déficit
 │   │   ├── climate_service.py # Open-Meteo API + ET₀ + caché Redis
-│   │   ├── alert_service.py # Umbrales → alertas → email con cooldown
+│   │   ├── alert_service.py # Umbrales → alertas → email con cooldown Redis
 │   │   ├── mqtt_service.py  # Consumer HiveMQ (paho-mqtt async bridge)
-│   │   └── cache_service.py # Redis wrapper (get/set + graceful fail)
+│   │   └── cache_service.py # Redis wrapper (get/set + graceful fallback)
 │   │
 │   ├── schemas/             # Pydantic v2 (request/response validation)
-│   ├── websocket/           # Manager broadcast en tiempo real
-│   └── prompts/             # YAML versionados: análisis, triage, summary
+│   ├── websocket/           # Manager broadcast en tiempo real por farm_id
+│   └── prompts/             # YAML versionados: análisis, triage, resumen diario
 │       ├── farm_analysis_v1.0.yaml
 │       ├── alert_triage_v1.0.yaml
 │       └── daily_summary_v1.0.yaml
 │
 ├── tests/
 │   ├── conftest.py          # Fixtures: SQLite in-memory + async session + mock auth
-│   ├── test_api_farms.py    # CRUD de fincas, autorización por propietario
-│   ├── test_api_sensors.py  # Timeseries, estadísticas
-│   ├── test_api_alerts.py   # Alertas activas, historial, resolución
-│   ├── test_api_users.py    # Creación de perfil, plan
-│   ├── test_climate_service.py # Fetching de pronóstico, caché
-│   ├── test_kpi_service.py  # VPD, ETc, riesgo de plagas
-│   ├── test_llm_service.py  # Selección de proveedor, parseo de respuesta
-│   └── test_alert_service.py # Cooldown Redis, envío de email, resolución
+│   ├── test_api_farms.py
+│   ├── test_api_sensors.py
+│   ├── test_api_alerts.py
+│   ├── test_api_users.py
+│   ├── test_climate_service.py
+│   ├── test_kpi_service.py
+│   ├── test_llm_service.py
+│   └── test_alert_service.py
 │
-├── migrations/              # Scripts SQL para Supabase
-├── Dockerfile               # Python 3.11-slim + uv
-├── fly.toml                 # Configuración Fly.io (Dallas, 512MB)
-└── pyproject.toml           # uv — dependencias + dev tools
+├── migrations/
+│   ├── 001_initial_schema.sql    # Tablas, índices, triggers
+│   ├── 002_analysis_quota.sql    # analyses_used, tokens_used en user_profiles
+│   ├── enable_rls.sql            # Row Level Security policies
+│   └── data_retention.sql        # Auto-delete lecturas > 90 días
+│
+├── Dockerfile               # Python 3.11-slim + uv + Uvicorn port 8080
+├── fly.toml                 # Fly.io: Dallas (dfw), 512MB, always-on
+└── pyproject.toml           # uv — dependencias + ruff config
 ```
 
 ### Modelos de dominio
 
-| Modelo | Tabla | Descripción |
+| Modelo | Tabla | Campos clave |
 |--------|-------|-------------|
-| `UserProfile` | `user_profiles` | Extiende Supabase Auth. Guarda plan (`free`/`paid`), `email_count_month` y FK al UUID de Supabase |
-| `Farm` | `farms` | Unidad productiva. Campos: nombre, cultivo, lat/lon, área, email de alertas, `user_id` |
-| `SensorReading` | `sensor_readings` | Lectura temporal. Campos: temp. aire/suelo, humedad aire/suelo, UV, VPD calculado, batería, RSSI |
-| `Analysis` | `analyses` | Resultado IA. Incluye recomendaciones JSON, tokens usados, costo USD, modelo usado |
-| `Alert` | `alerts` | Alerta con severidad (`info`/`warning`/`critical`), acción recomendada, flag `is_resolved`, `email_sent` |
+| `UserProfile` | `user_profiles` | `plan` (free/paid), `analyses_used`, `tokens_used`, `email_alerts_this_month` |
+| `Farm` | `farms` | `name`, `crop_type`, `lat/lon`, `area_hectares`, `alert_email`, `user_id` |
+| `SensorReading` | `sensor_readings` | `air_temp_c`, `air_humidity_pct`, `soil_moisture_pct`, `soil_temp_c`, `uv_index`, `vpd_kpa`, `battery_mv`, `rssi_dbm` |
+| `Analysis` | `analyses` | `alert_level`, `water_stress_index`, `irrigation_needed`, `recommendations` (JSON), `input_tokens`, `output_tokens`, `cost_usd` |
+| `Alert` | `alerts` | `severity`, `title`, `recommended_action`, `is_resolved`, `email_sent` |
+
+### Cuotas del plan Free (en `UserProfile`)
+
+```python
+FREE_ANALYSES_LIMIT           = 4      # análisis IA lifetime
+FREE_TOKENS_LIMIT             = 3_200  # tokens output acumulados lifetime
+FREE_OUTPUT_TOKENS_PER_ANALYSIS = 800  # tokens máximos por análisis
+PAID_OUTPUT_TOKENS_PER_ANALYSIS = 2_048
+MAX_FARMS                     = 1      # finca por usuario free
+```
 
 ### Servicio LLM — Arquitectura multi-proveedor
 
-El `llm_service.py` soporta tres proveedores seleccionables via variable de entorno `LLM_PROVIDER`:
+El `llm_service.py` soporta tres proveedores via `LLM_PROVIDER`:
 
 ```
-LLM_PROVIDER=groq       → Groq API (Llama 3.3 70B) — primario, gratis hasta 14.4K req/día
-LLM_PROVIDER=anthropic  → Anthropic Claude 4.x — fallback, máxima calidad
-LLM_PROVIDER=ollama     → Ollama local — desarrollo sin costo ni red
+groq      → Groq API (Llama 3.3 70B) — primario, gratis hasta 14.4K req/día
+anthropic → Anthropic Claude Haiku 4.x — fallback, alta calidad
+ollama    → Ollama local — desarrollo sin costo ni red
 ```
 
-Los prompts están en archivos YAML versionados (`prompts/`), lo que permite actualizarlos sin modificar código Python y hacerlos trazables en git.
+Los prompts están en archivos YAML versionados (`prompts/`), actualizables sin tocar código Python.
+
+### Umbrales de alerta automática
+
+| Condición | Umbral | Severidad |
+|-----------|--------|-----------|
+| Humedad suelo baja | < 25% | warning |
+| Temperatura suelo alta | > 38°C | warning |
+| VPD alto | > 1.6 kPa | warning |
+| Batería baja | < 3400 mV | info |
+| Cooldown entre alertas | 30 min (Redis) | — |
 
 ---
 
@@ -224,60 +249,56 @@ Los prompts están en archivos YAML versionados (`prompts/`), lo que permite act
 
 ```
 frontend/src/
-├── app/                        # Next.js 15 App Router
-│   ├── page.tsx                # Landing page (hero, features, stats)
-│   ├── layout.tsx              # Root layout: AuthProvider + NavBar + Footer
-│   ├── dashboard/page.tsx      # Dashboard principal con KPIs y gráficas
-│   ├── farms/page.tsx          # Gestión de fincas (crear, listar, eliminar)
-│   ├── sensors/page.tsx        # Lecturas en tiempo real (WebSocket)
-│   ├── analyze/page.tsx        # Análisis IA (solo plan Pro)
-│   ├── alerts/page.tsx         # Centro de alertas activas e historial
-│   ├── login/page.tsx          # Inicio de sesión con email/contraseña
-│   ├── register/page.tsx       # Registro de nueva cuenta
-│   ├── upgrade/page.tsx        # Comparativa de planes Free vs Pro
-│   ├── como-funciona/          # Página estática — cómo funciona Surqo
-│   ├── soluciones/             # Soluciones por tipo de cultivo
-│   ├── preguntas/              # Preguntas frecuentes
-│   ├── privacidad/             # Política de privacidad
-│   └── terminos/               # Términos de uso
+├── app/
+│   ├── page.tsx                # Landing page (hero, features, glass morphism)
+│   ├── layout.tsx              # Root layout: AuthProvider + NavBar
+│   ├── (app)/                  # Rutas protegidas por SSR middleware
+│   │   ├── dashboard/page.tsx  # KPIs + gráficas + feed live
+│   │   ├── farms/page.tsx      # CRUD fincas
+│   │   ├── sensors/page.tsx    # Lecturas tiempo real (WebSocket)
+│   │   ├── analyze/page.tsx    # Análisis IA + chat con la finca
+│   │   └── alerts/page.tsx     # Centro de alertas
+│   ├── login/page.tsx
+│   ├── register/page.tsx
+│   ├── upgrade/page.tsx        # Free vs Pro con CTA de contacto
+│   ├── como-funciona/
+│   ├── soluciones/
+│   ├── preguntas/
+│   ├── privacidad/
+│   └── terminos/
 │
 ├── components/
-│   ├── NavBar.tsx              # Barra fija: nav + usuario + badge plan
+│   ├── NavBar.tsx              # Barra fija: nav + badge plan + cuota análisis
 │   ├── AuthProvider.tsx        # Contexto React: session, isPaid, planLimits
-│   ├── RequireAuth.tsx         # HOC protección de rutas cliente
-│   ├── KPICard.tsx             # Tarjeta de métrica (VPD, ETc, humedad)
+│   ├── KPICard.tsx             # Tarjeta de métrica
 │   ├── SensorChart.tsx         # Gráfica temporal (Recharts)
-│   ├── LiveFeed.tsx            # Feed WebSocket en tiempo real
-│   ├── AnalysisResult.tsx      # Resultado análisis IA con recomendaciones
-│   ├── AlertBadge.tsx          # Badge de severidad (ok / warning / critical)
-│   ├── ThemeProvider.tsx       # Dark/light mode (next-themes)
-│   ├── ThemeToggle.tsx         # Botón toggle dark/light
-│   └── ui/                     # Primitivas de diseño (Button, Card)
+│   ├── LiveFeed.tsx            # Feed WebSocket tiempo real
+│   ├── AnalysisResult.tsx      # Resultado IA con recomendaciones
+│   └── AlertBadge.tsx          # Badge severidad
 │
 ├── lib/
-│   ├── api.ts                  # Cliente HTTP: todos los endpoints con auth JWT
-│   ├── auth.ts                 # Helpers: getSession, getAccessToken, signOut
-│   ├── supabase.ts             # createBrowserClient (SSR-compatible con cookies)
-│   ├── websocket.ts            # WebSocket manager (live feed)
-│   └── utils.ts                # cn(), formatters de fecha y unidades
+│   ├── api.ts                  # Cliente HTTP con JWT injection
+│   ├── auth.ts                 # getSession, getAccessToken, signOut
+│   ├── supabase.ts             # createBrowserClient SSR-compatible
+│   └── websocket.ts            # WebSocket manager live feed
 │
 ├── types/index.ts              # Farm, SensorReading, Alert, Analysis, KPIs
 └── middleware.ts               # Protección SSR de rutas (cookies Supabase)
 ```
 
-### Páginas y funcionalidades
+### Páginas
 
 | Ruta | Acceso | Descripción |
 |------|--------|-------------|
-| `/` | Público | Landing page con propuesta de valor y glass morphism |
-| `/login` | Solo no-auth | Inicio de sesión (redirige a `/dashboard`) |
-| `/register` | Solo no-auth | Registro gratuito — plan Free automático |
-| `/dashboard` | Autenticado | KPIs en tiempo real, gráficas, feed live |
-| `/farms` | Autenticado | Gestión de fincas (límite 3 en Free, ilimitadas en Pro) |
-| `/sensors` | Autenticado | Lecturas de sensores, timeseries, WebSocket |
-| `/alerts` | Autenticado | Alertas activas e historial |
-| `/analyze` | **Solo Pro** | Análisis IA completo con Groq/Claude — plan de acción |
-| `/upgrade` | Autenticado | Comparativa Free vs Pro, CTA de contacto |
+| `/` | Público | Landing page con propuesta de valor |
+| `/login` | Público | Inicio de sesión |
+| `/register` | Público | Registro — plan Free automático |
+| `/(app)/dashboard` | Autenticado | KPIs + gráficas + feed live |
+| `/(app)/farms` | Autenticado | CRUD fincas (límite **1** en Free) |
+| `/(app)/sensors` | Autenticado | Lecturas tiempo real, WebSocket |
+| `/(app)/alerts` | Autenticado | Alertas activas e historial |
+| `/(app)/analyze` | Autenticado | Análisis IA (**4 gratis**, ilimitados en Pro) |
+| `/upgrade` | Autenticado | Comparativa planes, CTA contacto |
 
 ---
 
@@ -287,66 +308,94 @@ frontend/src/
 
 | Componente | Función | Precio aprox. |
 |-----------|---------|--------------|
-| ESP32 WROOM-32 | Microcontrolador + WiFi nativo | $4 USD |
-| DHT22 | Temperatura y humedad del aire | $2 USD |
-| DS18B20 (impermeable) | Temperatura del suelo | $2 USD |
-| Sensor capacitivo suelo | Humedad volumétrica del suelo | $1.5 USD |
+| ESP32 WROOM-32 DevKit | Microcontrolador + WiFi | $4 USD |
+| **DHT22** (AM2302) | Temperatura y humedad del aire (±0.5°C) | $2 USD |
+| DS18B20 waterproof | Temperatura del suelo (sonda metálica) | $2 USD |
+| Sensor capacitivo suelo v2.0 | Humedad volumétrica (sin corrosión) | $1.5 USD |
 | ML8511 | Índice UV solar | $2 USD |
-| Batería LiPo 2000mAh | Autonomía ~2 semanas en deep sleep | $4 USD |
+| 2× batería 18650 Li-Ion | Autonomía ~2 semanas en deep sleep | $4 USD |
+| TP4056 con protección | Cargador baterías | $1 USD |
+| Caja IP65 | Protección lluvia y polvo | $2 USD |
+
+> ⚠️ Usar **DHT22**, no DHT11. El DHT11 tiene precisión ±2°C — insuficiente para cálculo de VPD.
 
 ### Conexiones GPIO
 
 ```
 ESP32 GPIO4  → DHT22 DATA
-ESP32 GPIO5  → DS18B20 DATA (OneWire + resistencia 4.7kΩ a 3.3V)
-ESP32 GPIO32 → Sensor suelo capacitivo AOUT
-ESP32 GPIO34 → ML8511 UV OUT
-ESP32 GPIO35 → Divisor de voltaje batería (para medir mV)
+ESP32 GPIO5  → DS18B20 DATA (OneWire + resistencia 10kΩ a 3.3V)
+ESP32 GPIO25 → VCC de todos los sensores (se corta en deep sleep)
+ESP32 GPIO32 → Sensor suelo capacitivo AOUT (ADC1_CH4)
+ESP32 GPIO34 → ML8511 UV OUT (ADC1_CH6 — solo entrada)
+ESP32 GPIO35 → Divisor de voltaje batería (ADC1_CH7 — solo entrada)
 ```
+
+> Los pines GPIO 34, 35, 36, 39 del ESP32 son **solo entrada** (input-only). No usar para salidas.
 
 ### Configuración `firmware/surqo_node/config.h`
 
 ```cpp
-#define WIFI_SSID       "tu-red"
-#define WIFI_PASSWORD   "tu-password"
-#define HIVEMQ_HOST     "cluster.s1.eu.hivemq.cloud"
-#define HIVEMQ_PORT     8883
-#define HIVEMQ_USER     "usuario"
-#define HIVEMQ_PASS     "password"
-#define DEVICE_ID       "esp32-nodo-01"
-#define FARM_ID         "uuid-de-la-finca"
-#define SLEEP_SECONDS   900   // 15 minutos
+#define WIFI_SSID         "tu-red"
+#define WIFI_PASSWORD     "tu-password"
+#define MQTT_HOST         "cluster.s1.eu.hivemq.cloud"
+#define MQTT_PORT         8883        // TLS
+#define MQTT_USERNAME     "usuario"
+#define MQTT_PASSWORD     "password"
+#define DEVICE_ID         "surqo-esp32-001"
+#define FARM_ID           "uuid-de-la-finca"
+#define SLEEP_MINUTES     15
+#define SOIL_DRY_ADC      3200   // Calibrar en tu suelo seco
+#define SOIL_WET_ADC      1200   // Calibrar en tu suelo saturado
 ```
 
 ### Ciclo de operación
 
 ```
-Despertar (timer RTC)
-  → Inicializar sensores (DHT22, DS18B20, capacitivo, ML8511)
-  → Conectar WiFi
-  → Sincronizar NTP
-  → Leer sensores (temp, humedad, suelo, UV, batería mV)
-  → Calcular VPD local
-  → Publicar JSON vía MQTT TLS (puerto 8883) a HiveMQ Cloud
+Despertar (timer RTC cada 15 min)
+  → GPIO25 HIGH (enciende sensores)
+  → Leer DHT22, DS18B20, capacitivo, ML8511, batería ADC
+  → Conectar WiFi → Sincronizar NTP
+  → Publicar JSON vía MQTT TLS a HiveMQ Cloud
+      topic: surqo/farms/{FARM_ID}/sensors
+  → Fallback si MQTT falla: HTTP POST a surqo-api.fly.dev
+  → GPIO25 LOW (apaga sensores)
   → Deep sleep 15 min (~10µA consumo)
+```
 
-Fallback si MQTT falla:
-  → HTTP POST a https://surqo-api.fly.dev/api/v1/sensors/readings
-  → Deep sleep
+### Compilar y subir
+
+```bash
+cd firmware
+pio run -t upload        # Compilar + subir al ESP32
+pio device monitor       # Ver logs por serial (115200 baud)
 ```
 
 ---
 
 ## Simulador IoT
 
-Para desarrollo sin hardware físico, el proyecto incluye un simulador MQTT:
+Para desarrollo sin hardware físico:
 
 ```bash
 cd iot-simulator
-python simulator.py
+pip install httpx paho-mqtt
+
+# Por HTTP al API local
+python simulator.py --mode http \
+  --interval 10 \
+  --api-url http://localhost:8000/api/v1/sensors/readings \
+  --farm-id tu-farm-uuid
+
+# Por MQTT a HiveMQ Cloud
+python simulator.py --mode mqtt \
+  --mqtt-host tu-cluster.hivemq.cloud \
+  --mqtt-user surqo-user \
+  --mqtt-pass tu_password \
+  --farm-id tu-farm-uuid \
+  --device-id ESP32-DEMO-001
 ```
 
-El simulador publica mensajes MQTT con valores aleatorios realistas para temperatura, humedad, suelo, UV y batería, usando el mismo schema JSON que el firmware ESP32. Útil para probar el consumer MQTT del backend y el WebSocket del frontend sin necesitar sensores físicos.
+Simula el modelo climático de Córdoba, Colombia: temperatura senoidal 22°C→34°C, humedad inversa, lluvia probabilística, UV solar.
 
 ---
 
@@ -355,9 +404,9 @@ El simulador publica mensajes MQTT con valores aleatorios realistas para tempera
 ### Prerrequisitos
 
 - Python 3.11+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (gestor de paquetes)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Node.js 20+
-- Cuentas en: Supabase, Upstash Redis, HiveMQ Cloud, Resend, Groq (todas con tier gratuito)
+- Cuentas (tier gratuito): Supabase, Upstash Redis, HiveMQ Cloud, Resend, Groq
 
 ### Backend
 
@@ -365,21 +414,15 @@ El simulador publica mensajes MQTT con valores aleatorios realistas para tempera
 git clone https://github.com/ricardomb-tech/surqo.git
 cd surqo/backend
 
-# Instalar dependencias
 uv sync
 
-# Configurar variables de entorno
 cp .env.example .env
-# Edita .env con tus credenciales (ver tabla más abajo)
+# Editar .env con tus credenciales
 
-# Arrancar servidor de desarrollo
 uv run fastapi dev app/main.py
 # → http://localhost:8000/docs
 
-# Correr tests
 uv run pytest tests/ -v --cov=app
-
-# Linter
 uv run ruff check app/
 ```
 
@@ -390,32 +433,28 @@ cd surqo/frontend
 
 npm install
 
-# Variables de entorno
-cat > .env.local << EOF
+# Crear .env.local
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
-EOF
 
-# Desarrollo
 npm run dev
 # → http://localhost:3000
-
-# Build producción
-npm run build && npm start
 ```
 
-### Variables de Entorno — Backend
+### Variables de Entorno — Backend completo
 
 ```env
 # LLM Provider (groq | anthropic | ollama)
 LLM_PROVIDER=groq
 GROQ_API_KEY=gsk_...
 GROQ_MODEL=llama-3.3-70b-versatile
+LLM_MAX_TOKENS=800
 
 # Anthropic (fallback opcional)
 ANTHROPIC_API_KEY=sk-ant-...
+LLM_MODEL=claude-haiku-4-5-20251001
 
 # Ollama (solo desarrollo local)
 OLLAMA_BASE_URL=http://localhost:11434
@@ -423,10 +462,10 @@ OLLAMA_MODEL=llama3
 
 # Supabase
 SUPABASE_URL=https://tu-proyecto.supabase.co
-SUPABASE_KEY=sb_secret_...             # Service Role Key (bypasea RLS)
-SUPABASE_JWK_X=pDWflX5Eq...           # Coordenada X del JWK público (ES256)
-SUPABASE_JWK_Y=kaePA94RA...           # Coordenada Y del JWK público
-SUPABASE_JWK_KID=f30d561e-...         # Key ID del JWK
+SUPABASE_KEY=sb_secret_...
+SUPABASE_JWK_X=pDWflX5Eq...
+SUPABASE_JWK_Y=kaePA94RA...
+SUPABASE_JWK_KID=f30d561e-...
 DATABASE_URL=postgresql+asyncpg://usuario:password@host:5432/postgres
 
 # Redis (Upstash)
@@ -443,12 +482,12 @@ MQTT_TOPIC_PREFIX=surqo
 
 # Email (Resend)
 RESEND_API_KEY=re_...
-FROM_EMAIL=alertas@surqo.io
+FROM_EMAIL=alertas@surqo.online
 
 # App
 APP_ENV=development
-CORS_ORIGINS=["http://localhost:3000","https://surqo.vercel.app"]
-LOGFIRE_TOKEN=                         # Opcional — vacío para deshabilitar
+CORS_ORIGINS=["http://localhost:3000","https://surqo.online"]
+LOGFIRE_TOKEN=   # Opcional
 ```
 
 ### Dónde obtener cada credencial
@@ -458,51 +497,36 @@ LOGFIRE_TOKEN=                         # Opcional — vacío para deshabilitar
 | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) → API Keys |
 | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) → API Keys |
 | `SUPABASE_URL` + `SUPABASE_KEY` | Supabase Dashboard → Settings → API |
-| `SUPABASE_JWK_X/Y/KID` | Supabase Dashboard → Settings → API → JWT Settings → JWKS |
-| `DATABASE_URL` | Supabase Dashboard → Settings → Database → Session Pooler (IPv4) |
+| `SUPABASE_JWK_X/Y/KID` | Supabase → Settings → API → JWT Settings → JWKS |
+| `DATABASE_URL` | Supabase → Settings → Database → Session Pooler (IPv4) |
 | `REDIS_URL` | [console.upstash.com](https://console.upstash.com) → Redis → Connect |
 | `HIVEMQ_HOST/USER/PASS` | [console.hivemq.cloud](https://console.hivemq.cloud) → Cluster Settings |
 | `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
-
-### Documentación local
-
-Con el backend corriendo en `http://localhost:8000`:
-
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
-- **Health check:** `http://localhost:8000/health`
 
 ---
 
 ## API Reference
 
-> Documentación interactiva en vivo: **[https://surqo-api.fly.dev/docs](https://surqo-api.fly.dev/docs)**
+> Documentación interactiva en desarrollo local: `http://localhost:8000/docs`
 
 ### Autenticación
 
-Todos los endpoints protegidos requieren el header:
+Todos los endpoints protegidos requieren:
 
 ```http
 Authorization: Bearer <jwt-token-de-supabase>
 ```
 
-El token JWT es emitido por **Supabase Auth** con algoritmo **ES256** (curva elíptica P-256). El backend lo valida contra la clave pública JWKS del proyecto Supabase. En el frontend, el token se obtiene automáticamente con `supabase.auth.getSession()`.
+JWT emitido por **Supabase Auth** con algoritmo **ES256** (curva P-256). El backend valida contra JWKS. En el frontend se obtiene con `supabase.auth.getSession()`.
 
 ---
 
 ### `GET /health`
 
-Verifica que el servidor y la base de datos están operativos.
-
 **Acceso:** Público
 
-**Respuesta `200`:**
 ```json
-{
-  "status": "ok",
-  "db": "ok",
-  "env": "production"
-}
+{ "status": "ok", "db": "ok", "env": "production" }
 ```
 
 ---
@@ -511,11 +535,8 @@ Verifica que el servidor y la base de datos están operativos.
 
 #### `POST /api/v1/farms/`
 
-Registra una nueva finca asociada al usuario autenticado.
+**Acceso:** Autenticado · Plan Free: **máximo 1 finca** (`402` al exceder)
 
-**Acceso:** Autenticado · Plan Free: máximo 3 fincas (`402` al exceder)
-
-**Body:**
 ```json
 {
   "name": "Finca La Esperanza",
@@ -527,42 +548,22 @@ Registra una nueva finca asociada al usuario autenticado.
 }
 ```
 
-**Respuesta `201`:**
-```json
-{
-  "id": "310f2f64-4faf-4552-bc13-e9964e1cfccb",
-  "name": "Finca La Esperanza",
-  "crop_type": "maíz",
-  "latitude": 8.7575,
-  "longitude": -75.8891,
-  "area_hectares": 12.5,
-  "alert_email": "agricultor@ejemplo.com",
-  "user_id": "uuid-usuario",
-  "created_at": "2026-05-17T10:00:00Z"
-}
-```
-
 #### `GET /api/v1/farms/`
-
-Lista todas las fincas del usuario autenticado.
+Lista las fincas del usuario autenticado.
 
 #### `GET /api/v1/farms/{farm_id}`
-
-Detalle de una finca. Solo el propietario puede acceder (`403` si otro usuario intenta).
+Detalle. Solo propietario (`403` si otro usuario).
 
 #### `PATCH /api/v1/farms/{farm_id}`
-
-Actualiza campos de la finca (todos opcionales). Solo propietario.
+Actualiza campos (todos opcionales).
 
 #### `DELETE /api/v1/farms/{farm_id}`
-
-Elimina la finca y todos sus datos (lecturas, análisis, alertas). Respuesta `204`.
+Elimina finca y datos asociados. `204`.
 
 #### `GET /api/v1/farms/{farm_id}/kpis`
 
-KPIs agronómicos basados en lecturas de las últimas 24 horas.
+KPIs agronómicos de las últimas 24h:
 
-**Respuesta `200`:**
 ```json
 {
   "vpd_kpa": 1.42,
@@ -570,13 +571,8 @@ KPIs agronómicos basados en lecturas de las últimas 24 horas.
   "avg_humidity_pct": 68.3,
   "avg_soil_moisture_pct": 44.1,
   "soil_health_score": 75,
-  "pest_risk": {
-    "risk_pct": 35,
-    "pathogens": ["roya", "fusarium"],
-    "conditions": "Condiciones moderadas de riesgo"
-  },
-  "readings_count_24h": 96,
-  "latest_reading_at": "2026-05-17T14:30:00Z"
+  "pest_risk": { "risk_pct": 35, "pathogens": ["roya"] },
+  "readings_count_24h": 96
 }
 ```
 
@@ -586,15 +582,12 @@ KPIs agronómicos basados en lecturas de las últimas 24 horas.
 
 #### `POST /api/v1/sensors/readings`
 
-Registra una lectura. Usada por el ESP32 como fallback HTTP o por el consumer MQTT interno.
+**Acceso:** Público (usado por ESP32 y simulador)
 
-**Acceso:** Público (el `farm_id` actúa como scope)
-
-**Body:**
 ```json
 {
   "device_id": "ESP32-CAMPO-001",
-  "farm_id": "310f2f64-4faf-4552-bc13-e9964e1cfccb",
+  "farm_id": "uuid-finca",
   "sensors": {
     "soil_moisture_pct": 44.5,
     "soil_temp_c": 27.8,
@@ -608,39 +601,27 @@ Registra una lectura. Usada por el ESP32 como fallback HTTP o por el consumer MQ
 }
 ```
 
-El `vpd_kpa` se calcula automáticamente en el backend usando la ecuación de Magnus.
+El `vpd_kpa` se calcula automáticamente en el backend (ecuación de Magnus).
 
 #### `GET /api/v1/sensors/timeseries/{farm_id}`
 
-Serie temporal para graficar.
+Query params: `hours` (default 24, máx 168), `metric` (default `soil_moisture_pct`)
 
-**Query params:**
-- `hours` (int, default 24, máx 168): ventana de tiempo
-- `metric` (string, default `soil_moisture_pct`): métrica a consultar
+Métricas: `soil_moisture_pct`, `soil_temp_c`, `air_temp_c`, `air_humidity_pct`, `vpd_kpa`, `uv_index`
 
-**Métricas disponibles:** `soil_moisture_pct`, `soil_temp_c`, `air_temp_c`, `air_humidity_pct`, `vpd_kpa`, `uv_index`
+#### `GET /api/v1/sensors/latest/{device_id}`
+Última lectura del dispositivo.
 
-**Respuesta `200`:**
-```json
-[
-  { "timestamp": "2026-05-17T00:00:00Z", "value": 43.2 },
-  { "timestamp": "2026-05-17T00:15:00Z", "value": 43.8 }
-]
-```
+#### `GET /api/v1/sensors/stats/{farm_id}`
+Estadísticas agregadas 24h.
 
 #### `WebSocket /api/v1/sensors/ws/live/{farm_id}`
 
-Stream en tiempo real. El backend hace broadcast a todos los clientes conectados cada vez que llega una lectura MQTT de esa finca.
+Stream tiempo real. Broadcast a todos los clientes conectados al recibir lectura MQTT.
 
-**Acceso:** Sin autenticación (el `farm_id` actúa como scope)
-
-**Ejemplo de conexión:**
 ```javascript
 const ws = new WebSocket('wss://surqo-api.fly.dev/api/v1/sensors/ws/live/FARM_ID')
-ws.onmessage = (event) => {
-  const reading = JSON.parse(event.data)
-  console.log('Humedad suelo:', reading.soil_moisture_pct)
-}
+ws.onmessage = (e) => console.log(JSON.parse(e.data))
 ```
 
 ---
@@ -649,14 +630,11 @@ ws.onmessage = (event) => {
 
 #### `POST /api/v1/analysis/analyze`
 
-Ejecuta análisis agronómico completo. Fusiona lecturas del sensor + pronóstico Open-Meteo (7 días) + KPIs → Groq (Llama 3.3 70B) → JSON estructurado. Tarda ~1-3 segundos.
+**Acceso:** Autenticado · Free: **4 análisis lifetime** (`402` al agotar) · Pro: ilimitado
 
-**Acceso:** Autenticado · **Solo plan Pro** (`402` en plan Free)
-
-**Body:**
 ```json
 {
-  "farm_id": "310f2f64-4faf-4552-bc13-e9964e1cfccb",
+  "farm_id": "uuid-finca",
   "farm_name": "Finca La Esperanza",
   "lat": 8.7575,
   "lon": -75.8891,
@@ -669,90 +647,112 @@ Ejecuta análisis agronómico completo. Fusiona lecturas del sensor + pronóstic
 ```json
 {
   "id": "uuid-analisis",
-  "farm_id": "uuid-finca",
-  "farm_name": "Finca La Esperanza",
-  "crop_type": "maíz",
   "alert_level": "warning",
-  "summary_for_farmer": "Tu cultivo de maíz muestra estrés hídrico moderado. El pronóstico indica ausencia de lluvia por 5 días. Se recomienda aplicar riego en las próximas 24 horas para evitar pérdidas en la etapa de llenado de grano.",
+  "summary_for_farmer": "Tu cultivo de maíz muestra estrés hídrico moderado...",
   "irrigation_needed": true,
   "water_stress_index": 0.67,
-  "avg_temperature_c": 29.5,
-  "total_rain_7d_mm": 8.2,
-  "avg_vpd_kpa": 1.62,
   "recommendations": [
     {
       "action": "Aplicar riego por goteo — 25mm en las próximas 6 horas",
       "time_window": "0-6h",
-      "justification": "VPD > 1.6 kPa y suelo al 38% de capacidad de campo",
-      "category": "irrigation",
-      "priority": 1
+      "priority": 1,
+      "category": "irrigation"
     }
   ],
-  "model_used": "llama-3.3-70b-versatile",
+  "model_used": "groq/llama-3.3-70b-versatile",
   "input_tokens": 624,
   "output_tokens": 318,
   "cost_usd": 0.0,
-  "created_at": "2026-05-17T14:35:00Z"
+  "created_at": "2026-06-28T14:35:00Z"
 }
 ```
 
-**Niveles de alerta:**
+**Niveles de alerta:** `ok` · `warning` · `critical`
 
-| `alert_level` | Descripción |
-|--------------|-------------|
-| `ok` | Condiciones óptimas — sin acción urgente |
-| `warning` | Estrés detectado — acción recomendada en 24-48h |
-| `critical` | Condición crítica — acción inmediata necesaria |
+**Error por cuota agotada (`402`):**
+```json
+{
+  "code": "analysis_quota_exceeded",
+  "message": "Usaste tus 4 análisis IA gratuitos. Contacta a nuestro equipo para activar el plan premium.",
+  "analyses_used": 4,
+  "analyses_limit": 4,
+  "contact_url": "https://surqo.online/upgrade"
+}
+```
 
 #### `GET /api/v1/analysis/history/{farm_id}`
-
-Historial de análisis, del más reciente al más antiguo.
+Historial de análisis (más reciente primero, últimos 10).
 
 #### `GET /api/v1/analysis/{analysis_id}`
-
-Detalle de un análisis específico. Solo propietario de la finca.
+Detalle de un análisis.
 
 ---
 
 ### Alertas — `/api/v1/alerts`
 
-Alertas automáticas generadas cuando las lecturas superan umbrales: VPD > 1.6 kPa, suelo < 25%, temperatura > 38°C. Cooldown de 30 minutos en Redis para evitar spam.
+Generadas automáticamente cuando lecturas superan umbrales. Cooldown Redis 30 min.
 
 #### `GET /api/v1/alerts/active`
-
-Alertas activas del usuario. Query param `farm_id` opcional para filtrar.
-
-**Respuesta `200`:**
-```json
-[
-  {
-    "id": "uuid-alerta",
-    "farm_id": "uuid-finca",
-    "title": "VPD crítico — Estrés hídrico severo",
-    "description": "El VPD alcanzó 2.1 kPa, superando el umbral crítico de 2.0 kPa.",
-    "severity": "critical",
-    "recommended_action": "Aplicar riego inmediato — mínimo 30mm en las próximas 2 horas.",
-    "is_resolved": false,
-    "created_at": "2026-05-17T12:00:00Z"
-  }
-]
-```
-
-**Niveles de severidad:**
-
-| `severity` | Descripción |
-|-----------|-------------|
-| `info` | Información relevante — sin urgencia |
-| `warning` | Condición anómala — monitorear |
-| `critical` | Acción inmediata requerida |
+Alertas activas. Query param `farm_id` opcional.
 
 #### `GET /api/v1/alerts/history`
+Todas (activas + resueltas).
 
-Historial completo (activas y resueltas).
+#### `GET /api/v1/alerts/{alert_id}`
+Detalle de una alerta.
 
 #### `PATCH /api/v1/alerts/{alert_id}/resolve`
+Marcar como resuelta.
 
-Marca una alerta como resuelta. Solo propietario.
+#### `POST /api/v1/alerts/{alert_id}/notify`
+Reenviar email de la alerta manualmente.
+
+---
+
+### Usuarios — `/api/v1/users`
+
+#### `GET /api/v1/users/me`
+
+```json
+{
+  "user_id": "uuid",
+  "email": "agricultor@ejemplo.com",
+  "plan": "free",
+  "is_paid": false,
+  "can_use_ai_analysis": true,
+  "analyses_used": 2,
+  "farms_count": 1,
+  "created_at": "2026-06-01T00:00:00Z"
+}
+```
+
+#### `PATCH /api/v1/users/me`
+Actualizar perfil (nombre).
+
+#### `GET /api/v1/users/me/plan-limits`
+
+```json
+{
+  "plan": "free",
+  "farms": { "used": 1, "limit": 1, "remaining": 0, "unlimited": false },
+  "ai_analysis": {
+    "allowed": true,
+    "used": 2,
+    "limit": 4,
+    "remaining": 2,
+    "tokens_used": 1600,
+    "tokens_limit": 3200,
+    "max_tokens_per_analysis": 800
+  },
+  "email_alerts": { "unlimited": true, "used_this_month": 3 }
+}
+```
+
+#### `PATCH /api/v1/users/{user_id}/plan` *(Solo admin)*
+
+```json
+{ "plan": "paid" }
+```
 
 ---
 
@@ -760,74 +760,16 @@ Marca una alerta como resuelta. Solo propietario.
 
 #### `GET /api/v1/kpis/farm/{farm_id}`
 
-KPIs calculados con ecuaciones científicas estándar.
-
 | KPI | Fórmula | Interpretación |
 |-----|---------|----------------|
-| **VPD** (kPa) | `es − ea` donde `es = 0.6108 × e^(17.27T/(T+237.3))` (Magnus) | < 0.8 óptimo · 0.8–1.6 aceptable · > 1.6 estrés · > 2.5 crítico |
-| **ETc** (mm/día) | `ET₀ × Kc` (coeficiente por cultivo) | Agua consumida por el cultivo por día |
-| **GDD** (°días) | `(Tmax + Tmin)/2 − Tbase` | Calor acumulado para desarrollo del cultivo |
-| **Déficit hídrico** (mm) | `ETc_7d − lluvia_7d` (solo si > 0) | Agua faltante en la semana |
-| **Score suelo** (0-100) | 40 pts humedad + 30 pts temp. + 30 pts CE | > 70 saludable · 50-70 aceptable · < 50 crítico |
-| **Riesgo plagas** (%) | Modelo por temp + humedad + cultivo | < 40 bajo · 40-70 moderado · > 70 alto |
+| **VPD** (kPa) | `es − ea` (Magnus) | < 0.8 óptimo · 0.8–1.6 aceptable · > 1.6 estrés |
+| **ETc** (mm/día) | `ET₀ × Kc` | Agua consumida diaria por el cultivo |
+| **GDD** (°días) | `(Tmax+Tmin)/2 − Tbase` | Calor acumulado para crecimiento |
+| **Déficit hídrico** (mm) | `ETc_7d − lluvia_7d` | Agua faltante en la semana |
+| **Score suelo** (0-100) | Compuesto humedad + temp | > 70 saludable · < 50 crítico |
+| **Riesgo plagas** (%) | Modelo temp + HR + cultivo | > 70 = alerta |
 
-**Coeficientes Kc por cultivo:**
-
-| Cultivo | Kc |
-|---------|-----|
-| Arroz | 1.20 |
-| Maíz | 1.15 |
-| Plátano | 1.10 |
-| Algodón | 1.05 |
-| Café | 0.95 |
-| Yuca | 0.85 |
-
----
-
-### Ejemplo de integración completa
-
-```bash
-BASE="https://surqo-api.fly.dev"
-JWT="TU_JWT_DE_SUPABASE"
-
-# 1. Crear una finca
-curl -X POST $BASE/api/v1/farms/ \
-  -H "Authorization: Bearer $JWT" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Mi Finca",
-    "crop_type": "maíz",
-    "latitude": 8.7575,
-    "longitude": -75.8891,
-    "area_hectares": 10,
-    "alert_email": "yo@ejemplo.com"
-  }'
-
-# 2. Enviar lectura de sensor (desde ESP32 o simulador)
-curl -X POST $BASE/api/v1/sensors/readings \
-  -H "Content-Type: application/json" \
-  -d '{
-    "device_id": "ESP32-TEST-001",
-    "farm_id": "FARM_ID_DEL_PASO_1",
-    "sensors": {
-      "soil_moisture_pct": 42.0,
-      "soil_temp_c": 28.0,
-      "air_temp_c": 31.0,
-      "air_humidity_pct": 68.0,
-      "light_uv_index": 7.2
-    },
-    "battery_mv": 3820,
-    "rssi_dbm": -62
-  }'
-
-# 3. Consultar KPIs
-curl $BASE/api/v1/farms/FARM_ID/kpis \
-  -H "Authorization: Bearer $JWT"
-
-# 4. Ver alertas activas
-curl "$BASE/api/v1/alerts/active?farm_id=FARM_ID" \
-  -H "Authorization: Bearer $JWT"
-```
+**Coeficientes Kc:** Arroz 1.20 · Maíz 1.15 · Plátano 1.10 · Algodón 1.05 · Café 0.95 · Yuca 0.85
 
 ---
 
@@ -836,51 +778,48 @@ curl "$BASE/api/v1/alerts/active?farm_id=FARM_ID" \
 ### Flujo de autenticación
 
 ```
-Browser                  Supabase Auth            FastAPI Backend
-   │                          │                         │
-   │── signInWithPassword() ──►│                         │
-   │◄── JWT (ES256) ───────────│                         │
-   │                          │                         │
-   │── GET /api/v1/farms/ ─────────────────────────────►│
-   │   Authorization: Bearer <jwt>                       │
-   │                          │    ECAlgorithm.from_jwk()│
-   │                          │    → decode ES256        │
-   │                          │    → get/create          │
-   │                          │      UserProfile         │
-   │◄── [fincas del usuario] ──────────────────────────  │
+Browser          Supabase Auth          FastAPI Backend
+   │                   │                      │
+   │─ signInWithPassword() ─►│                │
+   │◄─ JWT (ES256) ──────────│                │
+   │                         │                │
+   │─ GET /api/v1/farms/ ──────────────────►  │
+   │  Authorization: Bearer <jwt>             │
+   │                         │  validar JWKS  │
+   │                         │  → sub = UUID  │
+   │                         │  → get/create  │
+   │                         │    UserProfile │
+   │◄─ [fincas del usuario] ──────────────── │
 ```
 
-- **Algoritmo:** ES256 (curva elíptica P-256) — clave pública de la JWKS de Supabase
-- **Perfil automático:** El primer request con JWT válido crea el `UserProfile` en la DB (sin registro separado en el backend)
-- **SSR:** El middleware de Next.js usa `@supabase/ssr` + cookies para proteger rutas en el servidor antes de renderizar
-- **Caché de clave pública:** La clave EC se construye una sola vez con `@lru_cache` al arrancar, no en cada request
+- **Algoritmo:** ES256 (curva P-256) — clave pública JWKS de Supabase
+- **Perfil automático:** Primera request válida crea `UserProfile` (plan `free`)
+- **SSR:** `@supabase/ssr` + cookies HTTP-only protege rutas antes de renderizar
 
 ### Planes
 
 | Feature | Free | Pro |
 |---------|:----:|:---:|
-| Fincas registradas | 3 máximo | Ilimitadas |
-| Sensores tiempo real | ✓ | ✓ |
-| Historial de datos | ✓ | ✓ |
+| Fincas | **1** | Ilimitadas |
+| Monitoreo tiempo real | ✓ | ✓ |
+| KPIs agronómicos | ✓ | ✓ |
 | Alertas automáticas | ✓ | ✓ |
-| Emails de alerta / mes | 10 | Ilimitados |
-| Análisis IA (Groq / Claude) | ✗ | ✓ |
+| Emails de alerta/mes | Ilimitados | Ilimitados |
+| **Análisis IA** | **4 lifetime** | **Ilimitados** |
+| Tokens por análisis | 800 | 2.048 |
 | Soporte prioritario | ✗ | ✓ |
 
-**Gestión de plan:** El admin cambia el plan via `PATCH /api/v1/users/{id}/plan` con `{"plan": "paid"}`. La arquitectura está lista para conectar Stripe Checkout — solo se necesita el webhook al mismo endpoint.
+**Upgrade:** El admin activa Pro con `PATCH /api/v1/users/{id}/plan {"plan": "paid"}`. Arquitectura lista para conectar Stripe — solo falta el webhook.
 
-### Row Level Security
+### Migraciones de base de datos
 
-```sql
--- Aplicar en Supabase SQL Editor
-ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "farms: owner only" ON public.farms
-  FOR ALL USING (user_id = auth.uid());
-
--- Repetir para: user_profiles, sensor_readings, analyses, alerts
+```bash
+# Ejecutar en Supabase SQL Editor — en orden:
+# 001_initial_schema.sql    → tablas base
+# 002_analysis_quota.sql    → analyses_used + tokens_used en user_profiles
+# enable_rls.sql            → Row Level Security
+# data_retention.sql        → auto-delete lecturas > 90 días
 ```
-
-El backend usa `service_role` (bypasea RLS). Los usuarios con `anon key` solo ven sus propios datos.
 
 ---
 
@@ -898,39 +837,26 @@ push a master / PR a master
    │         │  ruff check app/
    │         │  pytest --cov (SQLite in-memory)
    └────┬────┘
-        │ success
-   ┌────┴──────────────────────────┐
-   │                               │
-   ▼                               ▼
-┌──────────────────┐      ┌────────────────────┐
-│  deploy-backend  │      │  deploy-frontend   │
-│  flyctl deploy   │      │  vercel-action     │
-│  --remote-only   │      │  --prod            │
-└────────┬─────────┘      └──────────┬─────────┘
-         │                           │
-         └────────────┬──────────────┘
-                      ▼
-              ┌──────────────┐
-              │notify-deploy │  Step summary con resultado
-              └──────────────┘
+        │ success (solo en push a master)
+        ▼
+┌──────────────────┐
+│  deploy-backend  │  flyctl deploy --remote-only
+└──────────────────┘
+
+Frontend: Vercel GitHub Integration (auto-deploy nativo)
+          Preview deployments en cada PR
 ```
 
 ### Secrets requeridos en GitHub
 
 ```
-# LLM
-GROQ_API_KEY              ANTHROPIC_API_KEY
-
-# Supabase
-SUPABASE_URL              SUPABASE_KEY
-SUPABASE_JWK_X            SUPABASE_JWK_Y            SUPABASE_JWK_KID
-
-# Infraestructura
-FLY_API_TOKEN             VERCEL_TOKEN
-VERCEL_ORG_ID             VERCEL_PROJECT_ID
-
-# Servicios opcionales
-RESEND_API_KEY            LOGFIRE_TOKEN
+GROQ_API_KEY          ANTHROPIC_API_KEY
+SUPABASE_URL          SUPABASE_KEY
+SUPABASE_JWK_X        SUPABASE_JWK_Y       SUPABASE_JWK_KID
+DATABASE_URL          REDIS_URL
+HIVEMQ_HOST           HIVEMQ_USERNAME      HIVEMQ_PASSWORD
+RESEND_API_KEY        FLY_API_TOKEN
+LOGFIRE_TOKEN         (opcional)
 ```
 
 ---
@@ -940,54 +866,33 @@ RESEND_API_KEY            LOGFIRE_TOKEN
 ### Backend — Fly.io
 
 ```bash
-# Instalar flyctl
 curl -L https://fly.io/install.sh | sh
-
-# Login
 flyctl auth login
 
-# Primera vez: crear la app
 cd backend
 flyctl launch --name surqo-api --region dfw
 
-# Configurar secrets (una sola vez)
 flyctl secrets set \
   GROQ_API_KEY="gsk_..." \
-  ANTHROPIC_API_KEY="sk-ant-..." \
   SUPABASE_URL="https://..." \
   SUPABASE_KEY="..." \
-  SUPABASE_JWK_X="..." \
-  SUPABASE_JWK_Y="..." \
-  SUPABASE_JWK_KID="..." \
   DATABASE_URL="postgresql+asyncpg://..." \
   REDIS_URL="rediss://..." \
-  HIVEMQ_HOST="..." \
-  HIVEMQ_USERNAME="..." \
-  HIVEMQ_PASSWORD="..." \
-  RESEND_API_KEY="re_..."
+  HIVEMQ_HOST="..." HIVEMQ_USERNAME="..." HIVEMQ_PASSWORD="..." \
+  RESEND_API_KEY="re_..." FROM_EMAIL="alertas@surqo.online"
 
-# Deploy manual
-flyctl deploy --remote-only
-
-# Ver logs
-flyctl logs
-
-# Estado de la app
-flyctl status
+flyctl deploy --remote-only   # Deploy manual
+flyctl logs                   # Ver logs
+flyctl status                 # Estado
 ```
 
-El CI/CD hace deploy automático en cada push a `master` usando `FLY_API_TOKEN`.
+### Frontend — Vercel + surqo.online
 
-### Frontend — Vercel
+El deploy es automático via **Vercel GitHub Integration** en cada push a `master`.
 
-El CI/CD hace deploy automático vía `amondnet/vercel-action`. Para deploy manual:
+**DNS configurado:** Nameservers de Hostinger apuntan a `ns1.vercel-dns.com` / `ns2.vercel-dns.com`.
 
-```bash
-cd frontend
-npx vercel --prod
-```
-
-Variables de entorno requeridas en Vercel:
+Variables en Vercel:
 ```
 NEXT_PUBLIC_API_URL=https://surqo-api.fly.dev
 NEXT_PUBLIC_WS_URL=wss://surqo-api.fly.dev
@@ -999,12 +904,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 
 ```toml
 app = "surqo-api"
-primary_region = "dfw"   # Dallas — más cercano a Colombia
+primary_region = "dfw"
 
 [http_service]
-  internal_port      = 8080
-  force_https        = true
-  auto_stop_machines = false   # Sin hibernación — siempre disponible
+  internal_port        = 8080
+  force_https          = true
+  auto_stop_machines   = false   # Sin hibernación
   min_machines_running = 1
 
 [[vm]]
@@ -1016,7 +921,6 @@ primary_region = "dfw"   # Dallas — más cercano a Colombia
   method   = "GET"
   path     = "/health"
   timeout  = "5s"
-  type     = "http"
 ```
 
 ---
@@ -1027,13 +931,13 @@ Este proyecto fue desarrollado en **7 días** cubriendo el stack completo de una
 
 | Día | Foco | Entregable |
 |-----|------|-----------|
-| 1 | Fundamentos | FastAPI + SQLAlchemy async + modelos de dominio (Farm, Sensor, Analysis, Alert) |
-| 2 | Datos y Clima | Open-Meteo API, VPD (Magnus), ETc (Penman-Monteith), GDD, cache Redis |
-| 3 | IA | LLM multi-proveedor (Groq/Anthropic/Ollama), prompts YAML versionados |
-| 4 | IoT + Tiempo Real | Consumer MQTT asíncrono, WebSocket broadcast, firmware ESP32 deep sleep |
-| 5 | Frontend | Next.js 15, dashboard, gráficas Recharts, diseño dark mode + glass morphism |
-| 6 | Alertas Email | Sistema de alertas con cooldown Redis, emails HTML vía Resend, 21 tests |
-| 7 | Auth + Deploy | Supabase Auth ES256, plan Free/Pro, login/register/paywall, Fly.io + CI/CD |
+| 1 | Fundamentos | FastAPI + SQLAlchemy async + modelos de dominio |
+| 2 | Datos y Clima | Open-Meteo API, VPD, ETc Penman-Monteith, GDD, Redis |
+| 3 | IA | LLM multi-proveedor, prompts YAML versionados |
+| 4 | IoT + Tiempo Real | MQTT consumer, WebSocket broadcast, firmware ESP32 |
+| 5 | Frontend | Next.js 15, dashboard, Recharts, glass morphism |
+| 6 | Alertas Email | Cooldown Redis, emails HTML Resend, tests |
+| 7 | Auth + Deploy | Supabase ES256, plan Free/Pro, freemium quota, Fly.io + CI/CD |
 
 ### Métricas del proyecto
 
@@ -1042,122 +946,103 @@ Este proyecto fue desarrollado en **7 días** cubriendo el stack completo de una
 | Líneas Python (backend) | ~2.400 |
 | Archivos Python | ~50 |
 | Archivos TypeScript/TSX | ~30 |
-| Endpoints REST | 28 |
+| Endpoints REST | 30+ |
 | WebSocket endpoints | 1 |
-| Tests automatizados | 52+ |
+| Tests automatizados | 86+ |
 | Modelos de base de datos | 5 |
-| Servicios de negocio | 6 |
+| Migraciones SQL | 4 |
 | Prompts YAML versionados | 3 |
+| Dominio propio | surqo.online |
 | Días de desarrollo | 7 |
 
 ---
 
 ## Optimizaciones y Valor de la Plataforma
 
-### Optimizaciones técnicas implementadas
+### Optimizaciones técnicas
 
 **Rendimiento:**
-- **Redis cache TTL** — llamadas a Open-Meteo se cachean 1 hora: de ~800ms a ~5ms en cache hit
-- **`@lru_cache` clave EC** — la clave pública ES256 de Supabase se construye una vez al arrancar, no en cada request
-- **Deep sleep ESP32** — consumo de ~10µA en reposo, autonomía 2 semanas con batería 2000mAh
-- **WebSocket broadcast en memoria** — sin polling, actualización instantánea sin carga HTTP adicional
-- **Async end-to-end** — FastAPI + SQLAlchemy async + asyncpg: un proceso maneja miles de conexiones
-- **uv package manager** — instalación 10-100× más rápida que pip en CI/CD
+- Redis cache TTL — Open-Meteo se cachea 1h: de ~800ms a ~5ms en hit
+- `@lru_cache` clave EC — clave pública ES256 se construye una vez al arrancar
+- Deep sleep ESP32 — ~10µA en reposo, 2 semanas de autonomía
+- WebSocket broadcast — sin polling, actualización instantánea
+- Async end-to-end — FastAPI + SQLAlchemy async + asyncpg
 
 **Seguridad:**
-- **JWT ES256** — clave pública EC, imposible falsificar sin la clave privada de Supabase
-- **Row Level Security** — acceso directo a PostgREST bloqueado por usuario en Postgres
-- **Cooldown de alertas** — Redis previene spam de emails (30 min entre alertas por finca)
-- **MQTT TLS puerto 8883** — tráfico del campo a la nube cifrado end-to-end
-- **HTTPS forzado** — configurado en Fly.io `force_https = true`
+- JWT ES256 — imposible falsificar sin clave privada de Supabase
+- Row Level Security — acceso por usuario en PostgreSQL
+- Cooldown Redis — previene spam de emails (30 min entre alertas)
+- MQTT TLS 8883 — tráfico IoT cifrado end-to-end
+- HTTPS forzado — Fly.io `force_https = true`
+- Security headers — nosniff, X-Frame-Options: DENY, HSTS
+- Rate limiting — slowapi por IP en endpoints críticos
+- Swagger deshabilitado en producción
 
-**Calidad de código:**
-- **Prompts YAML versionados** — se actualizan sin tocar el código, trazables en git
-- **Pydantic v2 estricto** — validación de entrada/salida en todos los endpoints
-- **Ruff linting** — cero warnings en CI antes de cada deploy
-- **52+ tests** — SQLite in-memory para tests rápidos sin DB real
+**Freemium:**
+- 4 análisis IA lifetime en free (800 tokens/análisis)
+- HTTP 402 con CTA de contacto al agotar cuota
+- Contadores `analyses_used` + `tokens_used` en DB
 
-**Infraestructura:**
-- **Fly.io vs Render:** Fly.io tiene `auto_stop_machines = false` — sin cold starts, siempre disponible. Render Free hiberna a los 15 min de inactividad (hasta 60s de arranque).
-
-### Roadmap
-
-**Corto plazo (1-2 semanas):**
-- Integrar Stripe Checkout — la API de admin ya está lista, solo falta el webhook
-- Alembic migrations formales en lugar de `create_all` en startup
-- Rate limiting por usuario en análisis IA (evitar abuso del plan Pro)
-- Tests de integración con `httpx.AsyncClient` para endpoints autenticados
-
-**Mediano plazo (1-3 meses):**
-- Dashboard móvil con React Native / Expo
-- LoRaWAN como transporte alternativo a WiFi para zonas sin señal
-- Modelo ONNX lite en el ESP32 para alertas offline sin conexión
-- Soporte multi-idioma (español / inglés) con i18n en Next.js
-
-**Largo plazo (6-12 meses):**
-- Imágenes satelitales Sentinel-2 para correlacionar NDVI con lecturas de suelo
-- API pública para integradores (certificadoras orgánicas, seguros agro, crédito FINAGRO)
-- Marketplace de sensores certificados Surqo con configuración plug-and-play
-- Modelo predictivo de cosecha basado en historial de KPIs + clima + variedad
-
-### Infraestructura gratuita hasta ~500 usuarios activos
+### Infraestructura gratuita hasta ~500 usuarios
 
 | Servicio | Tier gratuito | Uso |
 |---------|--------------|-----|
-| **Fly.io** | shared-cpu-1x, 3 VMs gratis | Backend FastAPI |
-| **Vercel** | Hobby — builds ilimitados | Frontend Next.js |
+| **Fly.io** | shared-cpu-1x, 3 VMs | Backend FastAPI |
+| **Vercel** | Hobby, builds ilimitados | Frontend (surqo.online) |
 | **Supabase** | 500MB DB, 50K req/mes | PostgreSQL + Auth |
-| **Upstash Redis** | 10.000 req/día | Cache clima/análisis |
+| **Upstash Redis** | 10.000 req/día | Cache + cooldowns |
 | **HiveMQ Cloud** | 100 conexiones MQTT | Broker IoT |
 | **Resend** | 3.000 emails/mes | Alertas email |
-| **Groq** | 14.400 req/día | LLM primario (gratis) |
+| **Groq** | 14.400 req/día | LLM primario ($0) |
 | **Open-Meteo** | Ilimitado | Pronóstico clima |
+| **Total** | **~$0–35/mes** | Stack producción completo |
 
 ### Propuesta de valor
 
-**Para el agricultor:**
-- Reducción estimada 20-35% en consumo de agua con riego basado en VPD/ETc real
-- Detección temprana de estrés hídrico y plagas antes de que sean visibles
-- Recomendaciones en lenguaje natural — sin conocimientos técnicos requeridos
-- Monitoreo 24/7 desde cualquier dispositivo con internet
-
-**Como producto SaaS:**
-
-| Plan | Precio estimado | Mercado |
-|------|----------------|---------|
-| Free | $0 | Agricultores pequeños, validación de mercado |
+| Plan | Precio | Target |
+|------|--------|--------|
+| Free | $0 | Validación, agricultores pequeños |
 | Pro | $15–25 USD/mes | Fincas medianas, cooperativas |
 | Enterprise | $200+ USD/mes | Agroindustria, grandes extensiones |
 
-**Mercado objetivo:**
-- Colombia tiene **4.9 millones** de unidades productivas agropecuarias (DANE 2022)
-- Solo el **2.3%** usa tecnología de precisión — mercado prácticamente virgen
-- Financiamiento disponible: MinAgricultura, FINAGRO, programas de digitalización rural
+**Mercado:** Colombia tiene 4.9M unidades productivas agropecuarias. Solo el 2.3% usa tecnología de precisión.
 
-**Diferenciadores competitivos:**
-1. **Precio del nodo** — $15 USD vs $200–500 USD de competidores internacionales (John Deere, Trimble)
-2. **IA contextualizada** — prompts entrenados para el trópico colombiano, no genéricos
-3. **Resiliencia offline** — ESP32 con deep sleep y fallback HTTP, funciona con red inestable
-4. **Stack serverless** — costo de infraestructura ~$0 hasta escala real
-5. **Open source** — comunidad puede adaptar el firmware a cultivos específicos
+**Diferenciadores:**
+1. Nodo sensor a $15 USD (vs $200–500 USD competidores internacionales)
+2. IA contextualizada para el trópico colombiano
+3. Resiliencia offline — fallback HTTP si MQTT falla
+4. Stack serverless — costo ~$0 hasta escala real
+
+### Roadmap
+
+**Corto plazo:**
+- Stripe Checkout + webhook para upgrade automático
+- Email proactivo cuando queda 1 análisis gratuito
+- Contador visual de análisis restantes en el dashboard
+
+**Mediano plazo:**
+- Alertas por WhatsApp (Twilio API)
+- Exportar CSV de datos históricos
+- Pronóstico 14 días (Pro) vs 3 días (Free)
+- Reporte PDF semanal automático
+
+**Largo plazo:**
+- App móvil (PWA — Next.js ya es PWA-ready)
+- LoRaWAN para zonas sin WiFi
+- Detección de plagas por foto (Claude Vision)
+- API pública para integradores (FINAGRO, seguros agro)
 
 ---
 
 ## Contribución
 
 ```bash
-# 1. Fork y clona el repositorio
 git checkout -b feature/mi-feature
-
-# 2. Desarrolla en el backend
 cd backend
-uv run pytest tests/ -v          # Todos los tests deben pasar
-uv run ruff check app/            # Sin errores de linting
-
-# 3. Commit semántico
-git commit -m "feat: descripción de la feature"
-
-# 4. Pull Request a master
+uv run pytest tests/ -v        # Todos los tests deben pasar
+uv run ruff check app/          # Sin errores de linting
+git commit -m "feat: descripción"
+# Pull Request a master
 ```
 
 ---
@@ -1170,7 +1055,7 @@ MIT License — libre para uso personal y comercial con atribución.
 
 ## Autor
 
-**Ricardo Martínez** — Junior Developer & AI Analyst  
-Plataforma completa IoT + IA + SaaS para el sector agrícola colombiano.
+**Ricardo Martínez** — Desarrollador Full Stack & AI  
+Plataforma IoT + IA + SaaS para el sector agrícola colombiano.
 
 *"Del surco al insight."*
