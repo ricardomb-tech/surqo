@@ -59,6 +59,8 @@ def _fake_user() -> SimpleNamespace:
         analyses_remaining=4,
         analyses_limit=4,
         tokens_limit=3200,
+        tokens_remaining=3200,
+        can_use_chat=True,
         max_output_tokens=800,
         FREE_ANALYSES_LIMIT=4,
         FREE_TOKENS_LIMIT=3200,
