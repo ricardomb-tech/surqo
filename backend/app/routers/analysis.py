@@ -12,11 +12,13 @@ from sqlalchemy import select
 from app.config import settings
 from app.dependencies import CurrentUser, DBSession
 from app.models.analysis import Analysis
+from app.models.chat_message import AnalysisChatMessage
 from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
 from app.schemas.analysis import (
     AnalysisRequest,
     AnalysisResponse,
+    ChatHistoryItem,
     ChatRequest,
     ChatResponse,
     ComparisonResult,
@@ -193,6 +195,25 @@ async def get_analysis(analysis_id: uuid.UUID, current_user: CurrentUser, db: DB
     return analysis
 
 
+@router.get("/{analysis_id}/chat-history", response_model=list[ChatHistoryItem])
+async def get_chat_history(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> list[AnalysisChatMessage]:
+    analysis = await db.get(Analysis, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+    if analysis.farm_id:
+        farm = await db.get(Farm, analysis.farm_id)
+        if not farm or farm.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="Sin acceso")
+
+    stmt = (
+        select(AnalysisChatMessage)
+        .where(AnalysisChatMessage.analysis_id == analysis_id)
+        .order_by(AnalysisChatMessage.created_at.asc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
 @router.post("/chat", response_model=ChatResponse)
 @limiter.limit("20/minute")
 async def chat_with_analysis(
@@ -233,6 +254,22 @@ async def chat_with_analysis(
         image_base64=body.image_base64,
         image_mime=body.image_mime,
     )
+
+    # Persistir el intercambio si hay analysis_id
+    if body.analysis_id:
+        db.add(AnalysisChatMessage(
+            analysis_id=body.analysis_id,
+            role="user",
+            content=body.message,
+            image_mime=body.image_mime if body.image_base64 else None,
+        ))
+        db.add(AnalysisChatMessage(
+            analysis_id=body.analysis_id,
+            role="assistant",
+            content=response_text,
+        ))
+        await db.commit()
+
     return ChatResponse(response=response_text, input_tokens=inp, output_tokens=out)
 
 

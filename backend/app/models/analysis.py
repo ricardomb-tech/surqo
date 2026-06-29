@@ -41,6 +41,10 @@ class Analysis(Base):
     )
 
     farm: Mapped[Farm | None] = relationship("Farm", back_populates="analyses")
+    chat_messages: Mapped[list[AnalysisChatMessage]] = relationship(
+        "AnalysisChatMessage", back_populates="analysis", cascade="all, delete-orphan"
+    )
 
 
 from app.models.farm import Farm  # noqa: E402
+from app.models.chat_message import AnalysisChatMessage  # noqa: E402

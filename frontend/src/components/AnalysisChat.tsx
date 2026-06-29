@@ -43,10 +43,26 @@ export default function AnalysisChat({ analysis }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(true)
   const [totalTokens, setTotalTokens] = useState(0)
   const [pendingImage, setPendingImage] = useState<{ base64: string; mime: string; preview: string } | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Cargar historial guardado
+  useEffect(() => {
+    if (!analysis.id || analysis.id === "demo") { setLoadingHistory(false); return }
+    getAccessToken().then((token) =>
+      fetch(`${API_BASE}/api/v1/analysis/${analysis.id}/chat-history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    ).then((r) => r.ok ? r.json() : [])
+      .then((items: { role: string; content: string }[]) => {
+        if (items.length > 0) setMessages(items.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })))
+      })
+      .catch(() => {})
+      .finally(() => setLoadingHistory(false))
+  }, [analysis.id])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -117,7 +133,12 @@ export default function AnalysisChat({ analysis }: Props) {
 
       {/* Messages */}
       <div className="px-4 py-4 space-y-3 max-h-96 overflow-y-auto">
-        {messages.length === 0 && (
+        {loadingHistory && (
+          <div className="flex items-center justify-center gap-2 py-6 text-xs text-gray-400">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />Cargando conversación anterior…
+          </div>
+        )}
+        {!loadingHistory && messages.length === 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 justify-center mb-2">
               <Camera className="w-3.5 h-3.5 text-purple-400" />
@@ -134,7 +155,7 @@ export default function AnalysisChat({ analysis }: Props) {
           </div>
         )}
 
-        {messages.map((m, i) => (
+        {!loadingHistory && messages.map((m, i) => (
           <div key={i} className={`flex gap-2.5 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
             <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${m.role === "user" ? "bg-green-100" : "bg-purple-100"}`}>
               {m.role === "user" ? <User className="w-3.5 h-3.5 text-green-700" /> : <Bot className="w-3.5 h-3.5 text-purple-600" />}
@@ -152,7 +173,7 @@ export default function AnalysisChat({ analysis }: Props) {
           </div>
         ))}
 
-        {loading && (
+        {!loadingHistory && loading && (
           <div className="flex gap-2.5">
             <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
               <Bot className="w-3.5 h-3.5 text-purple-600" />

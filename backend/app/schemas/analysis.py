@@ -85,3 +85,12 @@ class ChatResponse(BaseModel):
     response: str
     input_tokens: int = 0
     output_tokens: int = 0
+
+
+class ChatHistoryItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    role: str
+    content: str
+    created_at: datetime
