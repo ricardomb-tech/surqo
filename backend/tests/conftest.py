@@ -44,6 +44,10 @@ def _fake_user() -> SimpleNamespace:
         user_id=TEST_USER_ID,
         email="test@surqo.io",
         full_name="Test User",
+        phone=None,
+        bio=None,
+        avatar_url=None,
+        cover_url=None,
         plan="free",
         is_admin=False,
         is_paid=True,
@@ -53,7 +57,11 @@ def _fake_user() -> SimpleNamespace:
         analyses_used=0,
         tokens_used=0,
         analyses_remaining=4,
+        analyses_limit=4,
+        tokens_limit=3200,
         max_output_tokens=800,
+        FREE_ANALYSES_LIMIT=4,
+        FREE_TOKENS_LIMIT=3200,
         created_at=datetime(2024, 1, 1, tzinfo=UTC),
     )
 
