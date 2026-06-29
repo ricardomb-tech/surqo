@@ -50,15 +50,29 @@ async function uploadToSupabase(file: File, path: string): Promise<string> {
 }
 
 function AvatarDisplay({ url, name, size = 96 }: { url?: string | null; name?: string | null; size?: number }) {
+  const [loaded, setLoaded] = useState(false)
+  const [errored, setErrored] = useState(false)
   const initial = (name ?? "U")[0].toUpperCase()
-  if (url) return (
-    <img src={url} alt="avatar" className="rounded-full object-cover border-4 border-white shadow-lg"
-      style={{ width: size, height: size }} />
-  )
+  const showFallback = !url || errored
+
   return (
-    <div className="rounded-full border-4 border-white shadow-lg flex items-center justify-center font-black text-white"
-      style={{ width: size, height: size, background: "linear-gradient(135deg, #2d6e10, #86E66A)", fontSize: size * 0.35 }}>
-      {initial}
+    <div className="rounded-full border-4 border-white shadow-lg overflow-hidden relative"
+      style={{ width: size, height: size, flexShrink: 0 }}>
+      {/* Fallback / placeholder */}
+      <div className={`absolute inset-0 flex items-center justify-center font-black text-white transition-opacity duration-300 ${loaded && !errored ? "opacity-0" : "opacity-100"}`}
+        style={{ background: "linear-gradient(135deg, #2d6e10, #86E66A)", fontSize: size * 0.35 }}>
+        {showFallback ? initial : null}
+      </div>
+      {/* Imagen real */}
+      {url && !errored && (
+        <img
+          src={url}
+          alt="avatar"
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
     </div>
   )
 }
@@ -76,6 +90,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("")
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [coverLoaded, setCoverLoaded] = useState(false)
 
   // Form personal
   const [fullName, setFullName] = useState("")
@@ -149,6 +164,7 @@ export default function ProfilePage() {
     try {
       const ext = file.name.split(".").pop() ?? "jpg"
       const url = await uploadToSupabase(file, `covers/${user.id}.${ext}`)
+      setCoverLoaded(false)
       await patchProfile({ cover_url: url })
     } catch (e: unknown) {
       setError("No se pudo subir la portada. Asegúrate de tener el bucket 'profiles' creado en Supabase.")
@@ -187,9 +203,18 @@ export default function ProfilePage() {
     <div className="min-h-screen" style={{ background: "#f4f7f4" }}>
       {/* Cover */}
       <div className="relative h-48 sm:h-56 overflow-hidden"
-        style={{ background: profile.cover_url ? undefined : "linear-gradient(135deg, #0f2e10 0%, #1a4a1a 60%, #1f5a20 100%)" }}>
+        style={{ background: "linear-gradient(135deg, #0f2e10 0%, #1a4a1a 60%, #1f5a20 100%)" }}>
+        {/* Skeleton shimmer mientras carga */}
+        {profile.cover_url && !coverLoaded && (
+          <div className="absolute inset-0 animate-pulse" style={{ background: "linear-gradient(90deg, #1a4a1a 25%, #2d6e10 50%, #1a4a1a 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite" }} />
+        )}
         {profile.cover_url && (
-          <img src={profile.cover_url} alt="portada" className="w-full h-full object-cover" />
+          <img
+            src={profile.cover_url}
+            alt="portada"
+            onLoad={() => setCoverLoaded(true)}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${coverLoaded ? "opacity-100" : "opacity-0"}`}
+          />
         )}
         <div className="absolute inset-0 bg-black/20" />
 
