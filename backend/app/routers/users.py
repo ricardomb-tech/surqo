@@ -17,10 +17,12 @@ router = APIRouter()
 @router.get("/me", response_model=UserProfileResponse)
 async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
     """Retorna el perfil del usuario autenticado con stats actualizados."""
-    farm_count_result = await db.execute(
-        select(func.count()).where(Farm.user_id == current_user.user_id)
+    farms_result = await db.execute(
+        select(Farm).where(Farm.user_id == current_user.user_id).order_by(Farm.created_at.desc())
     )
-    farms_count = farm_count_result.scalar() or 0
+    farms = farms_result.scalars().all()
+
+    is_paid = current_user.is_paid or current_user.is_admin
 
     data = {
         "user_id": current_user.user_id,
@@ -31,13 +33,28 @@ async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
         "avatar_url": current_user.avatar_url,
         "cover_url": current_user.cover_url,
         "plan": current_user.plan,
-        "is_paid": current_user.is_paid,
+        "is_paid": is_paid,
         "can_use_ai_analysis": current_user.can_use_ai_analysis,
         "can_send_email_alert": current_user.can_send_email_alert,
         "email_alerts_this_month": current_user.email_alerts_this_month,
-        "farms_count": farms_count,
+        "farms_count": len(farms),
         "analyses_used": current_user.analyses_used,
+        "analyses_limit": None if is_paid else current_user.FREE_ANALYSES_LIMIT,
+        "analyses_remaining": current_user.analyses_remaining,
+        "tokens_used": current_user.tokens_used,
+        "tokens_limit": None if is_paid else current_user.FREE_TOKENS_LIMIT,
         "created_at": current_user.created_at,
+        "farms": [
+            {
+                "id": str(f.id),
+                "name": f.name,
+                "crop_type": f.crop_type,
+                "area_hectares": float(f.area_hectares) if f.area_hectares else None,
+                "municipality": f.municipality,
+                "department": f.department,
+            }
+            for f in farms
+        ],
     }
     return data
 

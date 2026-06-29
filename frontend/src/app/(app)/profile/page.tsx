@@ -13,6 +13,15 @@ import { useAuth } from "@/components/AuthProvider"
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 const LIME = "#86E66A"
 
+interface FarmSummary {
+  id: string
+  name: string
+  crop_type: string
+  area_hectares: number | null
+  municipality: string | null
+  department: string | null
+}
+
 interface Profile {
   user_id: string
   email: string
@@ -22,8 +31,14 @@ interface Profile {
   avatar_url: string | null
   cover_url: string | null
   plan: string
+  is_paid: boolean
   analyses_used: number
+  analyses_limit: number | null
+  analyses_remaining: number | null
+  tokens_used: number
+  tokens_limit: number | null
   farms_count: number
+  farms: FarmSummary[]
   created_at: string
 }
 
@@ -224,8 +239,16 @@ export default function ProfilePage() {
             </div>
             <div className="w-px bg-gray-200" />
             <div className="text-center">
-              <p className="text-xl font-black text-gray-900">{profile.analyses_used}</p>
+              <p className="text-xl font-black text-gray-900">
+                {profile.analyses_used}
+                {profile.analyses_limit != null && <span className="text-sm font-medium text-gray-400">/{profile.analyses_limit}</span>}
+              </p>
               <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Análisis IA</p>
+            </div>
+            <div className="w-px bg-gray-200" />
+            <div className="text-center">
+              <p className="text-xl font-black text-gray-900">{(profile.tokens_used / 1000).toFixed(1)}k</p>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Tokens</p>
             </div>
           </div>
         </div>
@@ -303,6 +326,61 @@ export default function ProfilePage() {
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saving ? "Guardando…" : saved ? "¡Guardado!" : "Guardar cambios"}
             </button>
+
+            {/* Mis fincas */}
+            {profile.farms && profile.farms.length > 0 && (
+              <div className="pt-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Mis fincas</h3>
+                <div className="space-y-2">
+                  {profile.farms.map((farm) => (
+                    <div key={farm.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: `${LIME}25` }}>
+                        <Sprout className="w-4 h-4" style={{ color: "#2d6e10" }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{farm.name}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {farm.crop_type}
+                          {farm.area_hectares ? ` · ${farm.area_hectares} ha` : ""}
+                          {farm.municipality ? ` · ${farm.municipality}` : ""}
+                          {farm.department ? `, ${farm.department}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Uso del plan */}
+            <div className="pt-4">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Uso del plan</h3>
+              <div className="space-y-3">
+                {profile.analyses_limit != null && (
+                  <div>
+                    <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
+                      <span>Análisis IA</span>
+                      <span>{profile.analyses_used} / {profile.analyses_limit}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, (profile.analyses_used / profile.analyses_limit) * 100)}%`,
+                          background: profile.analyses_used >= profile.analyses_limit ? "#ef4444" : "linear-gradient(90deg, #2d6e10, #86E66A)"
+                        }} />
+                    </div>
+                    {profile.analyses_remaining === 0 && (
+                      <p className="text-[11px] text-red-500 mt-1 font-medium">Límite alcanzado — contacta al equipo para plan premium</p>
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-between text-xs font-medium text-gray-600">
+                  <span>Tokens usados</span>
+                  <span>{profile.tokens_used.toLocaleString("es-CO")} {profile.tokens_limit ? `/ ${profile.tokens_limit.toLocaleString("es-CO")}` : ""}</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
