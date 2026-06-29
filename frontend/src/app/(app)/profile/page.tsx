@@ -91,6 +91,7 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const [coverLoaded, setCoverLoaded] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // Form personal
   const [fullName, setFullName] = useState("")
@@ -349,7 +350,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <button onClick={handleSavePersonal} disabled={saving}
+            <button onClick={() => setShowConfirm(true)} disabled={saving}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60"
               style={{ background: "linear-gradient(135deg, #2d6e10, #3d8e20)", boxShadow: "0 4px 12px rgba(45,110,16,0.3)" }}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
@@ -465,5 +466,35 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
+
+    {/* Modal de confirmación */}
+    {showConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full mb-4 mx-auto"
+            style={{ background: "#f0fdf4" }}>
+            <Save className="w-5 h-5" style={{ color: "#2d6e10" }} />
+          </div>
+          <h3 className="text-base font-black text-gray-900 text-center mb-1">¿Guardar cambios?</h3>
+          <p className="text-sm text-gray-500 text-center mb-6">
+            Se actualizarán tu nombre, teléfono y descripción.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
+              Cancelar
+            </button>
+            <button
+              onClick={() => { setShowConfirm(false); handleSavePersonal() }}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all"
+              style={{ background: "linear-gradient(135deg, #2d6e10, #3d8e20)", boxShadow: "0 4px 12px rgba(45,110,16,0.3)" }}>
+              Sí, guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   )
 }
