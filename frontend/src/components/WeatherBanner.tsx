@@ -43,7 +43,11 @@ export default function WeatherBanner() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    if (!navigator.geolocation) { setLoading(false); setError(true); return }
+    if (!navigator.geolocation) { setLoading(false); return }
+
+    const controller = new AbortController()
+    // Si en 12s no terminó todo el proceso, desistimos silenciosamente
+    const globalTimer = setTimeout(() => { controller.abort(); setLoading(false) }, 12_000)
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
@@ -53,11 +57,16 @@ export default function WeatherBanner() {
             `&current=temperature_2m,apparent_temperature,precipitation_probability,weathercode,wind_speed_10m` +
             `&hourly=temperature_2m,precipitation_probability` +
             `&forecast_days=1&timezone=auto`
-          const res = await fetch(url)
+
+          // Timeout propio de 5s para el fetch
+          const fetchTimer = setTimeout(() => controller.abort(), 5_000)
+          const res = await fetch(url, { signal: controller.signal })
+          clearTimeout(fetchTimer)
+
+          if (!res.ok) throw new Error("api error")
           const data = await res.json()
           const c = data.current
 
-          // Next 6 hours
           const now = new Date()
           const currentHour = now.getHours()
           const hours = data.hourly.time
@@ -78,14 +87,17 @@ export default function WeatherBanner() {
             hours,
           })
         } catch {
-          setError(true)
+          // Falla silenciosa — el banner simplemente no aparece
         } finally {
+          clearTimeout(globalTimer)
           setLoading(false)
         }
       },
-      () => { setLoading(false); setError(true) },
-      { timeout: 8000 }
+      () => { clearTimeout(globalTimer); setLoading(false) },
+      { timeout: 6_000 }
     )
+
+    return () => { controller.abort(); clearTimeout(globalTimer) }
   }, [])
 
   if (error || (!loading && !weather)) return null
