@@ -46,5 +46,5 @@ class Analysis(Base):
     )
 
 
-from app.models.farm import Farm  # noqa: E402
 from app.models.chat_message import AnalysisChatMessage  # noqa: E402
+from app.models.farm import Farm  # noqa: E402

@@ -75,6 +75,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     analysis_id: uuid.UUID | None = None
+    session_id: uuid.UUID | None = None
     message: str = Field(..., max_length=2000)
     history: list[ChatMessage] = []
     image_base64: str | None = None
@@ -83,6 +84,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    session_id: uuid.UUID
     input_tokens: int = 0
     output_tokens: int = 0
 
@@ -91,6 +93,14 @@ class ChatHistoryItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    session_id: uuid.UUID
     role: str
     content: str
     created_at: datetime
+
+
+class ChatSession(BaseModel):
+    session_id: uuid.UUID
+    started_at: datetime
+    message_count: int
+    first_message: str

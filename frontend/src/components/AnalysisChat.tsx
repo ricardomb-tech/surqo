@@ -1,14 +1,25 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Send, Loader2, Bot, User, Lightbulb, Zap, Camera, X, ImagePlus } from "lucide-react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import {
+  Send, Loader2, Bot, User, Lightbulb, Zap,
+  Camera, X, ImagePlus, MessageSquarePlus, ChevronLeft,
+  MessagesSquare, Clock,
+} from "lucide-react"
 import { getAccessToken } from "@/lib/auth"
 import type { Analysis } from "@/types"
 
 interface Message {
   role: "user" | "assistant"
   content: string
-  image?: string // data URL for preview
+  image?: string
+}
+
+interface Session {
+  session_id: string
+  started_at: string
+  message_count: number
+  first_message: string
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
@@ -20,10 +31,6 @@ const SUGGESTIONS = [
   "¿Cómo sé si la planta tiene falta de nutrientes?",
   "¿Qué hago si las hojas se están poniendo amarillas?",
 ]
-
-interface Props {
-  analysis: Analysis
-}
 
 function fileToBase64(file: File): Promise<{ base64: string; mime: string }> {
   return new Promise((resolve, reject) => {
@@ -39,41 +46,84 @@ function fileToBase64(file: File): Promise<{ base64: string; mime: string }> {
   })
 }
 
-export default function AnalysisChat({ analysis }: Props) {
+function relTime(iso: string) {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (d < 60) return "ahora"
+  if (d < 3600) return `hace ${Math.floor(d / 60)}m`
+  if (d < 86400) return `hace ${Math.floor(d / 3600)}h`
+  return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short" })
+}
+
+export default function AnalysisChat({ analysis }: { analysis: Analysis }) {
+  const [view, setView] = useState<"sessions" | "chat">("sessions")
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(true)
+
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [loadingHistory, setLoadingHistory] = useState(true)
   const [totalTokens, setTotalTokens] = useState(0)
   const [pendingImage, setPendingImage] = useState<{ base64: string; mime: string; preview: string } | null>(null)
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Cargar historial guardado
-  useEffect(() => {
-    if (!analysis.id || analysis.id === "demo") { setLoadingHistory(false); return }
-    getAccessToken().then((token) =>
-      fetch(`${API_BASE}/api/v1/analysis/${analysis.id}/chat-history`, {
+  const isDemo = !analysis.id || analysis.id === "demo"
+
+  // Cargar lista de sesiones
+  const loadSessions = useCallback(async () => {
+    if (isDemo) { setLoadingSessions(false); return }
+    try {
+      const token = await getAccessToken()
+      const res = await fetch(`${API_BASE}/api/v1/analysis/${analysis.id}/chat-sessions`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-    ).then((r) => r.ok ? r.json() : [])
-      .then((items: { role: string; content: string }[]) => {
-        if (items.length > 0) setMessages(items.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })))
-      })
-      .catch(() => {})
-      .finally(() => setLoadingHistory(false))
-  }, [analysis.id])
+      if (res.ok) setSessions(await res.json())
+    } catch { /* silent */ }
+    finally { setLoadingSessions(false) }
+  }, [analysis.id, isDemo])
+
+  useEffect(() => { loadSessions() }, [loadSessions])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, loading])
 
+  // Abrir una sesión existente
+  const openSession = async (sid: string) => {
+    setSessionId(sid)
+    setMessages([])
+    setTotalTokens(0)
+    setView("chat")
+    setLoadingHistory(true)
+    try {
+      const token = await getAccessToken()
+      const res = await fetch(
+        `${API_BASE}/api/v1/analysis/${analysis.id}/chat-history?session_id=${sid}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (res.ok) {
+        const items: { role: string; content: string }[] = await res.json()
+        setMessages(items.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })))
+      }
+    } catch { /* silent */ }
+    finally { setLoadingHistory(false) }
+  }
+
+  // Nuevo chat
+  const newChat = () => {
+    setSessionId(crypto.randomUUID())
+    setMessages([])
+    setTotalTokens(0)
+    setView("chat")
+  }
+
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) return
-    // Compress if over 1MB
     const { base64, mime } = await fileToBase64(file)
-    const preview = `data:${mime};base64,${base64}`
-    setPendingImage({ base64, mime, preview })
+    setPendingImage({ base64, mime, preview: `data:${mime};base64,${base64}` })
   }
 
   const send = async (text: string) => {
@@ -95,31 +145,102 @@ export default function AnalysisChat({ analysis }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          analysis_id: analysis.id !== "demo" ? analysis.id : null,
+          analysis_id: isDemo ? null : analysis.id,
+          session_id: sessionId,
           message: userMsg.content,
           history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
           image_base64: imageToSend?.base64 ?? null,
           image_mime: imageToSend?.mime ?? "image/jpeg",
         }),
       })
-      if (!res.ok) throw new Error("Error del servidor")
+      if (!res.ok) throw new Error()
       const data = await res.json()
+      // Si el backend nos devuelve un session_id nuevo (primer mensaje), lo guardamos
+      if (data.session_id && !sessionId) setSessionId(data.session_id)
       setMessages((m) => [...m, { role: "assistant", content: data.response }])
       setTotalTokens((t) => t + (data.input_tokens ?? 0) + (data.output_tokens ?? 0))
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Lo siento, no pude conectarme. Intenta de nuevo." }])
+      setMessages((m) => [...m, { role: "assistant", content: "No pude conectarme. Intenta de nuevo." }])
     } finally {
       setLoading(false)
     }
   }
 
+  // ── Vista: lista de sesiones ───────────────────────────────────────────────
+  if (view === "sessions") {
+    return (
+      <div className="rounded-2xl border border-purple-100 bg-white overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+        <div className="px-5 py-4 border-b border-purple-100 flex items-center justify-between bg-purple-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">Agrónomo IA · SURQO</p>
+              <p className="text-[11px] text-purple-500 font-medium">{sessions.length} conversación{sessions.length !== 1 ? "es" : ""} guardada{sessions.length !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+          <button onClick={newChat}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 transition-colors">
+            <MessageSquarePlus className="w-3.5 h-3.5" />Nuevo chat
+          </button>
+        </div>
+
+        <div className="p-4">
+          {loadingSessions ? (
+            <div className="flex items-center justify-center py-8 gap-2 text-xs text-gray-400">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />Cargando conversaciones…
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="text-center py-8">
+              <MessagesSquare className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+              <p className="text-sm font-bold text-gray-500 mb-1">Sin conversaciones aún</p>
+              <p className="text-xs text-gray-400 mb-4">Empieza a preguntarle al agrónomo IA sobre tu cultivo</p>
+              <button onClick={newChat}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white mx-auto transition-all"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #9333ea)" }}>
+                <MessageSquarePlus className="w-4 h-4" />Iniciar primer chat
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sessions.map((s) => (
+                <button key={s.session_id} onClick={() => openSession(s.session_id)}
+                  className="w-full text-left flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/50 transition-all group">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <MessagesSquare className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-purple-800">
+                      {s.first_message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5" />{relTime(s.started_at)}
+                      </span>
+                      <span className="text-[10px] text-gray-300">·</span>
+                      <span className="text-[10px] text-gray-400">{s.message_count * 2} mensajes</span>
+                    </div>
+                  </div>
+                  <ChevronLeft className="w-4 h-4 text-gray-300 group-hover:text-purple-400 transition-colors rotate-180 shrink-0 mt-1" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Vista: chat activo ─────────────────────────────────────────────────────
   return (
     <div className="rounded-2xl border border-purple-100 bg-white overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
       {/* Header */}
       <div className="px-5 py-4 border-b border-purple-100 flex items-center gap-3 bg-purple-50/50">
-        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-          <Bot className="w-4 h-4 text-purple-600" />
-        </div>
+        <button onClick={() => { setView("sessions"); loadSessions() }}
+          className="w-7 h-7 rounded-lg bg-white border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shrink-0">
+          <ChevronLeft className="w-3.5 h-3.5 text-purple-600" />
+        </button>
         <div className="flex-1">
           <p className="text-sm font-bold text-gray-900">Agrónomo IA · SURQO</p>
           <p className="text-[11px] text-purple-500 font-medium">Experto en cultivos · {analysis.farm_name}</p>
@@ -135,9 +256,10 @@ export default function AnalysisChat({ analysis }: Props) {
       <div className="px-4 py-4 space-y-3 max-h-96 overflow-y-auto">
         {loadingHistory && (
           <div className="flex items-center justify-center gap-2 py-6 text-xs text-gray-400">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />Cargando conversación anterior…
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />Cargando conversación…
           </div>
         )}
+
         {!loadingHistory && messages.length === 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 justify-center mb-2">
@@ -194,7 +316,7 @@ export default function AnalysisChat({ analysis }: Props) {
           <div className="relative">
             <img src={pendingImage.preview} alt="preview" className="h-16 w-16 object-cover rounded-lg border border-purple-200" />
             <button onClick={() => setPendingImage(null)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600">
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white">
               <X className="w-3 h-3" />
             </button>
           </div>

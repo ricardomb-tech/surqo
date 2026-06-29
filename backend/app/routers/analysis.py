@@ -21,6 +21,7 @@ from app.schemas.analysis import (
     ChatHistoryItem,
     ChatRequest,
     ChatResponse,
+    ChatSession,
     ComparisonResult,
     PromptEvalRequest,
 )
@@ -195,8 +196,7 @@ async def get_analysis(analysis_id: uuid.UUID, current_user: CurrentUser, db: DB
     return analysis
 
 
-@router.get("/{analysis_id}/chat-history", response_model=list[ChatHistoryItem])
-async def get_chat_history(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> list[AnalysisChatMessage]:
+async def _verify_analysis_access(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> Analysis:
     analysis = await db.get(Analysis, analysis_id)
     if not analysis:
         raise HTTPException(status_code=404, detail="Análisis no encontrado")
@@ -204,10 +204,57 @@ async def get_chat_history(analysis_id: uuid.UUID, current_user: CurrentUser, db
         farm = await db.get(Farm, analysis.farm_id)
         if not farm or farm.user_id != current_user.user_id:
             raise HTTPException(status_code=403, detail="Sin acceso")
+    return analysis
+
+
+@router.get("/{analysis_id}/chat-sessions", response_model=list[ChatSession])
+async def get_chat_sessions(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> list[dict]:
+    """Lista todas las conversaciones (sesiones) de un análisis."""
+    await _verify_analysis_access(analysis_id, current_user, db)
 
     stmt = (
         select(AnalysisChatMessage)
-        .where(AnalysisChatMessage.analysis_id == analysis_id)
+        .where(
+            AnalysisChatMessage.analysis_id == analysis_id,
+            AnalysisChatMessage.role == "user",
+        )
+        .order_by(AnalysisChatMessage.created_at.asc())
+    )
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+
+    # Agrupar por session_id
+    sessions: dict[uuid.UUID, dict] = {}
+    for row in rows:
+        sid = row.session_id
+        if sid not in sessions:
+            sessions[sid] = {
+                "session_id": sid,
+                "started_at": row.created_at,
+                "message_count": 0,
+                "first_message": row.content[:80],
+            }
+        sessions[sid]["message_count"] += 1
+
+    return list(sessions.values())
+
+
+@router.get("/{analysis_id}/chat-history", response_model=list[ChatHistoryItem])
+async def get_chat_history(
+    analysis_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBSession,
+    session_id: uuid.UUID | None = None,
+) -> list[AnalysisChatMessage]:
+    await _verify_analysis_access(analysis_id, current_user, db)
+
+    filters = [AnalysisChatMessage.analysis_id == analysis_id]
+    if session_id:
+        filters.append(AnalysisChatMessage.session_id == session_id)
+
+    stmt = (
+        select(AnalysisChatMessage)
+        .where(*filters)
         .order_by(AnalysisChatMessage.created_at.asc())
     )
     result = await db.execute(stmt)
@@ -256,21 +303,24 @@ async def chat_with_analysis(
     )
 
     # Persistir el intercambio si hay analysis_id
+    session_id = body.session_id or uuid.uuid4()
     if body.analysis_id:
         db.add(AnalysisChatMessage(
             analysis_id=body.analysis_id,
+            session_id=session_id,
             role="user",
             content=body.message,
             image_mime=body.image_mime if body.image_base64 else None,
         ))
         db.add(AnalysisChatMessage(
             analysis_id=body.analysis_id,
+            session_id=session_id,
             role="assistant",
             content=response_text,
         ))
         await db.commit()
 
-    return ChatResponse(response=response_text, input_tokens=inp, output_tokens=out)
+    return ChatResponse(response=response_text, session_id=session_id, input_tokens=inp, output_tokens=out)
 
 
 @router.post("/evaluate-prompts", response_model=ComparisonResult)
