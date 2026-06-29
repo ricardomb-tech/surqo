@@ -67,6 +67,20 @@ class UserProfile(Base):
         return self.analyses_used < self.FREE_ANALYSES_LIMIT
 
     @property
+    def can_use_chat(self) -> bool:
+        """Permite chatear mientras no se hayan agotado los tokens del plan free."""
+        if self.is_admin or self.is_paid:
+            return True
+        return self.tokens_used < self.FREE_TOKENS_LIMIT
+
+    @property
+    def tokens_remaining(self) -> int | None:
+        """None = ilimitado (plan paid). Entero = tokens restantes en free."""
+        if self.is_paid or self.is_admin:
+            return None
+        return max(0, self.FREE_TOKENS_LIMIT - self.tokens_used)
+
+    @property
     def analyses_remaining(self) -> int | None:
         """None = ilimitado (plan paid). Entero = restantes en free."""
         if self.is_paid or self.is_admin:

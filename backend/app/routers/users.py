@@ -43,6 +43,8 @@ async def get_my_profile(current_user: CurrentUser, db: DBSession) -> dict:
         "analyses_remaining": current_user.analyses_remaining,
         "tokens_used": current_user.tokens_used,
         "tokens_limit": None if is_paid else current_user.FREE_TOKENS_LIMIT,
+        "tokens_remaining": current_user.tokens_remaining,
+        "can_use_chat": current_user.can_use_chat,
         "created_at": current_user.created_at,
         "farms": [
             {

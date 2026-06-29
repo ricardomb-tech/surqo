@@ -36,6 +36,8 @@ class UserProfileResponse(BaseModel):
     analyses_remaining: int | None = None
     tokens_used: int = 0
     tokens_limit: int | None = None
+    tokens_remaining: int | None = None
+    can_use_chat: bool = True
     farms: list[FarmSummary] = []
     created_at: datetime
 

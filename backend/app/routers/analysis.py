@@ -269,6 +269,21 @@ async def chat_with_analysis(
     current_user: CurrentUser,
     db: DBSession,
 ) -> ChatResponse:
+    # Verificar cuota de tokens del plan free
+    if not current_user.can_use_chat:
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "code": "token_quota_exceeded",
+                "message": (
+                    f"Agotaste los {current_user.FREE_TOKENS_LIMIT:,} tokens gratuitos. "
+                    "Contacta a nuestro equipo para activar el plan premium."
+                ),
+                "tokens_used": current_user.tokens_used,
+                "tokens_limit": current_user.FREE_TOKENS_LIMIT,
+            },
+        )
+
     context: dict | None = None
     if body.analysis_id:
         analysis = await db.get(Analysis, body.analysis_id)
@@ -302,6 +317,10 @@ async def chat_with_analysis(
         image_mime=body.image_mime,
     )
 
+    # Sumar tokens al contador del usuario (afecta cuota free)
+    current_user.tokens_used += inp + out
+    db.add(current_user)
+
     # Persistir el intercambio si hay analysis_id
     session_id = body.session_id or uuid.uuid4()
     if body.analysis_id:
@@ -318,7 +337,8 @@ async def chat_with_analysis(
             role="assistant",
             content=response_text,
         ))
-        await db.commit()
+
+    await db.commit()
 
     return ChatResponse(response=response_text, session_id=session_id, input_tokens=inp, output_tokens=out)
 
