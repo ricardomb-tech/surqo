@@ -192,7 +192,7 @@ export default function ProfilePage() {
 
       {/* Avatar + nombre */}
       <div className="px-6 sm:px-10">
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-14 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 mb-8 pt-2">
           <div className="relative shrink-0">
             <AvatarDisplay url={profile.avatar_url} name={profile.full_name || profile.email} size={96} />
             <button onClick={() => avatarRef.current?.click()}
