@@ -6,11 +6,10 @@ from datetime import UTC, datetime, timedelta
 import logfire
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import select
 
 from app.database import get_db
-from app.dependencies import CurrentUser, DBSession, validate_ws_token
+from app.dependencies import CurrentUser, DBSession, rate_limit_key, validate_ws_token
 from app.models.farm import Farm
 from app.models.sensor_reading import SensorReading
 from app.models.user import UserProfile
@@ -20,7 +19,7 @@ from app.websocket.manager import manager
 
 router = APIRouter()
 kpi_svc = KPIService()
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=rate_limit_key)
 
 
 async def _require_farm_access(db: DBSession, farm_id: uuid.UUID, user: UserProfile) -> None:

@@ -6,11 +6,10 @@ import uuid
 import logfire
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import select
 
 from app.config import settings
-from app.dependencies import CurrentUser, DBSession
+from app.dependencies import CurrentUser, DBSession, rate_limit_key
 from app.models.analysis import Analysis
 from app.models.chat_message import AnalysisChatMessage
 from app.models.farm import Farm
@@ -34,7 +33,7 @@ router = APIRouter()
 climate_svc = ClimateService()
 llm_svc = LLMService()
 alert_svc = AlertService()
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=rate_limit_key)
 
 # Directorio base de prompts — usado para validar path traversal
 _PROMPTS_DIR = (pathlib.Path(__file__).parent.parent / "services" / "prompts").resolve()

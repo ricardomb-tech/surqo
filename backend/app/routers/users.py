@@ -5,16 +5,15 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import func, select
 
-from app.dependencies import CurrentUser, DBSession
+from app.dependencies import CurrentUser, DBSession, rate_limit_key
 from app.models.farm import Farm
 from app.models.user import UserProfile
 from app.schemas.user import UserPlanUpdate, UserProfileResponse, UserProfileUpdate
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=rate_limit_key)
 
 
 @router.get("/me", response_model=UserProfileResponse)

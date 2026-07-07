@@ -4,12 +4,11 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Request, status
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import delete as sql_delete
 from sqlalchemy import func, select
 from sqlalchemy import update as sql_update
 
-from app.dependencies import CurrentUser, DBSession
+from app.dependencies import CurrentUser, DBSession, rate_limit_key
 from app.models.alert import Alert
 from app.models.analysis import Analysis
 from app.models.farm import Farm
@@ -18,7 +17,7 @@ from app.models.user import UserProfile
 from app.schemas.farm import FarmCreate, FarmResponse, FarmUpdate
 
 router = APIRouter()
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=rate_limit_key)
 
 
 @router.post("/", response_model=FarmResponse, status_code=status.HTTP_201_CREATED)

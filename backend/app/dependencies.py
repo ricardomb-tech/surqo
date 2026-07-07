@@ -8,9 +8,10 @@ import uuid
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.algorithms import ECAlgorithm, RSAAlgorithm
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -200,6 +201,26 @@ async def validate_ws_token(token: str, db: AsyncSession) -> UserProfile:
     if profile is None:
         raise HTTPException(status_code=401, detail="Usuario no encontrado.")
     return profile
+
+
+def rate_limit_key(request: Request) -> str:
+    """Clave para slowapi: user_id del JWT si está presente, si no la IP.
+
+    El JWT no se verifica aquí (solo se lee el claim `sub` para agrupar el
+    conteo de requests) — la autorización real la hace get_current_user.
+    Esto evita que un usuario autenticado evada el límite rotando de IP.
+    """
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        token = auth[7:]
+        try:
+            payload = jwt.decode(token, options={"verify_signature": False})
+            sub = payload.get("sub")
+            if sub:
+                return f"user:{sub}"
+        except jwt.InvalidTokenError:
+            pass
+    return f"ip:{get_remote_address(request)}"
 
 
 CurrentUser = Annotated[UserProfile, Depends(get_current_user)]
