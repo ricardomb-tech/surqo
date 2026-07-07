@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import logging
 import time
-import urllib.request
 import uuid
 from typing import Annotated
 
+import httpx
 import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -30,7 +30,7 @@ _jwks_fetched_at: float = 0.0
 _JWKS_TTL = 3600
 
 
-def _fetch_jwks_keys() -> list:
+async def _fetch_jwks_keys() -> list:
     """Descarga las claves públicas desde el endpoint JWKS de Supabase (cache 1h)."""
     global _jwks_cache, _jwks_fetched_at
 
@@ -40,8 +40,10 @@ def _fetch_jwks_keys() -> list:
 
     jwks_url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
     try:
-        with urllib.request.urlopen(jwks_url, timeout=5) as resp:
-            data = json.loads(resp.read())
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(jwks_url)
+            resp.raise_for_status()
+            data = resp.json()
         keys = []
         for jwk in data.get("keys", []):
             kty = jwk.get("kty", "")
@@ -63,7 +65,7 @@ def _fetch_jwks_keys() -> list:
         return _jwks_cache  # devolver cache anterior si hay, o []
 
 
-def _decode_token(token: str) -> dict:
+async def _decode_token(token: str) -> dict:
     """
     Verifica el JWT de Supabase en este orden:
     1. JWKS dinámico desde /auth/v1/.well-known/jwks.json (nuevo sistema)
@@ -74,7 +76,7 @@ def _decode_token(token: str) -> dict:
 
     # 1. JWKS dinámico
     if settings.SUPABASE_URL:
-        jwks_keys = _fetch_jwks_keys()
+        jwks_keys = await _fetch_jwks_keys()
         for alg, key in jwks_keys:
             try:
                 return jwt.decode(
@@ -135,7 +137,7 @@ async def get_current_user(
 
     token = credentials.credentials
     try:
-        payload = _decode_token(token)
+        payload = await _decode_token(token)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado. Vuelve a iniciar sesión.")
     except jwt.InvalidTokenError as e:
@@ -186,7 +188,7 @@ async def get_paid_user(user: Annotated[UserProfile, Depends(get_current_user)])
 async def validate_ws_token(token: str, db: AsyncSession) -> UserProfile:
     """Valida un Bearer token recibido como query param en WebSocket."""
     try:
-        payload = _decode_token(token)
+        payload = await _decode_token(token)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado.")
     except jwt.InvalidTokenError:
