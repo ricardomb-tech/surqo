@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # Groq (gratis: 14,400 req/día con Llama 3.3 70B)
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     # Anthropic (fallback de pago)
     ANTHROPIC_API_KEY: str = ""
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     CACHE_TTL_CLIMATE: int = 3600
     CACHE_TTL_ANALYSIS: int = 3600
 
-    # MQTT (HiveMQ Cloud)
+    # MQTT (HiveMQ Cloud) 
     HIVEMQ_HOST: str = "broker.hivemq.com"
     HIVEMQ_PORT: int = 8883
     HIVEMQ_USERNAME: str = ""

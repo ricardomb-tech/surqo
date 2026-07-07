@@ -87,7 +87,7 @@ class SurqoSimulator:
     farm_id: str = str(uuid.uuid4())
     interval_seconds: int = 30
     mode: Literal["mqtt", "http"] = "mqtt"
-    api_url: str = "https://surqo-api.onrender.com/api/v1/sensors/reading"
+    api_url: str = "https://surqo-api.fly.dev/api/v1/sensors/reading"
     mqtt_host: str = "broker.hivemq.com"
     mqtt_port: int = 8883
     mqtt_username: str = ""
@@ -234,7 +234,7 @@ def main() -> None:
     parser.add_argument("--farm-id", default=str(uuid.uuid4()))
     parser.add_argument("--interval", type=int, default=30, help="Segundos entre lecturas")
     parser.add_argument("--mode", choices=["mqtt", "http"], default="http")
-    parser.add_argument("--api-url", default="https://surqo-api.onrender.com/api/v1/sensors/reading")
+    parser.add_argument("--api-url", default="https://surqo-api.fly.dev/api/v1/sensors/reading")
     parser.add_argument("--mqtt-host", default="broker.hivemq.com")
     parser.add_argument("--mqtt-port", type=int, default=8883)
     parser.add_argument("--mqtt-user", default="")

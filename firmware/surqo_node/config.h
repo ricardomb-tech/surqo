@@ -39,7 +39,7 @@
 #define SENSOR_WARMUP_MS  500   // Tiempo de estabilización sensores
 
 // URLs fallback HTTP (si MQTT falla)
-#define API_FALLBACK_URL  "https://surqo-api.onrender.com/api/v1/sensors/reading"
+#define API_FALLBACK_URL  "https://surqo-api.fly.dev/api/v1/sensors/reading"
 
 // ADC averaging
 #define ADC_SAMPLES       10    // Muestras para promediar ADC y reducir ruido
