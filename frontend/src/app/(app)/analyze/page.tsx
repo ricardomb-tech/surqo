@@ -101,7 +101,7 @@ export default function AnalyzePage() {
           </div>
           <h1 className="text-2xl font-black tracking-tight text-gray-900 mb-2">Análisis Predictivo con IA</h1>
           <p className="text-gray-500 font-medium max-w-xl text-sm">
-            Llama 3.3 70B fusiona el pronóstico climático de 7 días con los datos de tus sensores para generar recomendaciones agronómicas precisas.
+            La IA fusiona el pronóstico climático de 7 días, los datos de tus sensores y el conocimiento agronómico de tu cultivo para generar recomendaciones precisas.
           </p>
         </div>
 
