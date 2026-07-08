@@ -16,6 +16,35 @@ from app.services.climate_service import ClimateData
 
 # ─── Abstracción de proveedor LLM ─────────────────────────────────────────────
 
+def _parse_json_response(raw: str) -> dict:
+    """Parsea la respuesta del LLM de forma tolerante: quita fences de markdown y,
+    si hay texto extra, extrae el primer objeto JSON balanceado. Los modelos de
+    razonamiento a veces envuelven el JSON o agregan texto alrededor."""
+    text = (raw or "").strip()
+    if "```json" in text:
+        text = text.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in text:
+        text = text.split("```", 1)[1].split("```", 1)[0].strip()
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Fallback: extraer el primer objeto {...} balanceado
+    start = text.find("{")
+    if start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    return json.loads(text[start:i + 1])
+    raise json.JSONDecodeError("No se encontró JSON válido en la respuesta del modelo", text, 0)
+
+
 class LLMProvider(Protocol):
     """Interfaz común para todos los proveedores."""
     async def complete(
@@ -23,6 +52,7 @@ class LLMProvider(Protocol):
         system_prompt: str,
         user_content: str,
         max_tokens: int = 1024,
+        json_mode: bool = False,
     ) -> tuple[str, int, int]:
         """Retorna (texto_respuesta, input_tokens, output_tokens)."""
         ...
@@ -38,9 +68,9 @@ class GroqProvider:
         self._api_key = settings.GROQ_API_KEY
 
     async def complete(
-        self, system_prompt: str, user_content: str, max_tokens: int = 1024
+        self, system_prompt: str, user_content: str, max_tokens: int = 1024, json_mode: bool = False
     ) -> tuple[str, int, int]:
-        payload = {
+        payload: dict = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -49,6 +79,9 @@ class GroqProvider:
             "max_tokens": max_tokens,
             "temperature": 0.2,
         }
+        if json_mode:
+            # Fuerza salida JSON válida (evita JSON malformado de modelos de razonamiento)
+            payload["response_format"] = {"type": "json_object"}
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -109,8 +142,9 @@ class AnthropicProvider:
         self.model   = settings.LLM_MODEL
 
     async def complete(
-        self, system_prompt: str, user_content: str, max_tokens: int = 1024
+        self, system_prompt: str, user_content: str, max_tokens: int = 1024, json_mode: bool = False
     ) -> tuple[str, int, int]:
+        # json_mode: Claude ya devuelve JSON confiable con el prompt actual; se acepta por interfaz
         response = await self._client.messages.create(
             model=self.model,
             max_tokens=max_tokens,
@@ -139,9 +173,9 @@ class OllamaProvider:
         self.model    = settings.OLLAMA_MODEL
 
     async def complete(
-        self, system_prompt: str, user_content: str, max_tokens: int = 1024
+        self, system_prompt: str, user_content: str, max_tokens: int = 1024, json_mode: bool = False
     ) -> tuple[str, int, int]:
-        payload = {
+        payload: dict = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -150,6 +184,8 @@ class OllamaProvider:
             "options": {"temperature": 0.2, "num_predict": max_tokens},
             "stream": False,
         }
+        if json_mode:
+            payload["format"] = "json"
         async with httpx.AsyncClient(timeout=120) as client:
             r = await client.post(f"{self.base_url}/api/chat", json=payload)
             r.raise_for_status()
@@ -328,17 +364,13 @@ class LLMService:
             raw_text, input_tokens, output_tokens = await self._provider.complete(
                 system_prompt=prompt_cfg["system_prompt"],
                 user_content=user_content,
-                max_tokens=max_output_tokens,
+                # Piso de tokens: los modelos de razonamiento (gpt-oss) necesitan
+                # margen para no truncar el JSON a mitad de camino
+                max_tokens=max(max_output_tokens, 1500),
+                json_mode=True,
             )
-            raw_text = raw_text.strip()
 
-            # Extraer JSON si viene envuelto en markdown
-            if "```json" in raw_text:
-                raw_text = raw_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in raw_text:
-                raw_text = raw_text.split("```")[1].split("```")[0].strip()
-
-            data = json.loads(raw_text)
+            data = _parse_json_response(raw_text)
 
             return AnalysisResult(
                 alert_level=data.get("alert_level", "ok"),
