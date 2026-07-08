@@ -6,17 +6,19 @@ import type { Alert } from "@/types"
 import { ShieldAlert, CheckCircle2, Loader2, Search, AlertTriangle, XCircle, RefreshCcw, Clock } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { PageSkeleton } from "@/components/Skeleton"
+import { getCached } from "@/lib/cache"
+import type { Farm } from "@/types"
 
 export default function AlertsPage() {
   const [active,    setActive]    = useState<Alert[]>([])
   const [resolved,  setResolved]  = useState<Alert[]>([])
-  const [loading,   setLoading]   = useState(true)
+  // Si ya conocemos la finca por caché, no bloqueamos con el skeleton de nuevo
+  const [loading,   setLoading]   = useState(() => getCached<Farm[]>("farms") === null)
   const [query,     setQuery]     = useState("")
   const [resolving, setResolving] = useState<string | null>(null)
   const [tab,       setTab]       = useState<"active" | "resolved">("active")
 
   const load = useCallback(async () => {
-    setLoading(true)
     try {
       const farms = await farmAPI.list()
       if (!farms.length) { setLoading(false); return }
@@ -31,12 +33,28 @@ export default function AlertsPage() {
 
   const handleResolve = async (id: string) => {
     setResolving(id)
-    try { await alertAPI.resolve(id); await load() } finally { setResolving(null) }
+    // Optimista: la movemos de "activas" a "resueltas" ya mismo; si falla, la regresamos.
+    const alert = active.find((a) => a.id === id)
+    setActive((a) => a.filter((x) => x.id !== id))
+    if (alert) setResolved((r) => [{ ...alert, is_resolved: true }, ...r])
+    try {
+      await alertAPI.resolve(id)
+    } catch {
+      if (alert) { setActive((a) => [alert, ...a]); setResolved((r) => r.filter((x) => x.id !== id)) }
+    } finally { setResolving(null) }
   }
 
   const handleResolveAll = async () => {
     setResolving("all")
-    try { await Promise.all(active.map((a) => alertAPI.resolve(a.id))); await load() } finally { setResolving(null) }
+    const previousActive = active
+    setResolved((r) => [...previousActive.map((a) => ({ ...a, is_resolved: true })), ...r])
+    setActive([])
+    try {
+      await Promise.all(previousActive.map((a) => alertAPI.resolve(a.id)))
+    } catch {
+      setActive(previousActive)
+      setResolved((r) => r.filter((x) => !previousActive.some((a) => a.id === x.id)))
+    } finally { setResolving(null) }
   }
 
   const criticalCount = active.filter((a) => a.severity === "critical").length

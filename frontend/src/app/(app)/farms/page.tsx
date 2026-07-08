@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { farmAPI } from "@/lib/api"
+import { getCached, invalidateCached } from "@/lib/cache"
 import { useAuth } from "@/components/AuthProvider"
 import type { Farm } from "@/types"
 import { Plus, Sprout, MapPin, Loader2, Trash2, X, Edit2, AlertCircle, CheckCircle2, Mountain } from "lucide-react"
@@ -37,18 +38,19 @@ const EMPTY: FormState = { name: "", department: "", municipality: "", crop_type
 
 export default function FarmsPage() {
   const { planLimits, refreshPlanLimits } = useAuth()
-  const [farms,      setFarms]      = useState<Farm[]>([])
-  const [loading,    setLoading]    = useState(true)
+  const [farms,      setFarms]      = useState<Farm[]>(() => getCached<Farm[]>("farms") ?? [])
+  const [loading,    setLoading]    = useState(() => getCached<Farm[]>("farms") === null)
   const [showForm,   setShowForm]   = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
-  const [deleteId,   setDeleteId]   = useState<string | null>(null)
+  const [deleteId,     setDeleteId]     = useState<string | null>(null)
+  const [deleteError,  setDeleteError]  = useState<string | null>(null)
   const [form,       setForm]       = useState<FormState>(EMPTY)
   const [mapData,    setMapData]    = useState<MapData | null>(null)
 
+  // Pinta al instante con la caché (si hay) y refresca en segundo plano
   const load = useCallback(async () => {
-    setLoading(true)
-    try { setFarms(await farmAPI.list()) } catch { setFarms([]) } finally { setLoading(false) }
+    try { setFarms(await farmAPI.list()) } catch { setFarms((f) => f) } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -101,14 +103,22 @@ export default function FarmsPage() {
 
   const handleDelete = async (id: string) => {
     setDeleteId(id)
+    // Optimista: la quitamos de la vista ya mismo; si falla, la regresamos.
+    const previous = farms
+    setFarms((f) => f.filter((x) => x.id !== id))
     try {
       const token = await import("@/lib/auth").then((m) => m.getAccessToken())
       const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev").replace(/^﻿/, "").trim()
-      await fetch(`${API_BASE}/api/v1/farms/${id}`, {
+      const resp = await fetch(`${API_BASE}/api/v1/farms/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })
-      await Promise.all([load(), refreshPlanLimits()])
+      if (!resp.ok) throw new Error()
+      invalidateCached("farms")
+      await refreshPlanLimits()
+    } catch {
+      setFarms(previous)  // rollback
+      setDeleteError("No se pudo eliminar la finca. Intenta de nuevo.")
     } finally { setDeleteId(null) }
   }
 
@@ -147,6 +157,14 @@ export default function FarmsPage() {
               <p className="text-sm font-bold text-blue-900">Límite de fincas alcanzado</p>
               <p className="text-xs text-blue-600 font-medium mt-0.5">El plan actual incluye 1 finca. Elimina la actual para registrar una nueva.</p>
             </div>
+          </div>
+        )}
+
+        {deleteError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-sm text-red-600 font-medium flex-1">{deleteError}</p>
+            <button onClick={() => setDeleteError(null)} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
           </div>
         )}
 

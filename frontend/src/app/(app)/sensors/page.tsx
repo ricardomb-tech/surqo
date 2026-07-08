@@ -10,11 +10,12 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import { PageSkeleton } from "@/components/Skeleton"
+import { getCached } from "@/lib/cache"
 
 const STEPS = [
-  { n: "01", title: "Configura config.h", desc: "WiFi SSID + password, host MQTT de HiveMQ Cloud y el Farm ID de tu finca." },
-  { n: "02", title: "Flashea el firmware", desc: "PlatformIO: pio run --target upload desde /firmware/surqo_node" },
-  { n: "03", title: "Verifica la conexión", desc: "Abre el Serial Monitor a 115200 baud. Deberías ver ✅ Publicado por MQTT" },
+  { n: "01", title: "Enciende el nodo", desc: "Conéctate a la red Surqo-Setup-XXXX desde el celular y elige tu WiFi." },
+  { n: "02", title: "Emparéjalo con tu finca", desc: "En Dispositivos, toca “Conectar nodo” — aparece solo, sin código." },
+  { n: "03", title: "Verifica la conexión", desc: "El Live Feed de abajo debería mostrar “Live” y datos llegando." },
 ]
 
 function CopyButton({ text }: { text: string }) {
@@ -28,8 +29,9 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export default function SensorsPage() {
-  const [farm, setFarm] = useState<Farm | null>(null)
-  const [loading, setLoading] = useState(true)
+  const cachedFarms = getCached<Farm[]>("farms")
+  const [farm, setFarm] = useState<Farm | null>(cachedFarms?.[0] ?? null)
+  const [loading, setLoading] = useState(cachedFarms === null)
 
   useEffect(() => {
     farmAPI.list().then((f) => { if (f.length) setFarm(f[0]) }).catch(() => {}).finally(() => setLoading(false))

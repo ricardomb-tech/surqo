@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { deviceAPI, farmAPI } from "@/lib/api"
+import { getCached } from "@/lib/cache"
 import type { Device, Farm } from "@/types"
 import {
   Cpu, Plus, Loader2, Trash2, X, AlertCircle, CheckCircle2,
@@ -30,10 +31,11 @@ function relTime(ms: number): string {
 }
 
 export default function DevicesPage() {
-  const [devices, setDevices] = useState<Device[]>([])
-  const [farms, setFarms] = useState<Farm[]>([])
-  const [loading, setLoading] = useState(true)
+  const [devices, setDevices] = useState<Device[]>(() => getCached<Device[]>("devices") ?? [])
+  const [farms, setFarms] = useState<Farm[]>(() => getCached<Farm[]>("farms") ?? [])
+  const [loading, setLoading] = useState(() => getCached<Device[]>("devices") === null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [unclaimError, setUnclaimError] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)  // desvincular: pide confirmación
 
   // Flujo de conexión
@@ -47,15 +49,15 @@ export default function DevicesPage() {
   const [error, setError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Pinta al instante con la caché (si hay) y refresca en segundo plano
   const load = useCallback(async () => {
-    setLoading(true)
     try {
       const [d, f] = await Promise.all([deviceAPI.list(), farmAPI.list()])
       setDevices(d)
       setFarms(f)
       setFarmId((prev) => prev || (f[0]?.id ?? ""))
     } catch {
-      setDevices([])
+      // deja lo que ya había en pantalla (caché o vacío) ante un fallo transitorio
     } finally {
       setLoading(false)
     }
@@ -89,9 +91,10 @@ export default function DevicesPage() {
     setError(null)
     setClaiming(code)
     try {
-      await deviceAPI.claim({ claim_code: code.trim().toUpperCase(), farm_id: farmId, name: name || undefined })
+      const claimed = await deviceAPI.claim({ claim_code: code.trim().toUpperCase(), farm_id: farmId, name: name || undefined })
+      // Optimista: lo agregamos ya mismo con lo que devolvió el servidor, sin esperar un reload completo
+      setDevices((prev) => [claimed, ...prev.filter((d) => d.id !== claimed.id)])
       setShowModal(false)
-      await load()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "No se pudo emparejar el nodo")
     } finally {
@@ -102,8 +105,16 @@ export default function DevicesPage() {
   const handleUnclaim = async (id: string) => {
     setDeleteId(id)
     setConfirmId(null)
-    try { await deviceAPI.unclaim(id); await load() }
-    finally { setDeleteId(null) }
+    setUnclaimError(null)
+    // Optimista: lo quitamos de la vista ya mismo; si falla, lo regresamos.
+    const previous = devices
+    setDevices((d) => d.filter((x) => x.id !== id))
+    try {
+      await deviceAPI.unclaim(id)
+    } catch {
+      setDevices(previous)  // rollback
+      setUnclaimError("No se pudo desvincular el nodo. Intenta de nuevo.")
+    } finally { setDeleteId(null) }
   }
 
   if (loading) return <PageSkeleton />
@@ -132,6 +143,14 @@ export default function DevicesPage() {
             <p className="text-sm font-medium text-amber-800">
               Primero registra una finca en la sección <strong>Fincas</strong> — el nodo se conecta con ella.
             </p>
+          </div>
+        )}
+
+        {unclaimError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+            <p className="text-sm text-red-600 font-medium flex-1">{unclaimError}</p>
+            <button onClick={() => setUnclaimError(null)} className="text-red-400 hover:text-red-600"><X className="w-4 h-4" /></button>
           </div>
         )}
 

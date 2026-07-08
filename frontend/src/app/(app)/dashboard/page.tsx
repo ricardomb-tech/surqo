@@ -16,6 +16,7 @@ import { farmAPI, alertAPI, analysisAPI, sensorAPI } from "@/lib/api"
 import { getAccessToken } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import { PageSkeleton } from "@/components/Skeleton"
+import { getCached } from "@/lib/cache"
 import type { Farm, Alert, KPIs, Analysis, TimeseriesPoint } from "@/types"
 import Link from "next/link"
 
@@ -129,12 +130,15 @@ function NoFarm() {
 }
 
 export default function DashboardPage() {
-  const [farm,         setFarm]         = useState<Farm | null>(null)
+  const cachedFarms = getCached<Farm[]>("farms")
+  const [farm,         setFarm]         = useState<Farm | null>(cachedFarms?.[0] ?? null)
   const [kpis,         setKpis]         = useState<KPIs | null>(null)
   const [alerts,       setAlerts]       = useState<Alert[]>([])
   const [timeseries,   setTimeseries]   = useState<TimeseriesPoint[]>([])
   const [lastAnalysis, setLastAnalysis] = useState<Analysis | undefined>(undefined)
-  const [loading,      setLoading]      = useState(true)
+  // Con la finca ya conocida por caché, pintamos su identidad al instante y
+  // solo mostramos el skeleton completo si de verdad no sabemos nada todavía
+  const [loading,      setLoading]      = useState(cachedFarms === null)
   const [refreshing,   setRefreshing]   = useState(false)
   const [lastSync,     setLastSync]     = useState<string | null>(null)
   const [userProfile,  setUserProfile]  = useState<{ avatar_url?: string | null; cover_url?: string | null; full_name?: string | null } | null>(null)

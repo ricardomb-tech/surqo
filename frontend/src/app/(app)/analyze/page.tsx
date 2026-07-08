@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { AnalysisResult } from "@/components/AnalysisResult"
 import { analysisAPI, farmAPI } from "@/lib/api"
+import { getCached } from "@/lib/cache"
 import { Button } from "@/components/ui/Primitives"
-import type { Analysis } from "@/types"
+import type { Analysis, Farm } from "@/types"
 import {
   Brain, Sparkles, Mail, Sprout,
   ArrowRight, Loader2, Clock, CheckCircle2,
@@ -32,15 +33,20 @@ function stressColor(v: number | null) {
   return "text-green-600"
 }
 
+function farmToForm(f: Farm) {
+  return { farm_name: f.name, lat: String(f.latitude), lon: String(f.longitude), crop_type: f.crop_type || "maíz", alert_email: f.owner_email || "" }
+}
+
 export default function AnalyzePage() {
-  const [form, setForm] = useState({ farm_name: "", lat: "", lon: "", crop_type: "maíz", alert_email: "" })
-  const [farmId,         setFarmId]         = useState<string | undefined>()
+  const cachedFarm = getCached<Farm[]>("farms")?.[0]
+  const [form, setForm] = useState(() => cachedFarm ? farmToForm(cachedFarm) : { farm_name: "", lat: "", lon: "", crop_type: "maíz", alert_email: "" })
+  const [farmId,         setFarmId]         = useState<string | undefined>(cachedFarm?.id)
   const [result,         setResult]         = useState<Analysis | null>(null)
   const [history,        setHistory]        = useState<Analysis[]>([])
   const [loading,        setLoading]        = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [error,          setError]          = useState<string | null>(null)
-  const [farmLoaded,     setFarmLoaded]     = useState(false)
+  const [farmLoaded,     setFarmLoaded]     = useState(!!cachedFarm)
   const [showMap,        setShowMap]        = useState(false)
 
   useEffect(() => {
@@ -50,7 +56,7 @@ export default function AnalyzePage() {
         if (farms.length > 0) {
           const f = farms[0]
           setFarmId(f.id)
-          setForm({ farm_name: f.name, lat: String(f.latitude), lon: String(f.longitude), crop_type: f.crop_type || "maíz", alert_email: f.owner_email || "" })
+          setForm(farmToForm(f))
           setFarmLoaded(true)
           setLoadingHistory(true)
           const h = await analysisAPI.history(f.id)

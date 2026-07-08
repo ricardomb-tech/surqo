@@ -1,5 +1,6 @@
 import type { Analysis, Alert, Device, Farm, KPIs, SensorReading, TimeseriesPoint } from "@/types"
 import { getAccessToken } from "@/lib/auth"
+import { setCached, invalidateCached } from "@/lib/cache"
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev").replace(/^﻿/, "").trim()
 
@@ -39,13 +40,13 @@ async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
 
 // Farms
 export const farmAPI = {
-  list: () => fetchJSON<Farm[]>("/api/v1/farms/"),
+  list: () => fetchJSON<Farm[]>("/api/v1/farms/").then((d) => setCached("farms", d)),
   get: (id: string) => fetchJSON<Farm>(`/api/v1/farms/${id}`),
   create: (data: Partial<Farm>) =>
     fetchJSON<Farm>("/api/v1/farms/", {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    }).then((d) => { invalidateCached("farms"); return d }),
   kpis: (id: string) => fetchJSON<KPIs>(`/api/v1/farms/${id}/kpis`),
 }
 
@@ -99,20 +100,21 @@ export const alertAPI = {
 
 // Devices (nodos ESP32)
 export const deviceAPI = {
-  list: () => fetchJSON<Device[]>("/api/v1/devices/"),
+  list: () => fetchJSON<Device[]>("/api/v1/devices/").then((d) => setCached("devices", d)),
   discoverable: () => fetchJSON<Device[]>("/api/v1/devices/discoverable"),
   claim: (data: { claim_code: string; farm_id: string; name?: string }) =>
     fetchJSON<Device>("/api/v1/devices/claim", {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    }).then((d) => { invalidateCached("devices"); return d }),
   rename: (id: string, name: string) =>
     fetchJSON<Device>(`/api/v1/devices/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ name }),
-    }),
+    }).then((d) => { invalidateCached("devices"); return d }),
   unclaim: (id: string) =>
-    fetchJSON<void>(`/api/v1/devices/${id}`, { method: "DELETE" }),
+    fetchJSON<void>(`/api/v1/devices/${id}`, { method: "DELETE" })
+      .then((d) => { invalidateCached("devices"); return d }),
 }
 
 // KPIs
