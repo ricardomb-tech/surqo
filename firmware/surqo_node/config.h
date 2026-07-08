@@ -38,7 +38,7 @@
 #define SOIL_WET_ADC      1200  // ADC raw en suelo saturado
 
 // Tiempos
-#define SLEEP_MINUTES     15    // Deep sleep entre lecturas (min)
+#define SLEEP_MINUTES     1     // Deep sleep entre lecturas (min) — 1 para pruebas/demo (USB); usa 15-30 en batería/campo
 #define SENSOR_WARMUP_MS  2000  // Tiempo de estabilización sensores (DHT22 necesita ~2s)
 #define WIFI_TIMEOUT_MS   30000
 
