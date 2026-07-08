@@ -1,14 +1,20 @@
 /**
- * Surqo Node — Firmware ESP32
+ * Surqo Node — Firmware ESP32 v2
  * "Del surco al insight"
  *
- * Sensores: DHT22, DS18B20, Capacitive Soil v2, ML8511 UV, Voltage divider
- * Protocolo: MQTT TLS → HiveMQ Cloud | Fallback: HTTP → FastAPI
- * Power: Deep Sleep 15 min entre lecturas
+ * Sin FARM_ID ni WiFi hardcodeados:
+ *  - WiFi: portal cautivo (WiFiManager) en el primer arranque
+ *  - Identidad: MAC del ESP32 → código de emparejamiento (claim code)
+ *  - El usuario empareja el nodo con su finca desde la app usando ese código
+ *
+ * Sensores: DHT22, DS18B20, Capacitive Soil, ML8511 UV, Voltage divider
+ * Protocolo: MQTT TLS → HiveMQ | Fallback: HTTP → FastAPI
+ * Power: Deep Sleep entre lecturas
  */
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <WiFiManager.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <DHT.h>
@@ -24,8 +30,11 @@
 DHT dht(DHT_PIN, DHT22);
 OneWire oneWire(DS18B20_PIN);
 DallasTemperature ds18b20(&oneWire);
-WiFiClientSecure wifiClient;
-PubSubClient mqttClient(wifiClient);
+WiFiClientSecure mqttTls;
+PubSubClient mqttClient(mqttTls);
+
+String g_mac;        // identidad: a4cf12a3f2c1 (minúsculas, sin ":")
+String g_claimCode;  // código para el usuario: A3F2C1
 
 // ─── Struct de datos ─────────────────────────────────────────────────────────
 struct SensorData {
@@ -40,15 +49,18 @@ struct SensorData {
 };
 
 // ─── Prototipos ──────────────────────────────────────────────────────────────
-bool connectWiFi();
-bool connectMQTT();
+void   computeIdentity();
+bool   connectWiFiManaged();
+void   registerDevice();
+bool   connectMQTT();
 SensorData readAllSensors();
-void publishSensorData(const SensorData& data);
-bool fallbackHTTP(const SensorData& data);
+void   publishSensorData(const SensorData& data);
+bool   fallbackHTTP(const SensorData& data);
+bool   httpsPost(const String& url, const String& body, String& response);
 String buildJSON(const SensorData& data);
 String getISO8601Timestamp();
-int averageADC(int pin, int samples);
-float mapFloat(float x, float in_min, float in_max, float out_min, float out_max);
+int    averageADC(int pin, int samples);
+float  mapFloat(float x, float in_min, float in_max, float out_min, float out_max);
 
 // ─── Setup (corre en cada ciclo después del deep sleep) ─────────────────────
 void setup() {
@@ -59,26 +71,34 @@ void setup() {
   Serial.println("  Del surco al insight");
   Serial.println("═══════════════════════════════════");
 
+  computeIdentity();
+  Serial.println("┌───────────────────────────────────");
+  Serial.printf ("│ MAC del nodo : %s\n", g_mac.c_str());
+  Serial.printf ("│ CÓDIGO DE EMPAREJAMIENTO: %s\n", g_claimCode.c_str());
+  Serial.println("│ Escribe ese código en la app Surqo");
+  Serial.println("│ para vincular este nodo con tu finca.");
+  Serial.println("└───────────────────────────────────");
+
   // Activar sensores
   pinMode(SENSOR_POWER_PIN, OUTPUT);
   digitalWrite(SENSOR_POWER_PIN, HIGH);
   delay(SENSOR_WARMUP_MS);
 
-  // Inicializar sensores
   dht.begin();
   ds18b20.begin();
   ds18b20.setResolution(12);
 
-  // Sincronizar NTP (UTC-5 Colombia)
-  bool wifiOk = connectWiFi();
+  // Leer sensores ANTES del WiFi (el radio interfiere con el timing del DHT22)
+  SensorData data = readAllSensors();
+
+  // WiFi por portal cautivo (usa credenciales guardadas si ya existen)
+  bool wifiOk = connectWiFiManaged();
 
   if (wifiOk) {
-    configTime(-18000, 0, "pool.ntp.org", "time.nist.gov");
-    delay(1500);  // Esperar sincronización NTP
+    configTime(-18000, 0, "pool.ntp.org", "time.nist.gov");  // UTC-5 Colombia
+    delay(1500);
+    registerDevice();  // best-effort: anuncia el nodo al backend
   }
-
-  // Leer sensores
-  SensorData data = readAllSensors();
 
   if (data.valid) {
     Serial.println("\n📊 Lectura actual:");
@@ -88,7 +108,6 @@ void setup() {
     Serial.printf("  RSSI:  %d dBm\n", data.rssi);
 
     bool published = false;
-
     if (wifiOk) {
       if (connectMQTT()) {
         publishSensorData(data);
@@ -99,10 +118,7 @@ void setup() {
         if (published) Serial.println("✅ Publicado por HTTP fallback");
       }
     }
-
-    if (!published) {
-      Serial.println("⚠️  Sin publicación — sin conexión");
-    }
+    if (!published) Serial.println("⚠️  Sin publicación — sin conexión");
   } else {
     Serial.println("❌ Error leyendo sensores");
   }
@@ -122,34 +138,59 @@ void loop() {
   // No se usa — el ESP32 duerme entre lecturas
 }
 
-// ─── WiFi ─────────────────────────────────────────────────────────────────────
-bool connectWiFi() {
-  Serial.printf("📶 Conectando a %s...", WIFI_SSID);
+// ─── Identidad por MAC ───────────────────────────────────────────────────────
+void computeIdentity() {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  String raw = WiFi.macAddress();  // "A4:CF:12:A3:F2:C1"
+  raw.replace(":", "");
+  raw.toLowerCase();
+  g_mac = raw;
+  g_claimCode = g_mac.substring(g_mac.length() - 6);
+  g_claimCode.toUpperCase();
+}
 
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_TIMEOUT_MS) {
-    delay(500);
-    Serial.print(".");
-  }
+// ─── WiFi con portal cautivo ─────────────────────────────────────────────────
+bool connectWiFiManaged() {
+  WiFiManager wm;
+  wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
+  wm.setConnectTimeout(WIFI_TIMEOUT_MS / 1000);
 
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\n✅ WiFi OK — IP: %s\n", WiFi.localIP().toString().c_str());
-    return true;
+  String apName = "Surqo-Setup-" + g_claimCode;
+  Serial.printf("📶 Conectando WiFi (si es 1ª vez, únete a la red \"%s\")...\n", apName.c_str());
+
+  bool ok = wm.autoConnect(apName.c_str(), AP_PASSWORD);
+  if (ok) {
+    Serial.printf("✅ WiFi OK — IP: %s\n", WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("❌ Sin WiFi (portal expiró). Reintenta en el próximo ciclo.");
   }
-  Serial.println("\n❌ WiFi timeout");
-  return false;
+  return ok;
+}
+
+// ─── Registro del dispositivo en el backend ──────────────────────────────────
+void registerDevice() {
+  JsonDocument doc;
+  doc["device_mac"] = g_mac;
+  doc["firmware_version"] = FIRMWARE_VERSION;
+  String body, resp;
+  serializeJson(doc, body);
+
+  if (httpsPost(String(API_BASE_URL) + "/api/v1/devices/register", body, resp)) {
+    Serial.printf("🔗 Registrado en Surqo: %s\n", resp.c_str());
+  } else {
+    Serial.println("ℹ️  No se pudo registrar ahora (se reintenta luego)");
+  }
 }
 
 // ─── MQTT TLS ─────────────────────────────────────────────────────────────────
 bool connectMQTT() {
-  wifiClient.setInsecure();  // Para HiveMQ Cloud — en producción usar setCACert()
+  mqttTls.setInsecure();  // HiveMQ Cloud — en producción usar setCACert()
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
   mqttClient.setBufferSize(1024);
 
+  String clientId = "surqo-" + g_mac;
   Serial.printf("📡 Conectando MQTT a %s...", MQTT_HOST);
-  if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD)) {
+  if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
     Serial.println(" ✅");
     return true;
   }
@@ -159,7 +200,7 @@ bool connectMQTT() {
 
 // ─── Publicar datos por MQTT ──────────────────────────────────────────────────
 void publishSensorData(const SensorData& data) {
-  String topic = String("surqo/farms/") + FARM_ID + "/sensors";
+  String topic = "surqo/devices/" + g_mac + "/sensors";
   String payload = buildJSON(data);
   mqttClient.publish(topic.c_str(), payload.c_str(), false);
   mqttClient.loop();
@@ -168,20 +209,29 @@ void publishSensorData(const SensorData& data) {
 
 // ─── Fallback HTTP ────────────────────────────────────────────────────────────
 bool fallbackHTTP(const SensorData& data) {
+  String url = String(API_BASE_URL) + "/api/v1/devices/" + g_mac + "/reading";
+  String resp;
+  return httpsPost(url, buildJSON(data), resp);
+}
+
+bool httpsPost(const String& url, const String& body, String& response) {
+  WiFiClientSecure client;
+  client.setInsecure();
   HTTPClient http;
-  http.begin(API_FALLBACK_URL);
+  if (!http.begin(client, url)) return false;
   http.addHeader("Content-Type", "application/json");
-  String payload = buildJSON(data);
-  int code = http.POST(payload);
+  int code = http.POST(body);
+  if (code > 0) response = http.getString();
   http.end();
-  return (code == 200 || code == 201);
+  return (code >= 200 && code < 300);
 }
 
 // ─── Construir JSON ────────────────────────────────────────────────────────────
 String buildJSON(const SensorData& data) {
   JsonDocument doc;
-  doc["device_id"] = DEVICE_ID;
-  doc["farm_id"] = FARM_ID;
+  doc["device_id"] = g_mac;
+  doc["device_mac"] = g_mac;
+  doc["claim_code"] = g_claimCode;
   doc["timestamp"] = getISO8601Timestamp();
   doc["firmware_version"] = FIRMWARE_VERSION;
   doc["battery_mv"] = data.batteryMv;
@@ -233,14 +283,12 @@ SensorData readAllSensors() {
 
   // Sensor capacitivo: 10 muestras ADC promediadas
   int rawSoil = averageADC(SOIL_MOISTURE_PIN, ADC_SAMPLES);
-  // Invertir: mayor ADC = más seco
   d.soilMoisturePct = mapFloat(rawSoil, SOIL_DRY_ADC, SOIL_WET_ADC, 0.0, 100.0);
   d.soilMoisturePct = constrain(d.soilMoisturePct, 0.0, 100.0);
 
   // ML8511: índice UV
   int rawUV = averageADC(UV_SENSOR_PIN, ADC_SAMPLES);
   float voltUV = rawUV * 3.3 / 4095.0;
-  // Calibración ML8511: 0V = 0 UV, 1V = 15 UV (aprox)
   d.uvIndex = max(0.0f, (voltUV - 0.99f) * 17.0f);
 
   // Batería: divisor de voltaje (R1=100k, R2=100k → factor 2)

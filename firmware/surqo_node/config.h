@@ -4,23 +4,26 @@
 // SURQO NODE — Configuración del nodo ESP32
 // "Del surco al insight"
 // ═══════════════════════════════════════════════
+//
+// El WiFi ya NO se configura aquí: en el primer arranque el nodo abre un portal
+// cautivo (red "Surqo-Setup-XXXX") donde el agricultor escribe su WiFi desde el
+// celular. Tampoco hay FARM_ID: el nodo se identifica por su MAC y el usuario lo
+// empareja con su finca desde la app usando el código que muestra el portal/serial.
 
-// WiFi
-#define WIFI_SSID         "TU_RED_WIFI"
-#define WIFI_PASSWORD     "TU_PASSWORD_WIFI"
-#define WIFI_TIMEOUT_MS   30000
+// Portal cautivo — se abre solo si no hay WiFi guardado (o si falla la conexión)
+#define AP_PASSWORD       "surqo1234"   // Clave para conectarse a la red de configuración
+#define PORTAL_TIMEOUT_S  180           // Segundos que el portal espera antes de rendirse
 
-// HiveMQ Cloud MQTT
-#define MQTT_HOST         "tu-cluster.hivemq.cloud"
+// HiveMQ Cloud MQTT (compartido por todos los nodos)
+#define MQTT_HOST         "4fd28440312d4127bb4fc40a08d21e18.s1.eu.hivemq.cloud"
 #define MQTT_PORT         8883
-#define MQTT_USERNAME     "surqo-user"
-#define MQTT_PASSWORD     "tu_password"
-#define MQTT_CLIENT_ID    "surqo-node-001"
+#define MQTT_USERNAME     "Ricardo"
+#define MQTT_PASSWORD     "R01010011k*"
 
-// Identidad del nodo
-#define DEVICE_ID         "ESP32-NODE-001"
-#define FARM_ID           "tu-farm-uuid"
-#define FIRMWARE_VERSION  "1.0.0"
+// Backend Surqo
+#define API_BASE_URL      "https://surqo-api.fly.dev"
+
+#define FIRMWARE_VERSION  "2.0.0"
 
 // Pines sensores
 #define DHT_PIN           4     // DHT22 — Temp/Humedad aire
@@ -36,10 +39,8 @@
 
 // Tiempos
 #define SLEEP_MINUTES     15    // Deep sleep entre lecturas (min)
-#define SENSOR_WARMUP_MS  500   // Tiempo de estabilización sensores
-
-// URLs fallback HTTP (si MQTT falla)
-#define API_FALLBACK_URL  "https://surqo-api.fly.dev/api/v1/sensors/reading"
+#define SENSOR_WARMUP_MS  2000  // Tiempo de estabilización sensores (DHT22 necesita ~2s)
+#define WIFI_TIMEOUT_MS   30000
 
 // ADC averaging
 #define ADC_SAMPLES       10    // Muestras para promediar ADC y reducir ruido
