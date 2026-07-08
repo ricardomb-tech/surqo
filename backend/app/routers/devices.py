@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request, status
 from slowapi import Limiter
@@ -22,6 +22,9 @@ from app.websocket.manager import manager
 
 router = APIRouter()
 limiter = Limiter(key_func=rate_limit_key)
+
+# Ventana para considerar un nodo "recién conectado" en la detección automática
+DISCOVERY_WINDOW_MIN = 10
 
 
 @router.post("/register", response_model=DeviceRegisterResponse)
@@ -58,6 +61,23 @@ async def register_device(request: Request, body: DeviceRegister, db: DBSession)
 async def list_devices(current_user: CurrentUser, db: DBSession) -> list[Device]:
     """Nodos emparejados por el usuario autenticado."""
     result = await db.execute(select(Device).where(Device.user_id == current_user.user_id))
+    return list(result.scalars().all())
+
+
+@router.get("/discoverable", response_model=list[DeviceResponse])
+async def discoverable_devices(current_user: CurrentUser, db: DBSession) -> list[Device]:
+    """Nodos SIN emparejar vistos en los últimos minutos — alimenta la detección
+    automática: el usuario prende el nodo y aparece solo, sin escribir código."""
+    cutoff = datetime.now(UTC) - timedelta(minutes=DISCOVERY_WINDOW_MIN)
+    result = await db.execute(
+        select(Device)
+        .where(
+            Device.user_id.is_(None),
+            Device.last_seen.is_not(None),
+            Device.last_seen >= cutoff,
+        )
+        .order_by(Device.last_seen.desc())
+    )
     return list(result.scalars().all())
 
 

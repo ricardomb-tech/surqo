@@ -87,6 +87,7 @@ export const alertAPI = {
 // Devices (nodos ESP32)
 export const deviceAPI = {
   list: () => fetchJSON<Device[]>("/api/v1/devices/"),
+  discoverable: () => fetchJSON<Device[]>("/api/v1/devices/discoverable"),
   claim: (data: { claim_code: string; farm_id: string; name?: string }) =>
     fetchJSON<Device>("/api/v1/devices/claim", {
       method: "POST",
