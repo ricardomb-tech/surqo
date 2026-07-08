@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import AsyncSessionLocal, init_db
 from app.dependencies import rate_limit_key
-from app.routers import alerts, analysis, farms, kpis, sensors, users
+from app.routers import alerts, analysis, devices, farms, kpis, sensors, users
 from app.websocket.manager import manager
 
 limiter = Limiter(key_func=rate_limit_key)
@@ -101,6 +101,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(farms.router, prefix="/api/v1/farms", tags=["farms"])
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(sensors.router, prefix="/api/v1/sensors", tags=["sensors"])
+app.include_router(devices.router, prefix="/api/v1/devices", tags=["devices"])
 app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["alerts"])
 app.include_router(kpis.router, prefix="/api/v1/kpis", tags=["kpis"])
 

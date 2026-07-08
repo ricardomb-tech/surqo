@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class SurqoMQTTService:
-    TOPIC_PATTERN = "surqo/farms/+/sensors"
+    # Tópico nuevo (basado en dispositivo, sin FARM_ID hardcodeado) + legacy (finca)
+    TOPIC_DEVICES = "surqo/devices/+/sensors"
+    TOPIC_FARMS = "surqo/farms/+/sensors"
     RECONNECT_DELAYS = [1, 2, 4, 8, 16, 32, 60]
 
     def __init__(
@@ -54,7 +56,7 @@ class SurqoMQTTService:
     def _on_connect(self, client, userdata, flags, rc, properties=None) -> None:
         if rc == 0:
             self._reconnect_attempt = 0
-            client.subscribe(self.TOPIC_PATTERN, qos=1)
+            client.subscribe([(self.TOPIC_DEVICES, 1), (self.TOPIC_FARMS, 1)])
             logfire.info("MQTT conectado a HiveMQ", host=settings.HIVEMQ_HOST)
         else:
             logger.error("MQTT conexión rechazada, código: %s", rc)
@@ -76,10 +78,12 @@ class SurqoMQTTService:
         try:
             payload = json.loads(msg.payload.decode())
             parts = msg.topic.split("/")
-            farm_id = parts[2] if len(parts) >= 3 else None
+            # surqo/{devices|farms}/{identificador}/sensors
+            scheme = parts[1] if len(parts) >= 2 else ""
+            identifier = parts[2] if len(parts) >= 3 else None
 
             asyncio.run_coroutine_threadsafe(
-                self._process_reading(payload, farm_id),
+                self._process_reading(payload, scheme, identifier),
                 self._loop,
             )
         except json.JSONDecodeError as e:
@@ -87,80 +91,48 @@ class SurqoMQTTService:
         except Exception as e:
             logger.error("Error procesando mensaje MQTT: %s", e)
 
-    async def _process_reading(self, payload: dict, farm_id: str | None) -> None:
-        import uuid as _uuid
-
-        from app.models.farm import Farm
-        from app.models.sensor_reading import SensorReading
-        from app.services.alert_service import AlertService
-        from app.services.kpi_service import KPIService
-
-        kpi_svc = KPIService()
-        alert_svc = AlertService()
-        sensors = payload.get("sensors", payload)
-
-        air_temp = sensors.get("air_temp_c") or payload.get("air_temp_c")
-        humidity = sensors.get("air_humidity_pct") or payload.get("air_humidity_pct")
-        vpd = None
-        if air_temp is not None and humidity is not None:
-            vpd = kpi_svc.calculate_vpd(air_temp, humidity)
-
-        reading_data = {
-            "device_id": payload.get("device_id", "unknown"),
-            "farm_id": farm_id,
-            "soil_moisture_pct": sensors.get("soil_moisture_pct"),
-            "soil_temp_c": sensors.get("soil_temp_c"),
-            "air_temp_c": air_temp,
-            "air_humidity_pct": humidity,
-            "uv_index": sensors.get("light_uv_index") or sensors.get("uv_index"),
-            "battery_mv": payload.get("battery_mv"),
-            "rssi_dbm": payload.get("rssi_dbm"),
-            "vpd_kpa": vpd,
-            "raw_payload": payload,
-            "source": "mqtt",
-            "firmware_version": payload.get("firmware_version"),
-        }
-
-        farm_uuid: _uuid.UUID | None = None
-        if farm_id:
-            try:
-                farm_uuid = _uuid.UUID(farm_id)
-            except ValueError:
-                pass
+    async def _process_reading(self, payload: dict, scheme: str, identifier: str | None) -> None:
+        from app.services.ingest_service import ingest_reading
 
         async with self._db_factory() as db:
-            reading = SensorReading(**{k: v for k, v in reading_data.items() if k != "farm_id"})
-            reading.farm_id = farm_uuid
-            db.add(reading)
-            await db.commit()
+            if scheme == "devices" and identifier:
+                farm_id = await self._resolve_device_farm(db, identifier, payload)
+                if farm_id is None:
+                    # Dispositivo registrado pero aún sin emparejar a una finca
+                    return
+            else:
+                farm_id = identifier
 
-            # Lookup finca para email
-            farm_name = "Finca"
-            owner_email: str | None = None
-            if farm_uuid:
-                farm = await db.get(Farm, farm_uuid)
-                if farm:
-                    farm_name = farm.name
-                    owner_email = farm.owner_email
+            await ingest_reading(db, self._ws_manager, payload, farm_id, source="mqtt")
 
-            # Verificar umbrales y enviar alertas/email
-            user_id_str = str(farm.user_id) if farm and farm.user_id else None
-            await alert_svc.process_threshold_violations(
-                db=db,
-                reading={**reading_data, "vpd_kpa": vpd},
-                farm_id=farm_id,
-                device_id=reading_data["device_id"],
-                farm_name=farm_name,
-                owner_email=owner_email,
-                user_id=user_id_str,
+    async def _resolve_device_farm(self, db, mac: str, payload: dict) -> str | None:
+        """Busca (o crea) el dispositivo por MAC, actualiza last_seen y retorna su farm_id."""
+        from datetime import UTC, datetime
+
+        from sqlalchemy import select
+
+        from app.models.device import Device
+
+        norm = Device.normalize_mac(mac)
+        result = await db.execute(select(Device).where(Device.device_mac == norm))
+        device = result.scalar_one_or_none()
+
+        if device is None:
+            device = Device(
+                device_mac=norm,
+                claim_code=Device.code_from_mac(norm),
+                firmware_version=payload.get("firmware_version"),
+                last_seen=datetime.now(UTC),
             )
+            db.add(device)
+            await db.commit()
+            return None
 
-        # Broadcast a WebSocket
-        if farm_id:
-            await self._ws_manager.broadcast_to_farm(farm_id, {
-                "type": "sensor_reading",
-                "data": {**reading_data, "vpd_kpa": vpd},
-            })
+        device.last_seen = datetime.now(UTC)
+        if payload.get("firmware_version"):
+            device.firmware_version = payload["firmware_version"]
+        await db.commit()
+        return str(device.farm_id) if device.farm_id else None
 
     def start_background(self) -> None:
         self._running = True
