@@ -33,6 +33,7 @@ export default function DevicesPage() {
   const [farms, setFarms] = useState<Farm[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<string | null>(null)  // desvincular: pide confirmación
 
   // Flujo de conexión
   const [showModal, setShowModal] = useState(false)
@@ -99,6 +100,7 @@ export default function DevicesPage() {
 
   const handleUnclaim = async (id: string) => {
     setDeleteId(id)
+    setConfirmId(null)
     try { await deviceAPI.unclaim(id); await load() }
     finally { setDeleteId(null) }
   }
@@ -282,11 +284,6 @@ export default function DevicesPage() {
                         <p className="text-xs text-gray-400 font-medium truncate">{farmName(d.farm_id)}</p>
                       </div>
                     </div>
-                    <button onClick={() => handleUnclaim(d.id)} disabled={deleteId === d.id}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
-                      title="Desvincular">
-                      {deleteId === d.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    </button>
                   </div>
                   <div className="px-5 py-4 space-y-3">
                     <div className="flex items-center gap-2">
@@ -306,6 +303,29 @@ export default function DevicesPage() {
                       )}
                     </div>
                     <p className="text-[10px] text-gray-300 font-mono truncate">{d.device_mac}</p>
+
+                    {/* Desvincular — visible, con confirmación */}
+                    <div className="pt-2 border-t border-gray-100">
+                      {confirmId === d.id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-500 flex-1">¿Desvincular este nodo?</span>
+                          <button onClick={() => handleUnclaim(d.id)} disabled={deleteId === d.id}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors flex items-center gap-1.5">
+                            {deleteId === d.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                            Sí, desvincular
+                          </button>
+                          <button onClick={() => setConfirmId(null)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors">
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmId(d.id)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />Desvincular nodo
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
