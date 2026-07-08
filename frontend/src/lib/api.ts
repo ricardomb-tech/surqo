@@ -14,8 +14,21 @@ async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
     },
   })
   if (!resp.ok) {
-    const err = await resp.json().catch(() => ({ detail: resp.statusText }))
-    throw new Error(err.detail || `API error: ${resp.status}`)
+    const body = await resp.json().catch(() => null)
+    const detail = body?.detail
+    let message: string
+    if (typeof detail === "string") {
+      message = detail
+    } else if (detail && typeof detail === "object") {
+      // Errores estructurados (ej. cuota agotada) traen { message, code, ... }
+      message = detail.message || detail.code || `Error ${resp.status}`
+    } else {
+      message = `Error ${resp.status}`
+    }
+    const e = new Error(message) as Error & { status?: number; detail?: unknown }
+    e.status = resp.status
+    e.detail = detail
+    throw e
   }
   // 204 No Content (p.ej. DELETE) no trae cuerpo JSON
   if (resp.status === 204 || resp.headers.get("content-length") === "0") {

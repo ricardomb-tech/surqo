@@ -153,14 +153,38 @@ export default function AnalysisChat({ analysis }: { analysis: Analysis }) {
           image_mime: imageToSend?.mime ?? "image/jpeg",
         }),
       })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        const detail = data?.detail
+        let msg: string
+        if (res.status === 402) {
+          // Cuota agotada — mensaje amigable del backend si viene, si no uno por defecto
+          msg = (detail && typeof detail === "object" && detail.message)
+            ? `🌱 ${detail.message}`
+            : "🌱 Se te acabaron los mensajes gratuitos. Escríbenos para activar el plan premium y tener consultas ilimitadas."
+        } else if (res.status === 429) {
+          msg = "Vas muy rápido 😅 Espera unos segundos y vuelve a preguntar."
+        } else if (res.status >= 500) {
+          msg = "Tuvimos un problema en el servidor procesando tu mensaje. Ya lo estamos revisando — intenta de nuevo en un momento."
+        } else if (detail && typeof detail === "object" && detail.message) {
+          msg = detail.message
+        } else if (typeof detail === "string") {
+          msg = detail
+        } else {
+          msg = "No pude responder esta vez. Intenta de nuevo."
+        }
+        setMessages((m) => [...m, { role: "assistant", content: msg }])
+        return
+      }
+
       // Si el backend nos devuelve un session_id nuevo (primer mensaje), lo guardamos
       if (data.session_id && !sessionId) setSessionId(data.session_id)
       setMessages((m) => [...m, { role: "assistant", content: data.response }])
       setTotalTokens((t) => t + (data.input_tokens ?? 0) + (data.output_tokens ?? 0))
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "No pude conectarme. Intenta de nuevo." }])
+      // Falla de red real (sin respuesta del servidor)
+      setMessages((m) => [...m, { role: "assistant", content: "No hay conexión a internet o el servidor no respondió. Revisa tu conexión e intenta de nuevo." }])
     } finally {
       setLoading(false)
     }

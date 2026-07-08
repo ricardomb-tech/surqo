@@ -77,7 +77,14 @@ export default function AnalyzePage() {
       setResult(analysis)
       if (farmId) { const h = await analysisAPI.history(farmId); setHistory(h) }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al generar el análisis")
+      const e = err as Error & { status?: number }
+      let msg = e?.message || "No se pudo generar el análisis."
+      if (e?.status && e.status >= 500) {
+        msg = "El servidor tuvo un problema generando el análisis. Ya lo estamos revisando — intenta de nuevo en un momento."
+      } else if (e?.status === 429) {
+        msg = "Estás generando análisis muy seguido. Espera un momento y vuelve a intentar."
+      }
+      setError(msg)
     } finally { setLoading(false) }
   }
 
