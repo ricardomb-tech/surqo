@@ -50,9 +50,9 @@ class UserProfile(Base):
 
     farms: Mapped[list[Farm]] = relationship("Farm", back_populates="owner", lazy="noload")
 
-    FREE_ANALYSES_LIMIT = 4
-    FREE_TOKENS_LIMIT = 3_200   # 4 × 800 tokens output
-    FREE_OUTPUT_TOKENS_PER_ANALYSIS = 800
+    FREE_ANALYSES_LIMIT = 25
+    FREE_TOKENS_LIMIT = 50_000   # generoso: Groq es gratis, el límite es solo anti-abuso
+    FREE_OUTPUT_TOKENS_PER_ANALYSIS = 1_000
     PAID_OUTPUT_TOKENS_PER_ANALYSIS = 2_048
     MAX_FARMS = 1
 
