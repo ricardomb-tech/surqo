@@ -5,10 +5,11 @@ import { LiveFeed } from "@/components/LiveFeed"
 import { farmAPI } from "@/lib/api"
 import type { Farm } from "@/types"
 import {
-  Cpu, Wifi, Terminal, Loader2, Copy, Check,
+  Cpu, Wifi, Terminal, Copy, Check,
   AlertCircle, CheckCircle2, ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
+import { PageSkeleton } from "@/components/Skeleton"
 
 const STEPS = [
   { n: "01", title: "Configura config.h", desc: "WiFi SSID + password, host MQTT de HiveMQ Cloud y el Farm ID de tu finca." },
@@ -34,11 +35,7 @@ export default function SensorsPage() {
     farmAPI.list().then((f) => { if (f.length) setFarm(f[0]) }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="w-7 h-7 text-green-700 animate-spin" />
-    </div>
-  )
+  if (loading) return <PageSkeleton />
 
   const farmId = farm?.id ?? "tu-farm-uuid"
   const simCmd = `python simulator.py --farm-id ${farmId} --interval 30 --mode mqtt`

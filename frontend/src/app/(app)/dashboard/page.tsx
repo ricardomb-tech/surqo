@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import {
   Wind, Droplets, Thermometer, AlertCircle,
   RefreshCcw, BarChart3, Waves, ArrowRight,
-  Loader2, MapPin, Sprout, Activity, Brain,
+  MapPin, Sprout, Activity, Brain,
   Clock, Wifi, WifiOff, TrendingUp, TrendingDown, Minus,
   ChevronRight, Bell, UserCircle2,
 } from "lucide-react"
@@ -15,6 +15,7 @@ import WeatherBanner from "@/components/WeatherBanner"
 import { farmAPI, alertAPI, analysisAPI, sensorAPI } from "@/lib/api"
 import { getAccessToken } from "@/lib/auth"
 import { cn } from "@/lib/utils"
+import { PageSkeleton } from "@/components/Skeleton"
 import type { Farm, Alert, KPIs, Analysis, TimeseriesPoint } from "@/types"
 import Link from "next/link"
 
@@ -177,14 +178,7 @@ export default function DashboardPage() {
   const hasTimeseries = timeseries.length > 0
   const location      = farm ? [farm.municipality, farm.department].filter(Boolean).join(", ") || "Colombia" : ""
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: LIME_DARK }} />
-        <p className="text-sm text-gray-500 font-medium">Cargando datos de la finca…</p>
-      </div>
-    </div>
-  )
+  if (loading) return <PageSkeleton variant="dashboard" />
 
   if (!farm) return <NoFarm />
 

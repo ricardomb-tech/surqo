@@ -5,6 +5,7 @@ import { farmAPI, alertAPI } from "@/lib/api"
 import type { Alert } from "@/types"
 import { ShieldAlert, CheckCircle2, Loader2, Search, AlertTriangle, XCircle, RefreshCcw, Clock } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
+import { PageSkeleton } from "@/components/Skeleton"
 
 export default function AlertsPage() {
   const [active,    setActive]    = useState<Alert[]>([])
@@ -46,11 +47,7 @@ export default function AlertsPage() {
     (a) => !query || a.title.toLowerCase().includes(query.toLowerCase()) || a.description?.toLowerCase().includes(query.toLowerCase())
   )
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="w-7 h-7 text-green-700 animate-spin" />
-    </div>
-  )
+  if (loading) return <PageSkeleton />
 
   return (
     <div className="min-h-screen pb-16">

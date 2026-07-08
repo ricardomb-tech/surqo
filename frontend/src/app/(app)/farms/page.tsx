@@ -8,6 +8,7 @@ import type { Farm } from "@/types"
 import { Plus, Sprout, MapPin, Loader2, Trash2, X, Edit2, AlertCircle, CheckCircle2, Mountain } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
 import ColombiaLocationSelector from "@/components/ColombiaLocationSelector"
+import { PageSkeleton } from "@/components/Skeleton"
 import "leaflet/dist/leaflet.css"
 
 const FarmMapSelector = dynamic(() => import("@/components/FarmMapSelector"), { ssr: false })
@@ -115,11 +116,7 @@ export default function FarmsPage() {
 
   const atLimit = (planLimits?.farms.used ?? 0) >= (planLimits?.farms.limit ?? 1)
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="w-7 h-7 text-green-700 animate-spin" />
-    </div>
-  )
+  if (loading) return <PageSkeleton />
 
   return (
     <div className="min-h-screen pb-16">

@@ -8,6 +8,7 @@ import {
   Wifi, WifiOff, Radio, Search, Keyboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/Primitives"
+import { PageSkeleton } from "@/components/Skeleton"
 
 const ONLINE_WINDOW_MS = 30 * 60 * 1000  // 30 min sin reportar = desconectado
 
@@ -105,11 +106,7 @@ export default function DevicesPage() {
     finally { setDeleteId(null) }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="w-7 h-7 text-green-700 animate-spin" />
-    </div>
-  )
+  if (loading) return <PageSkeleton />
 
   return (
     <div className="min-h-screen pb-16">
