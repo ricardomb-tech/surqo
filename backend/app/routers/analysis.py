@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import logfire
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
@@ -28,6 +29,7 @@ from app.services.alert_service import AlertService
 from app.services.cache_service import cache_service
 from app.services.climate_service import ClimateService
 from app.services.llm_service import LLMService, PromptEvaluator
+from app.services.sensor_trends import build_sensor_context
 
 router = APIRouter()
 climate_svc = ClimateService()
@@ -83,23 +85,20 @@ async def analyze_farm(
             if not farm or farm.user_id != current_user.user_id:
                 raise HTTPException(status_code=403, detail="Sin acceso a esta finca")
 
+            # Histórico de las últimas 48h → tendencias (mejor que una foto puntual)
+            cutoff = datetime.now(UTC) - timedelta(hours=48)
             stmt = (
                 select(SensorReading)
-                .where(SensorReading.farm_id == body.farm_id)
+                .where(
+                    SensorReading.farm_id == body.farm_id,
+                    SensorReading.created_at >= cutoff,
+                )
                 .order_by(SensorReading.created_at.desc())
-                .limit(1)
+                .limit(500)
             )
             result = await db.execute(stmt)
-            latest = result.scalar_one_or_none()
-            if latest:
-                sensor_dict = {
-                    "Humedad suelo": f"{latest.soil_moisture_pct}%" if latest.soil_moisture_pct else "N/A",
-                    "Temperatura suelo": f"{latest.soil_temp_c}°C" if latest.soil_temp_c else "N/A",
-                    "Temperatura aire": f"{latest.air_temp_c}°C" if latest.air_temp_c else "N/A",
-                    "Humedad aire": f"{latest.air_humidity_pct}%" if latest.air_humidity_pct else "N/A",
-                    "VPD": f"{latest.vpd_kpa} kPa" if latest.vpd_kpa else "N/A",
-                    "Batería": f"{latest.battery_mv}mV" if latest.battery_mv else "N/A",
-                }
+            readings = list(result.scalars().all())
+            sensor_dict = build_sensor_context(readings)
 
         result_data = await llm_svc.analyze_farm(
             climate_data=climate_data,
