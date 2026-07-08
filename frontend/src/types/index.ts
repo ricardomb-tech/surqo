@@ -17,6 +17,17 @@ export interface Farm {
   created_at: string
 }
 
+export interface Device {
+  id: string
+  device_mac: string
+  claim_code: string
+  name: string | null
+  farm_id: string | null
+  firmware_version: string | null
+  last_seen: string | null
+  created_at: string
+}
+
 export interface SensorReading {
   id: string
   device_id: string

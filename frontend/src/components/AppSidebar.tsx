@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import {
   LayoutDashboard, Activity, Bell,
-  FlaskConical, Sprout, LogOut, ChevronRight, UserCircle2,
+  FlaskConical, Sprout, LogOut, ChevronRight, UserCircle2, Cpu,
 } from "lucide-react"
 import { useAuth } from "@/components/AuthProvider"
 import { SurqoIcon } from "@/components/SurqoIcon"
@@ -18,6 +18,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev"
 const NAV = [
   { href: "/dashboard", label: "Dashboard",   icon: LayoutDashboard },
   { href: "/sensors",   label: "Sensores",    icon: Activity },
+  { href: "/devices",   label: "Dispositivos", icon: Cpu },
   { href: "/alerts",    label: "Alertas",     icon: Bell },
   { href: "/analyze",   label: "Análisis IA", icon: FlaskConical },
   { href: "/farms",     label: "Fincas",      icon: Sprout },

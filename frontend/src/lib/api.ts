@@ -1,4 +1,4 @@
-import type { Analysis, Alert, Farm, KPIs, SensorReading, TimeseriesPoint } from "@/types"
+import type { Analysis, Alert, Device, Farm, KPIs, SensorReading, TimeseriesPoint } from "@/types"
 import { getAccessToken } from "@/lib/auth"
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://surqo-api.fly.dev").replace(/^﻿/, "").trim()
@@ -16,6 +16,10 @@ async function fetchJSON<T>(path: string, options?: RequestInit): Promise<T> {
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ detail: resp.statusText }))
     throw new Error(err.detail || `API error: ${resp.status}`)
+  }
+  // 204 No Content (p.ej. DELETE) no trae cuerpo JSON
+  if (resp.status === 204 || resp.headers.get("content-length") === "0") {
+    return undefined as T
   }
   return resp.json()
 }
@@ -78,6 +82,23 @@ export const alertAPI = {
       method: "PATCH",
       body: JSON.stringify({ resolved: true }),
     }),
+}
+
+// Devices (nodos ESP32)
+export const deviceAPI = {
+  list: () => fetchJSON<Device[]>("/api/v1/devices/"),
+  claim: (data: { claim_code: string; farm_id: string; name?: string }) =>
+    fetchJSON<Device>("/api/v1/devices/claim", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  rename: (id: string, name: string) =>
+    fetchJSON<Device>(`/api/v1/devices/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    }),
+  unclaim: (id: string) =>
+    fetchJSON<void>(`/api/v1/devices/${id}`, { method: "DELETE" }),
 }
 
 // KPIs
