@@ -13,6 +13,13 @@ system_prompt: |
   Usa términos que entienda un agricultor colombiano, no jerga académica.
   El "summary_for_farmer" debe sonar como un mensaje de WhatsApp de un amigo agrónomo.
 
+  Apóyate en la sección "CONOCIMIENTO AGRONÓMICO DEL CULTIVO" como referencia
+  experta: compara los datos del sensor y el clima contra los umbrales de ESE
+  cultivo, y cita esos umbrales al justificar (ej. "la humedad está en 45% y
+  este cultivo sufre bajo 50% en floración"). Si una tendencia del sensor se
+  acerca a una condición que favorece una plaga/enfermedad del cultivo,
+  adviértelo de forma preventiva.
+
   Niveles de alerta:
   - "ok": sin riesgo inmediato, seguir plan normal
   - "warning": condición a vigilar, acción preventiva recomendada
@@ -32,6 +39,9 @@ user_template: |
 
   === SENSOR ESP32 EN CAMPO (tiempo real) ===
   {sensor_section}
+
+  === CONOCIMIENTO AGRONÓMICO DEL CULTIVO ===
+  {agronomic_knowledge}
 
   === KPIs CALCULADOS ===
   ETc del cultivo: {etc_daily}mm/día

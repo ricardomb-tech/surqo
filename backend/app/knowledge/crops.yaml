@@ -1,0 +1,128 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Base de conocimiento agronómico — cultivos del trópico colombiano
+#
+# Se recupera por cultivo (clave normalizada) y se inyecta al prompt del análisis
+# IA para que las recomendaciones se apoyen en umbrales reales del cultivo, no en
+# conocimiento genérico del modelo.
+#
+# ⚠️  Valores de PARTIDA basados en rangos agronómicos estándar. Deben ser
+#     revisados y afinados por un agrónomo con datos locales (Córdoba/Caribe).
+#     Editar este archivo NO requiere tocar código.
+# ═══════════════════════════════════════════════════════════════════════════
+
+maiz:
+  nombre: "Maíz"
+  humedad_suelo: "Óptimo 60–80% de capacidad de campo. Regar si baja de ~50%. El suelo seco en floración es lo más dañino."
+  temperatura: "Óptimo 21–30 °C. Estrés por calor sobre 35 °C. Germinación necesita suelo > 15 °C."
+  vpd: "Ideal 0.8–1.5 kPa. VPD alto (>1.8) acelera la pérdida de agua de la planta."
+  etapas_criticas: "Floración/espigado (V12–R1) es la etapa crítica: déficit hídrico aquí puede reducir el rendimiento hasta 50%. Llenado de grano: mantener humedad estable."
+  plagas_clima: "Gusano cogollero (Spodoptera): favorecido por calor + sequía. Pudriciones de mazorca por hongos: favorecidas por alta humedad + calor."
+  notas: "En Córdoba, alinear siembra con el inicio de lluvias. Vigilar cogollero en periodos secos y calurosos."
+
+arroz:
+  nombre: "Arroz"
+  humedad_suelo: "En riego por inundación, mantener lámina de agua o suelo saturado según etapa. Evitar que el suelo se seque en floración."
+  temperatura: "Óptimo 25–35 °C. Temperaturas bajo 20 °C o sobre 38 °C afectan el llenado."
+  vpd: "Tolera VPD moderado; el estrés viene más por manejo del agua que por VPD."
+  etapas_criticas: "Panícula/floración: máxima sensibilidad al estrés hídrico y térmico."
+  plagas_clima: "Añublo del arroz (Pyricularia): favorecido por alta humedad y follaje mojado prolongado. Sogata (vector de virus): en clima cálido."
+  notas: "El manejo del agua es el factor dominante; usar el sensor de humedad para no dejar secar en etapas críticas."
+
+cafe:
+  nombre: "Café"
+  humedad_suelo: "Mantener húmedo sin encharcar. Sensible a sequía durante floración y llenado del grano. Buen drenaje indispensable."
+  temperatura: "Óptimo 18–24 °C (típico 1200–1800 msnm). Sobre 30 °C hay estrés; suele requerir sombrío."
+  vpd: "Prefiere VPD bajo-moderado; ambientes muy secos estresan la planta."
+  etapas_criticas: "Floración (disparada por lluvia tras periodo seco) y llenado del grano."
+  plagas_clima: "Broca (Hypothenemus hampei): favorecida por calor + humedad. Roya (Hemileia): favorecida por alta humedad y mojado foliar."
+  notas: "Vigilar roya cuando hay lluvias frecuentes y follaje mojado; broca en granos en periodos cálidos húmedos."
+
+cacao:
+  nombre: "Cacao"
+  humedad_suelo: "Requiere humedad constante; sensible tanto a sequía como a encharcamiento. Mulching ayuda a retener humedad."
+  temperatura: "Óptimo 21–32 °C, con alta humedad relativa y sombrío. Sensible a golpes de calor y viento seco."
+  vpd: "Prefiere VPD bajo (ambiente húmedo). VPD alto estresa el árbol."
+  etapas_criticas: "Formación y llenado de mazorca: el estrés hídrico reduce cuaje y tamaño."
+  plagas_clima: "Monilia y escoba de bruja: favorecidas por alta humedad y lluvia. Pudrición parda (Phytophthora): en exceso de humedad."
+  notas: "Balance fino: ni seco ni encharcado. Buen drenaje + sombra reducen enfermedades fungosas."
+
+platano:
+  nombre: "Plátano / Banano"
+  humedad_suelo: "Alta demanda de agua; mantener suelo consistentemente húmedo. Raíces superficiales, sensibles a sequía."
+  temperatura: "Óptimo 26–30 °C. Crecimiento se frena bajo 15 °C."
+  vpd: "Prefiere humedad alta; VPD alto aumenta el consumo de agua."
+  etapas_criticas: "Diferenciación floral y llenado del racimo: el déficit hídrico reduce el peso del racimo."
+  plagas_clima: "Sigatoka negra: favorecida por clima cálido y húmedo con follaje mojado. Picudo negro: en focos húmedos."
+  notas: "ETc alta: en periodos secos requiere riego frecuente. Buen drenaje para evitar pudrición radicular."
+
+aguacate:
+  nombre: "Aguacate"
+  humedad_suelo: "Riego moderado y suelo MUY bien drenado. Muy sensible al encharcamiento (más peligroso que la sequía leve)."
+  temperatura: "Óptimo 20–30 °C según variedad. Sensible a calor extremo y a heladas en altura."
+  vpd: "VPD moderado; ambientes muy secos con calor causan caída de flores/frutos."
+  etapas_criticas: "Floración y amarre de fruto: evitar tanto estrés hídrico como exceso de agua."
+  plagas_clima: "Pudrición radicular (Phytophthora cinnamomi): favorecida por exceso de humedad y mal drenaje — la amenaza #1."
+  notas: "NO sobre-regar. Si el sensor marca humedad alta sostenida, alertar por riesgo de Phytophthora."
+
+yuca:
+  nombre: "Yuca"
+  humedad_suelo: "Tolerante a sequía; requiere poca agua. Evitar encharcamiento (pudre la raíz)."
+  temperatura: "Óptimo 25–29 °C. Muy adaptada a calor."
+  vpd: "Tolera VPD alto mejor que la mayoría de cultivos."
+  etapas_criticas: "Primeros 3–4 meses (establecimiento): es cuando más responde al agua; después es muy rústica."
+  plagas_clima: "Ácaros y mosca blanca: favorecidos por sequía prolongada y calor."
+  notas: "No sobre-regar: la yuca sufre más por exceso que por falta de agua. Priorizar drenaje."
+
+sorgo:
+  nombre: "Sorgo"
+  humedad_suelo: "Muy tolerante a sequía. Regar solo en floración y llenado si hay déficit marcado."
+  temperatura: "Óptimo 25–32 °C; tolera calor mejor que el maíz."
+  vpd: "Tolera VPD alto."
+  etapas_criticas: "Floración y llenado de grano."
+  plagas_clima: "Mosca del sorgo y áfidos: en periodos cálidos."
+  notas: "Buena opción para zonas secas; no requiere riego frecuente."
+
+algodon:
+  nombre: "Algodón"
+  humedad_suelo: "Necesita humedad en floración y formación de bellota; evitar encharcamiento."
+  temperatura: "Óptimo 25–32 °C."
+  vpd: "Tolera VPD moderado-alto."
+  etapas_criticas: "Floración y llenado de bellotas."
+  plagas_clima: "Picudo del algodonero y gusanos: favorecidos por calor. Vigilancia constante."
+  notas: "Cultivo con manejo intensivo de plagas; correlacionar calor con brotes."
+
+name:
+  nombre: "Ñame"
+  humedad_suelo: "Humedad constante en desarrollo del tubérculo; buen drenaje para evitar pudrición."
+  temperatura: "Óptimo 25–30 °C, alta humedad."
+  vpd: "Prefiere ambiente húmedo."
+  etapas_criticas: "Engrosamiento del tubérculo."
+  plagas_clima: "Antracnosis: favorecida por alta humedad y lluvia."
+  notas: "Buen tutorado y drenaje; vigilar antracnosis en épocas lluviosas."
+
+cana:
+  nombre: "Caña de azúcar"
+  humedad_suelo: "Alta demanda de agua en fase de crecimiento; reducir antes de cosecha para concentrar azúcar."
+  temperatura: "Óptimo 26–33 °C."
+  vpd: "Consumo de agua sube con VPD alto."
+  etapas_criticas: "Gran crecimiento (macollamiento y elongación)."
+  plagas_clima: "Barrenador (Diatraea): en clima cálido. Roya: en alta humedad."
+  notas: "Manejo de agua por fase: mucha en crecimiento, restricción antes de cosecha."
+
+palma:
+  nombre: "Palma de aceite"
+  humedad_suelo: "Alta y constante demanda de agua; sensible a déficit hídrico prolongado."
+  temperatura: "Óptimo 25–33 °C, alta humedad."
+  vpd: "Prefiere humedad alta; VPD alto sostenido reduce racimos."
+  etapas_criticas: "Formación de racimos (el déficit hoy se refleja en cosecha meses después)."
+  plagas_clima: "Pudrición del cogollo: asociada a exceso de humedad/mal drenaje. Anillo rojo: por picudo."
+  notas: "Llevar registro largo: el estrés hídrico impacta la producción con meses de retraso."
+
+_default:
+  nombre: "Cultivo tropical (guía general)"
+  humedad_suelo: "Mantener humedad adecuada según etapa; evitar tanto sequía prolongada como encharcamiento."
+  temperatura: "La mayoría de cultivos tropicales prefieren 22–32 °C; sobre 35 °C hay estrés por calor."
+  vpd: "VPD alto (>1.8 kPa) sostenido indica alta demanda evaporativa y estrés potencial."
+  etapas_criticas: "Floración y llenado/formación del producto suelen ser las más sensibles al estrés hídrico."
+  plagas_clima: "Plagas de insectos tienden a aumentar con calor + sequía; enfermedades fungosas con alta humedad + follaje mojado."
+  notas: "Correlacionar las tendencias del sensor con la etapa del cultivo para anticipar riego y plagas."

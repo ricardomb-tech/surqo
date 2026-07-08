@@ -302,6 +302,9 @@ class LLMService:
                     f"  {k}: {v}" for k, v in sensor_data.items()
                 )
 
+            from app.services.agronomy_service import get_crop_knowledge
+            agronomic_knowledge = get_crop_knowledge(crop_type)
+
             user_content = prompt_cfg["user_template"].format(
                 farm_name=farm_name,
                 crop_type=crop_type,
@@ -316,6 +319,7 @@ class LLMService:
                 vpd_avg=climate_data.vpd_avg,
                 uv_max=climate_data.uv_max_7d,
                 sensor_section=sensor_section,
+                agronomic_knowledge=agronomic_knowledge,
                 etc_daily=etc_daily,
                 water_deficit=round(water_deficit, 1),
                 water_stress_index=min(10.0, round(water_deficit / 5, 1)),
