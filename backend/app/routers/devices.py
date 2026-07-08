@@ -23,8 +23,9 @@ from app.websocket.manager import manager
 router = APIRouter()
 limiter = Limiter(key_func=rate_limit_key)
 
-# Ventana para considerar un nodo "recién conectado" en la detección automática
-DISCOVERY_WINDOW_MIN = 10
+# Ventana para considerar un nodo "recién conectado" en la detección automática.
+# Mayor que el deep sleep del nodo (15 min) para que no desaparezca entre ciclos.
+DISCOVERY_WINDOW_MIN = 20
 
 
 @router.post("/register", response_model=DeviceRegisterResponse)
