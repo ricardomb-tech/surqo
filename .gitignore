@@ -17,6 +17,8 @@ env/
 .env
 backend/.env
 frontend/.env.local
+# Firmware — credenciales MQTT / clave del portal (usar secrets.example.h como plantilla)
+firmware/surqo_node/secrets.h
 
 # .env.production es seguro subirlo — solo contiene NEXT_PUBLIC_* (ya expuestos al browser)
 # frontend/.env.production → se sube para que Vercel tenga las variables correctas

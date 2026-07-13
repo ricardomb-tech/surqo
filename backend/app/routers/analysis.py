@@ -110,6 +110,7 @@ async def analyze_farm(
 
         analysis = Analysis(
             farm_id=body.farm_id,
+            user_id=current_user.user_id,
             farm_name=body.farm_name,
             crop_type=body.crop_type,
             alert_level=result_data.alert_level,
@@ -181,28 +182,35 @@ async def get_history(farm_id: uuid.UUID, current_user: CurrentUser, db: DBSessi
     return list(result.scalars().all())
 
 
+async def _verify_analysis_access(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> Analysis:
+    """Devuelve el análisis solo si el usuario es su dueño. Falla cerrado: si el
+    dueño no es identificable (sin user_id y sin finca del usuario), deniega."""
+    analysis = await db.get(Analysis, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+    if current_user.is_admin:
+        return analysis
+
+    # 1) Dueño directo — cubre análisis sin finca o cuya finca fue borrada.
+    if analysis.user_id is not None:
+        if analysis.user_id != current_user.user_id:
+            raise HTTPException(status_code=404, detail="Análisis no encontrado")
+        return analysis
+
+    # 2) Legacy (sin user_id): resolver por la finca.
+    if analysis.farm_id is not None:
+        farm = await db.get(Farm, analysis.farm_id)
+        if farm and farm.user_id == current_user.user_id:
+            return analysis
+
+    # Sin dueño identificable → denegar.
+    raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+
 @router.get("/{analysis_id}", response_model=AnalysisResponse)
 async def get_analysis(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> Analysis:
-    analysis = await db.get(Analysis, analysis_id)
-    if not analysis:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    # Verificar que el análisis pertenece a una finca del usuario
-    if analysis.farm_id:
-        farm = await db.get(Farm, analysis.farm_id)
-        if not farm or farm.user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Sin acceso a este análisis")
-    return analysis
-
-
-async def _verify_analysis_access(analysis_id: uuid.UUID, current_user: CurrentUser, db: DBSession) -> Analysis:
-    analysis = await db.get(Analysis, analysis_id)
-    if not analysis:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    if analysis.farm_id:
-        farm = await db.get(Farm, analysis.farm_id)
-        if not farm or farm.user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Sin acceso")
-    return analysis
+    return await _verify_analysis_access(analysis_id, current_user, db)
 
 
 @router.get("/{analysis_id}/chat-sessions", response_model=list[ChatSession])
@@ -284,12 +292,8 @@ async def chat_with_analysis(
 
     context: dict | None = None
     if body.analysis_id:
-        analysis = await db.get(Analysis, body.analysis_id)
+        analysis = await _verify_analysis_access(body.analysis_id, current_user, db)
         if analysis:
-            if analysis.farm_id:
-                farm = await db.get(Farm, analysis.farm_id)
-                if farm and farm.user_id != current_user.user_id:
-                    raise HTTPException(status_code=403, detail="Sin acceso a este análisis")
             context = {
                 "finca": analysis.farm_name,
                 "cultivo": analysis.crop_type,

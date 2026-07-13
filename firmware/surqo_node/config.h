@@ -1,5 +1,10 @@
 #pragma once
 
+// Ensure Arduino core types and macros are available when this header is
+// included from .ino files or other translation units. This helps IDEs and
+// build systems resolve include paths and reduces "include errors detected"
+#include <Arduino.h>
+
 // ═══════════════════════════════════════════════
 // SURQO NODE — Configuración del nodo ESP32
 // "Del surco al insight"
@@ -10,15 +15,19 @@
 // celular. Tampoco hay FARM_ID: el nodo se identifica por su MAC y el usuario lo
 // empareja con su finca desde la app usando el código que muestra el portal/serial.
 
+// Secretos (credenciales MQTT y clave del portal). NO se versionan: viven en
+// secrets.h, que está en .gitignore. Copia secrets.example.h -> secrets.h y
+// rellena los valores reales antes de compilar.
+#include "secrets.h"
+
 // Portal cautivo — se abre solo si no hay WiFi guardado (o si falla la conexión)
-#define AP_PASSWORD       "surqo1234"   // Clave para conectarse a la red de configuración
+// AP_PASSWORD lo define secrets.h
 #define PORTAL_TIMEOUT_S  180           // Segundos que el portal espera antes de rendirse
 
 // HiveMQ Cloud MQTT (compartido por todos los nodos)
+// MQTT_USERNAME y MQTT_PASSWORD los define secrets.h
 #define MQTT_HOST         "4fd28440312d4127bb4fc40a08d21e18.s1.eu.hivemq.cloud"
 #define MQTT_PORT         8883
-#define MQTT_USERNAME     "Ricardo"
-#define MQTT_PASSWORD     "R01010011k*"
 
 // Backend Surqo
 #define API_BASE_URL      "https://surqo-api.fly.dev"

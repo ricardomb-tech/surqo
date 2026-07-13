@@ -18,6 +18,15 @@ class Analysis(Base):
     farm_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("farms.id"), nullable=True, index=True
     )
+    # Dueño del análisis. Independiente de farm_id para que un análisis sin finca
+    # (o cuya finca se borró) siga teniendo un dueño verificable. Nullable por
+    # filas legacy anteriores a esta columna.
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("user_profiles.user_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     farm_name: Mapped[str] = mapped_column(String(200))
     crop_type: Mapped[str] = mapped_column(String(100))
     alert_level: Mapped[str] = mapped_column(String(20))
