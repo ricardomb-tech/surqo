@@ -157,10 +157,28 @@ export default function DevicesPage() {
         {/* Cómo conectar */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Cómo conectar un nodo nuevo</p>
-          <ol className="space-y-2 text-sm text-gray-600">
-            <li className="flex gap-2"><span className="font-black text-green-600">1.</span> Enciende el nodo. La 1ª vez crea una red WiFi <strong>Surqo-Setup-XXXX</strong>: conéctate desde el celular y elige tu WiFi.</li>
-            <li className="flex gap-2"><span className="font-black text-green-600">2.</span> Toca <strong>“Conectar nodo”</strong> aquí y espera: el nodo aparece solo.</li>
-            <li className="flex gap-2"><span className="font-black text-green-600">3.</span> Toca <strong>“Este es mi nodo”</strong> y listo — empieza a recibir datos.</li>
+          <ol className="space-y-3 text-sm text-gray-600">
+            <li className="flex gap-2">
+              <span className="font-black text-green-600">1.</span>
+              <span>Enciende el nodo. La 1ª vez crea su propia red WiFi llamada <strong>Surqo-Setup-XXXX</strong> para poder configurarse.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-black text-green-600">2.</span>
+              <div>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 mb-1">
+                  <Wifi className="w-3 h-3" />Ajustes de WiFi del celular — no esta app
+                </span>
+                <p>Ahí busca la red <strong>Surqo-Setup-XXXX</strong> y conéctate (usa la contraseña que configuraste en el nodo). Se abrirá una página — <strong>esa página es del nodo, no de Surqo</strong> — ahí eliges tu WiFi normal de casa/finca y escribes <strong>su</strong> contraseña. Tienes unos 3 minutos antes de que se cierre.</p>
+              </div>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-black text-green-600">3.</span>
+              <span>Cuando tu celular vuelva a tu WiFi normal (la red Surqo-Setup desaparece), regresa a esta pantalla y toca <strong>“Conectar nodo”</strong> — el nodo aparece solo en unos segundos.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-black text-green-600">4.</span>
+              <span>Toca <strong>“Es mío”</strong> junto al nodo detectado y listo — empieza a recibir datos.</span>
+            </li>
           </ol>
         </div>
 
