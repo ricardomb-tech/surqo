@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class AlertResponse(BaseModel):
@@ -30,5 +30,5 @@ class AlertResolveRequest(BaseModel):
 
 
 class AlertNotifyRequest(BaseModel):
-    to_email: str
+    to_email: EmailStr
     farm_name: str = "Finca"

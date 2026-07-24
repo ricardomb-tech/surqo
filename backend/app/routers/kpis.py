@@ -50,7 +50,9 @@ async def get_vpd_history(farm_id: uuid.UUID, db: DBSession, current_user: Curre
 
 @router.get("/farm/{farm_id}/water-balance")
 async def get_water_balance(farm_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> dict:
-    """Balance hídrico estimado de los últimos 7 días."""
+    """Balance hídrico aproximado de los últimos 7 días, basado solo en
+    lecturas de sensor (sin datos reales de lluvia — para eso usar
+    /analysis/analyze, que sí cruza con el pronóstico de Open-Meteo)."""
     await _require_farm_access(db, farm_id, current_user)
     since = datetime.now(UTC) - timedelta(days=7)
     stmt = (
@@ -63,22 +65,32 @@ async def get_water_balance(farm_id: uuid.UUID, db: DBSession, current_user: Cur
     result = await db.execute(stmt)
     readings = result.scalars().all()
 
-    if readings:
-        temps = [float(r.air_temp_c) for r in readings if r.air_temp_c]
-        _ = sum(temps) / len(temps) if temps else 28.0  # noqa: F841
+    if not readings:
+        return {"error": "Sin lecturas en los últimos 7 días"}
 
-    et0_approx = 4.5  # mm/día approx para zona tropical colombiana
+    temps = [float(r.air_temp_c) for r in readings if r.air_temp_c is not None]
+    avg_temp = sum(temps) / len(temps) if temps else None
+
+    # ET0 aproximada por temperatura (referencia tropical colombiana ~4.5mm/día
+    # a 28°C, +/-0.1mm por grado de desviación). Es una estimación gruesa —
+    # no hay datos de lluvia reales en esta ruta, así que NO se fabrica un
+    # 0.0 que subestimaría el déficit hídrico real.
+    et0_approx = 4.5 + ((avg_temp - 28.0) * 0.1 if avg_temp is not None else 0.0)
     etc_7d = kpi_svc.calculate_etc(et0_approx * 7, "maíz")
-    rain_approx = 0.0
 
     return {
         "farm_id": str(farm_id),
         "period_days": 7,
+        "avg_air_temp_c": round(avg_temp, 1) if avg_temp is not None else None,
         "et0_acumulada_mm": round(et0_approx * 7, 1),
         "etc_acumulada_mm": round(etc_7d, 1),
-        "lluvia_acumulada_mm": rain_approx,
-        "deficit_hidrico_mm": kpi_svc.calculate_water_deficit(etc_7d, rain_approx),
-        "nota": "ETc calculada con ET0 estimada. Para mayor precisión, ejecutar /analysis/analyze",
+        "lluvia_acumulada_mm": None,
+        "deficit_hidrico_mm": None,
+        "nota": (
+            "ET0/ETc estimadas solo con temperatura de sensor, sin datos reales de "
+            "lluvia — no se puede calcular déficit hídrico aquí. "
+            "Ejecutar /analysis/analyze para el balance real con pronóstico Open-Meteo."
+        ),
     }
 
 

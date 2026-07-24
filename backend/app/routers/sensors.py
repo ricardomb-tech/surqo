@@ -95,7 +95,9 @@ async def get_timeseries(
     farm_id: uuid.UUID,
     db: DBSession,
     current_user: CurrentUser,
-    hours: int = Query(default=24, ge=1, le=8760),
+    # Tope de 30 días: sin esto un rango largo (hasta 8760h = 1 año) carga
+    # cientos de miles de filas en memoria en una VM de 512MB por request.
+    hours: int = Query(default=24, ge=1, le=720),
     metric: str = "soil_moisture_pct",
 ) -> list[TimeseriesPoint]:
     await _require_farm_access(db, farm_id, current_user)

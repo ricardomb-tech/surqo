@@ -127,7 +127,8 @@ async def test_get_alert_history_limit(client: AsyncClient, db_session: AsyncSes
 
 @pytest.mark.asyncio
 async def test_get_alert_by_id(client: AsyncClient, db_session: AsyncSession) -> None:
-    alert = await _create_alert(db_session)
+    farm_id = await _create_user_farm(client)
+    alert = await _create_alert(db_session, farm_id=farm_id)
     resp = await client.get(f"/api/v1/alerts/{alert.id}")
     assert resp.status_code == 200
     assert resp.json()["id"] == str(alert.id)
@@ -139,6 +140,15 @@ async def test_get_alert_not_found(client: AsyncClient) -> None:
     assert resp.status_code == 404
 
 
+@pytest.mark.asyncio
+async def test_get_orphan_alert_denied(client: AsyncClient, db_session: AsyncSession) -> None:
+    """Una alerta sin finca (farm_id None) no tiene dueño identificable —
+    debe denegarse en vez de ser visible para cualquier usuario autenticado."""
+    alert = await _create_alert(db_session)  # farm_id=None
+    resp = await client.get(f"/api/v1/alerts/{alert.id}")
+    assert resp.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # PATCH /{alert_id}/resolve
 # ---------------------------------------------------------------------------
@@ -146,7 +156,8 @@ async def test_get_alert_not_found(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_resolve_alert(client: AsyncClient, db_session: AsyncSession) -> None:
-    alert = await _create_alert(db_session)
+    farm_id = await _create_user_farm(client)
+    alert = await _create_alert(db_session, farm_id=farm_id)
     resp = await client.patch(
         f"/api/v1/alerts/{alert.id}/resolve",
         json={"resolved": True},
@@ -159,13 +170,24 @@ async def test_resolve_alert(client: AsyncClient, db_session: AsyncSession) -> N
 
 @pytest.mark.asyncio
 async def test_unresolve_alert(client: AsyncClient, db_session: AsyncSession) -> None:
-    alert = await _create_alert(db_session, is_resolved=True)
+    farm_id = await _create_user_farm(client)
+    alert = await _create_alert(db_session, farm_id=farm_id, is_resolved=True)
     resp = await client.patch(
         f"/api/v1/alerts/{alert.id}/resolve",
         json={"resolved": False},
     )
     assert resp.status_code == 200
     assert resp.json()["is_resolved"] is False
+
+
+@pytest.mark.asyncio
+async def test_resolve_orphan_alert_denied(client: AsyncClient, db_session: AsyncSession) -> None:
+    alert = await _create_alert(db_session)  # farm_id=None
+    resp = await client.patch(
+        f"/api/v1/alerts/{alert.id}/resolve",
+        json={"resolved": True},
+    )
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio

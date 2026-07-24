@@ -28,10 +28,14 @@ async def _verify_alert_owner(db: DBSession, alert_id: uuid.UUID, user: UserProf
     alert = await db.get(Alert, alert_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alerta no encontrada")
-    if alert.farm_id:
-        farm = await db.get(Farm, alert.farm_id)
-        if not farm or farm.user_id != user.user_id:
-            raise HTTPException(status_code=403, detail="Sin acceso a esta alerta")
+    # Una alerta sin finca (farm_id None) no tiene dueño identificable —
+    # denegar por defecto en vez de permitir acceso a cualquier usuario
+    # autenticado (las listas /active y /history ya excluyen huérfanas).
+    if not alert.farm_id:
+        raise HTTPException(status_code=403, detail="Sin acceso a esta alerta")
+    farm = await db.get(Farm, alert.farm_id)
+    if not farm or farm.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Sin acceso a esta alerta")
     return alert
 
 

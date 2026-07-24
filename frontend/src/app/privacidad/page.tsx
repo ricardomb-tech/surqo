@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Footer } from "@/components/Footer"
 
-const LAST_UPDATED = "12 de junio de 2026"
+const LAST_UPDATED = "17 de julio de 2026"
 
 export const metadata = {
   title: "Política de Privacidad — Surqo",
@@ -26,6 +26,9 @@ export default function PrivacidadPage() {
           <Section title="1. Quiénes somos">
             <p>
               Surqo (&quot;nosotros&quot;, &quot;nuestro&quot; o &quot;la plataforma&quot;) es una plataforma de inteligencia agroclimática para el campo colombiano, desarrollada por Ricardo Martínez. Operamos desde Montería, Córdoba, Colombia. Puedes contactarnos en <a href="mailto:hola@surqo.co" className="text-surqo-green-bright hover:underline">hola@surqo.co</a>.
+            </p>
+            <p>
+              Esta política se rige por la <strong>Ley 1581 de 2012</strong> (Ley de Protección de Datos Personales de Colombia, &quot;habeas data&quot;) y su decreto reglamentario 1377 de 2013. Surqo actúa como Responsable del Tratamiento de tus datos personales.
             </p>
           </Section>
 
@@ -96,6 +99,15 @@ export default function PrivacidadPage() {
             </ul>
             <p>
               Para ejercer cualquiera de estos derechos escríbenos a <a href="mailto:hola@surqo.co" className="text-surqo-green-bright hover:underline">hola@surqo.co</a> con el asunto &quot;Solicitud de privacidad&quot;. Responderemos en máximo 15 días hábiles.
+            </p>
+            <p>
+              Si consideras que no atendimos tu solicitud correctamente, puedes presentar una queja ante la <strong>Superintendencia de Industria y Comercio (SIC)</strong>, autoridad de vigilancia y control en protección de datos personales en Colombia.
+            </p>
+          </Section>
+
+          <Section title="7.1 Registro Nacional de Bases de Datos (RNBD)">
+            <p>
+              La Ley 1581 exige que los responsables del tratamiento de datos personales inscriban sus bases de datos en el RNBD, administrado por la SIC. Surqo está en proceso de completar este registro conforme a los umbrales aplicables a su tamaño operativo actual; puedes solicitar el estado de este trámite escribiendo a <a href="mailto:hola@surqo.co" className="text-surqo-green-bright hover:underline">hola@surqo.co</a>.
             </p>
           </Section>
 

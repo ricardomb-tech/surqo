@@ -56,44 +56,61 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        CAMPO / FINCA                            │
-│                                                                 │
-│  ┌──────────────┐    TLS/MQTT (8883)    ┌──────────────────┐   │
-│  │  ESP32 Node  │ ──────────────────►  │  HiveMQ Cloud    │   │
-│  │  DHT22       │                       │  (Broker MQTT)   │   │
-│  │  DS18B20     │                       └────────┬─────────┘   │
-│  │  Capacitivo  │                                │             │
-│  │  ML8511 UV   │                      subscribe │             │
-│  └──────────────┘                                ▼             │
-│                                        ┌──────────────────┐    │
-│  ┌──────────────────┐                  │  FastAPI Backend │    │
-│  │  IoT Simulator   │ ── MQTT ──────►  │  (Fly.io — dfw)  │    │
-│  │  (Python)        │                  │                  │    │
-│  └──────────────────┘                  │  MQTT Consumer   │    │
-│                                        │  LLM Service     │    │
-│                                        │  Alert Service   │    │
-│                                        │  KPI Engine      │    │
-│                                        │  WebSocket Mgr   │    │
-│                                        └────────┬─────────┘    │
-└────────────────────────────────────────────────┼──────────────┘
-                                                  │
-                              ┌───────────────────┼───────────────────┐
-                              │                   │                   │
-                     Supabase PostgreSQL    Upstash Redis      Open-Meteo API
-                     (DB + Auth)            (Cache TTL)        (Clima 7 días)
-                              │
-                    ┌─────────┴──────────────────────┐
-                    │  WebSocket (wss://)             │
-                    │  REST API (/api/v1/*)           │
-                    ▼                                 ▼
-          ┌─────────────────────────────────────────────────┐
-          │              Next.js 15 Frontend                │
-          │         (Vercel — surqo.online)                 │
-          │                                                 │
-          │  Dashboard · Sensores · Análisis IA             │
-          │  Alertas · Fincas · Upgrade                     │
-          └─────────────────────────────────────────────────┘
+flowchart LR
+
+    subgraph IoT["🌱 IoT Layer"]
+        ESP32["ESP32 Sensor Node"]
+        MQTT["MQTT TLS :8883"]
+        HIVE["HiveMQ Cloud Broker"]
+
+        ESP32 --> MQTT --> HIVE
+    end
+
+    subgraph Backend["🚀 Backend - Fly.io (DFW)"]
+        API["FastAPI"]
+
+        MQTTC["MQTT Consumer"]
+        KPI["KPI Engine"]
+        ALERT["Alert Service"]
+        LLM["LLM Service"]
+        WS["WebSocket Manager"]
+
+        API --> MQTTC
+        API --> KPI
+        API --> ALERT
+        API --> LLM
+        API --> WS
+    end
+
+    subgraph Services["☁️ Cloud Services"]
+        DB["Supabase PostgreSQL"]
+        REDIS["Upstash Redis"]
+        GROQ["Groq / Anthropic"]
+    end
+
+    subgraph Front["🖥️ Frontend"]
+        NEXT["Next.js 16<br/>Vercel<br/>surqo.online"]
+
+        DASH["Dashboard"]
+        SENSOR["Sensores"]
+        ANALYSIS["Análisis IA"]
+        NOTIFY["Alertas"]
+
+        NEXT --> DASH
+        NEXT --> SENSOR
+        NEXT --> ANALYSIS
+        NEXT --> NOTIFY
+    end
+
+    HIVE --> API
+
+    API --> DB
+    API --> REDIS
+    API --> GROQ
+
+    API -->|"REST API"| NEXT
+    API -->|"WebSocket"| NEXT
+    
 ```
 
 ### Flujo de datos completo
@@ -817,8 +834,11 @@ Browser          Supabase Auth          FastAPI Backend
 # Ejecutar en Supabase SQL Editor — en orden:
 # 001_initial_schema.sql    → tablas base
 # 002_analysis_quota.sql    → analyses_used + tokens_used en user_profiles
+# 003_devices.sql           → tabla devices (provisioning por MAC)
+# 004_analysis_user_id.sql  → user_id en analyses
 # enable_rls.sql            → Row Level Security
 # data_retention.sql        → auto-delete lecturas > 90 días
+# 005_security_hardening.sql → cierra auto-escalación de privilegios y RLS de filas huérfanas
 ```
 
 ---

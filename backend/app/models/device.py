@@ -37,6 +37,13 @@ class Device(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    # Secreto TOFU (ver migración 006): una vez emitido, toda lectura de este
+    # dispositivo debe incluirlo o se descarta. NULL = todavía sin provisionar
+    # (dispositivo viejo o fuera de la ventana de claim).
+    device_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    pending_secret_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     @staticmethod
     def normalize_mac(mac: str) -> str:

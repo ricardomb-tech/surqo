@@ -45,6 +45,22 @@ def _parse_json_response(raw: str) -> dict:
     raise json.JSONDecodeError("No se encontró JSON válido en la respuesta del modelo", text, 0)
 
 
+async def _post_with_retry(client: httpx.AsyncClient, url: str, **kwargs) -> httpx.Response:
+    """POST con un reintento ante timeout o error transitorio (5xx/429) del
+    proveedor — evita que un fallo momentáneo de Groq se propague directo
+    como 500 al usuario en medio de un análisis."""
+    try:
+        r = await client.post(url, **kwargs)
+        r.raise_for_status()
+        return r
+    except (httpx.TimeoutException, httpx.HTTPStatusError) as e:
+        if isinstance(e, httpx.HTTPStatusError) and e.response.status_code < 500 and e.response.status_code != 429:
+            raise
+        r = await client.post(url, **kwargs)
+        r.raise_for_status()
+        return r
+
+
 class LLMProvider(Protocol):
     """Interfaz común para todos los proveedores."""
     async def complete(
@@ -87,8 +103,7 @@ class GroqProvider:
             "Content-Type": "application/json",
         }
         async with httpx.AsyncClient(timeout=60) as client:
-            r = await client.post(self.BASE_URL, json=payload, headers=headers)
-            r.raise_for_status()
+            r = await _post_with_retry(client, self.BASE_URL, json=payload, headers=headers)
 
         data = r.json()
         text = data["choices"][0]["message"]["content"]
@@ -127,8 +142,7 @@ class GroqProvider:
         }
         headers = {"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"}
         async with httpx.AsyncClient(timeout=45) as client:
-            r = await client.post(self.BASE_URL, json=payload, headers=headers)
-            r.raise_for_status()
+            r = await _post_with_retry(client, self.BASE_URL, json=payload, headers=headers)
         data = r.json()
         usage = data.get("usage", {})
         return data["choices"][0]["message"]["content"], usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)

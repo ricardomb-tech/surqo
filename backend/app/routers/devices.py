@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -27,6 +28,10 @@ limiter = Limiter(key_func=rate_limit_key)
 # Mayor que el deep sleep del nodo (15 min) para que no desaparezca entre ciclos.
 DISCOVERY_WINDOW_MIN = 20
 
+# Ventana TOFU tras el claim: el primer /register que llegue en estos minutos
+# se asume el nodo real (recién encendido por su dueño) y recibe el secreto.
+SECRET_TOFU_WINDOW_MIN = 5
+
 
 @router.post("/register", response_model=DeviceRegisterResponse)
 @limiter.limit("30/minute")
@@ -53,9 +58,33 @@ async def register_device(request: Request, body: DeviceRegister, db: DBSession)
         if body.firmware_version:
             device.firmware_version = body.firmware_version
 
+    # TOFU: si estamos dentro de la ventana abierta por /claim y todavía no
+    # se emitió secreto, este /register es (asumimos) el nodo real recién
+    # encendido por su dueño — se le entrega el secreto UNA sola vez.
+    issued_secret: str | None = None
+    now = datetime.now(UTC)
+    pending_until = device.pending_secret_until
+    if pending_until is not None and pending_until.tzinfo is None:
+        # SQLite (tests) no preserva tz-awareness; Postgres/asyncpg sí. Se
+        # asume UTC en ambos casos porque así se escribió el valor.
+        pending_until = pending_until.replace(tzinfo=UTC)
+    if (
+        device.farm_id is not None
+        and device.device_secret is None
+        and pending_until is not None
+        and now < pending_until
+    ):
+        issued_secret = secrets.token_hex(16)
+        device.device_secret = issued_secret
+        device.pending_secret_until = None
+
     await db.commit()
     await db.refresh(device)
-    return DeviceRegisterResponse(claim_code=device.claim_code, is_claimed=device.farm_id is not None)
+    return DeviceRegisterResponse(
+        claim_code=device.claim_code,
+        is_claimed=device.farm_id is not None,
+        device_secret=issued_secret,
+    )
 
 
 @router.get("/", response_model=list[DeviceResponse])
@@ -111,6 +140,12 @@ async def claim_device(
     elif not device.name:
         device.name = f"Nodo {device.claim_code}"
 
+    # Abre (o reabre) la ventana TOFU solo si el dispositivo aún no tiene
+    # secreto — si ya lo tenía (re-claim del mismo dueño sin haber
+    # desvinculado), no hace falta re-provisionar.
+    if device.device_secret is None:
+        device.pending_secret_until = datetime.now(UTC) + timedelta(minutes=SECRET_TOFU_WINDOW_MIN)
+
     await db.commit()
     await db.refresh(device)
     return device
@@ -137,6 +172,10 @@ async def unclaim_device(device_id: uuid.UUID, current_user: CurrentUser, db: DB
         raise HTTPException(status_code=404, detail="Nodo no encontrado")
     device.user_id = None
     device.farm_id = None
+    # El siguiente dueño debe re-provisionar su propio secreto — este nodo
+    # pudo cambiar de manos físicamente.
+    device.device_secret = None
+    device.pending_secret_until = None
     await db.commit()
 
 
@@ -162,6 +201,11 @@ async def ingest_device_reading(
         db.add(device)
         await db.commit()
         return {"status": "unclaimed", "claim_code": device.claim_code}
+
+    # Si el dispositivo ya tiene secreto (provisionado vía TOFU en /register),
+    # la lectura debe traerlo — cierra la ingesta anónima por MAC adivinada.
+    if device.device_secret is not None and body.get("device_secret") != device.device_secret:
+        raise HTTPException(status_code=401, detail="Secreto de dispositivo inválido o ausente")
 
     device.last_seen = datetime.now(UTC)
     if body.get("firmware_version"):

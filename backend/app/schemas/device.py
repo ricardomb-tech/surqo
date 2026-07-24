@@ -15,6 +15,10 @@ class DeviceRegister(BaseModel):
 class DeviceRegisterResponse(BaseModel):
     claim_code: str
     is_claimed: bool
+    # Solo viene poblado UNA VEZ: la primera vez que el nodo llama /register
+    # dentro de los 5 min posteriores a que su dueño lo emparejó (POST /claim).
+    # El firmware debe guardarlo en NVS — no se vuelve a entregar después.
+    device_secret: str | None = None
 
 
 class DeviceClaim(BaseModel):

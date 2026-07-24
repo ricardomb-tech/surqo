@@ -128,6 +128,10 @@ class SurqoMQTTService:
             await db.commit()
             return None
 
+        if device.device_secret is not None and payload.get("device_secret") != device.device_secret:
+            logger.warning("MQTT: secreto inválido o ausente para dispositivo %s — lectura descartada", mac)
+            return None
+
         device.last_seen = datetime.now(UTC)
         if payload.get("firmware_version"):
             device.firmware_version = payload["firmware_version"]

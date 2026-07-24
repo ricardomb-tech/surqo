@@ -8,6 +8,33 @@ from sqlalchemy.ext.asyncio import AsyncSession
 if TYPE_CHECKING:
     from app.websocket.manager import WebSocketManager
 
+# Mismos rangos que SensorReadingCreate (schemas/sensor.py) — la ingesta pública
+# de dispositivos (MQTT y el fallback HTTP en devices.py) no pasa por ese
+# schema, así que un valor absurdo (sensor dañado o payload manipulado) podía
+# guardarse sin validar y disparar alertas falsas. Fuera de rango -> se
+# descarta ese campo (no se inventa un valor clamped que podría gatillar un
+# umbral por sí mismo).
+_SENSOR_RANGES: dict[str, tuple[float, float]] = {
+    "soil_moisture_pct": (0, 100),
+    "soil_temp_c": (-10, 80),
+    "air_temp_c": (-10, 60),
+    "air_humidity_pct": (0, 100),
+    "uv_index": (0, 20),
+}
+
+
+def _in_range(field: str, value: float | int | None) -> float | int | None:
+    if value is None:
+        return None
+    bounds = _SENSOR_RANGES.get(field)
+    if bounds is None:
+        return value
+    lo, hi = bounds
+    try:
+        return value if lo <= float(value) <= hi else None
+    except (TypeError, ValueError):
+        return None
+
 
 async def ingest_reading(
     db: AsyncSession,
@@ -31,19 +58,23 @@ async def ingest_reading(
     alert_svc = AlertService()
     sensors = payload.get("sensors", payload)
 
-    air_temp = sensors.get("air_temp_c") or payload.get("air_temp_c")
-    humidity = sensors.get("air_humidity_pct") or payload.get("air_humidity_pct")
+    air_temp = _in_range("air_temp_c", sensors.get("air_temp_c") or payload.get("air_temp_c"))
+    humidity = _in_range(
+        "air_humidity_pct", sensors.get("air_humidity_pct") or payload.get("air_humidity_pct")
+    )
     vpd = None
     if air_temp is not None and humidity is not None:
         vpd = kpi_svc.calculate_vpd(air_temp, humidity)
 
     reading_data = {
         "device_id": payload.get("device_id", "unknown"),
-        "soil_moisture_pct": sensors.get("soil_moisture_pct"),
-        "soil_temp_c": sensors.get("soil_temp_c"),
+        "soil_moisture_pct": _in_range("soil_moisture_pct", sensors.get("soil_moisture_pct")),
+        "soil_temp_c": _in_range("soil_temp_c", sensors.get("soil_temp_c")),
         "air_temp_c": air_temp,
         "air_humidity_pct": humidity,
-        "uv_index": sensors.get("light_uv_index") or sensors.get("uv_index"),
+        "uv_index": _in_range(
+            "uv_index", sensors.get("light_uv_index") or sensors.get("uv_index")
+        ),
         "battery_mv": payload.get("battery_mv"),
         "rssi_dbm": payload.get("rssi_dbm"),
         "vpd_kpa": vpd,

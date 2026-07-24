@@ -40,6 +40,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         import logging
         logging.getLogger(__name__).warning("DB no disponible al arrancar: %s", e)
 
+    await manager.start_listener()
+
     # Iniciar MQTT consumer solo si hay credenciales configuradas
     if settings.HIVEMQ_HOST and settings.HIVEMQ_USERNAME:
         from app.services.mqtt_service import SurqoMQTTService
@@ -56,6 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     if _mqtt_service:
         _mqtt_service.stop()
+    await manager.stop_listener()
     logfire.info("Surqo API detenida")
 
 
