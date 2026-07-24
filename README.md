@@ -25,7 +25,7 @@ Surqo es una plataforma agroclimática de precisión que conecta sensores físic
 
 | Recurso | URL |
 |---------|-----|
-| **Sitio web** | [https://surqo.online](https://surqo.online) |
+| **Sitio web** | [https://surqo.online](https://www.surqo.online/) |
 | **API Backend** | [https://surqo-api.fly.dev](https://surqo-api.fly.dev) |
 | **Health check** | [https://surqo-api.fly.dev/health](https://surqo-api.fly.dev/health) |
 
